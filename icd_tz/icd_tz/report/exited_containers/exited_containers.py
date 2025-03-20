@@ -45,13 +45,19 @@ def get_columns():
             "width": 100
         },
         {
-            "fieldname": "arrival_date",
-            "label": _("Discharge Date"),
+            "fieldname": "received_date",
+            "label": _("Carry In Date"),
             "fieldtype": "Date",
             "width": 100
         },
         {
-            "fieldname": "departure_date",
+            "fieldname": "arrival_date",
+            "label": _("Ship D/C Date"),
+            "fieldtype": "Date",
+            "width": 100
+        },
+        {
+            "fieldname": "submitted_date",
             "label": _("Carryout Date"),
             "fieldtype": "Date",
             "width": 100
@@ -103,9 +109,9 @@ def get_data(filters):
         SELECT
             c.m_bl_no as bl_no,
             c.container_no,
-            # c.type_of_container,
+            c.received_date,
             c.arrival_date,
-            c.departure_date,
+            gp.submitted_date,
             c.port_of_destination,
             IFNULL(c.consignee, gp.consignee) as consignee_name,
             IFNULL(gp.goods_description, c.cargo_description) as goods_description,
@@ -146,5 +152,4 @@ def get_conditions(filters):
         conditions.append("c.m_bl_no = %(bl_no)s")
         
     return " AND " + " AND ".join(conditions) if conditions else ""
-
 
