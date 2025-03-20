@@ -18,7 +18,7 @@ def get_columns():
         },
         {
             "fieldname": "m_bl_no",
-            "label": _("B/L No."),
+            "label": _("M B/L No."),
             "fieldtype": "Data",
             "width": 120
         },
@@ -100,7 +100,7 @@ def get_data(filters):
 
     sql_query = f"""
     SELECT 
-			cb.container_id AS container_no,
+			cb.container_no,
 			c.m_bl_no,
 			cb.container_size,
 			cb.c_and_f_company,

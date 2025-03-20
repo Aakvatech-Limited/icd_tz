@@ -20,7 +20,7 @@ def get_columns():
         },
         {
             "fieldname": "bl_no",
-            "label": _("B/L No."),
+            "label": _("M B/L No."),
             "fieldtype": "Data",
             "width": 120
         },
@@ -74,13 +74,19 @@ def get_columns():
             "width": 150
         },
         {
+            "fieldname": "ship_dc_date",
+            "label": _("Ship D/C Date"),
+            "fieldtype": "Date",
+            "width": 150
+        },
+        {
             "fieldname": "arrival_date",
             "label": _("Date In"),
             "fieldtype": "Date",
             "width": 150
         },
         {
-            "fieldname": "departure_date",
+            "fieldname": "received_date",
             "label": _("Date Out"),
             "fieldtype": "Date",
             "width": 150
@@ -92,8 +98,8 @@ def get_data(filters=None):
   conditions = get_conditions(filters)
   query = f"""
   SELECT 
-    gp.container_id AS container_no,
-    gp.bl_no,
+    gp.container_no,
+    gp.m_bl_no,
     gp.size,
     gp.consignee,
     gp.sline,
@@ -102,8 +108,9 @@ def get_data(filters=None):
     gp.voyage_no,
     c.freight_indicator,
     c.place_of_destination,
+    gp.ship_dc_date,
     c.arrival_date,
-    c.departure_date
+    gp.submitted_date
   FROM 
     `tabGate Pass` AS gp
   LEFT JOIN

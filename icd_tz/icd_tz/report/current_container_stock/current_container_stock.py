@@ -58,7 +58,7 @@ def get_columns():
 				"DP WORLD", 
 				"TEAGTL"
 			],
-            "width": 360
+            "width": 160
         },
         {
             "fieldname": "ship",
@@ -82,7 +82,7 @@ def get_columns():
             "fieldname": "cargo_type",
             "label": _("Cargo Type"),
             "fieldtype": "Data",
-            "width": 360
+            "width": 150
         },
         {
             "fieldname": "vessel_name",
@@ -101,9 +101,34 @@ def get_columns():
 
  
 def get_data(filters=None):
-    sql_query = """
+    # Define status groups
+    in_house_statuses = ["In Yard", "At Booking", "At Inspection", "At Payments"]
+    delivered_statuses = ["Delivered"]
+
+    # Initialize conditions list and parameters
+    conditions = []
+    params = []
+
+    # Apply filters based on status_filter
+    if filters and filters.get("status_filter"):
+        status_filter = filters["status_filter"]
+        if status_filter == "In House":
+            conditions.append(f"c.status IN ({', '.join(['%s'] * len(in_house_statuses))})")
+            params.extend(in_house_statuses)
+        elif status_filter == "Delivered":
+            conditions.append(f"c.status IN ({', '.join(['%s'] * len(delivered_statuses))})")
+            params.extend(delivered_statuses)
+    else:
+        # Default condition to exclude 'Delivered' status
+        conditions.append(f"c.status NOT IN ({', '.join(['%s'] * len(delivered_statuses))})")
+        params.extend(delivered_statuses)
+
+    # Combine conditions into a single string
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+    sql_query = f"""
     SELECT 
-        c.name AS container_no,
+        c.container_no,
         c.m_bl_no,
         c.size,
         c.consignee,
@@ -123,5 +148,7 @@ def get_data(filters=None):
         `tabContainer Reception` AS cr ON c.container_reception = cr.name
     LEFT JOIN
 		`tabGate Pass` As gp ON c.name = gp.container_id
+    WHERE {where_clause}
     """
-    return frappe.db.sql(sql_query, as_dict=True)   
+
+    return frappe.db.sql(sql_query, params, as_dict=True)   
