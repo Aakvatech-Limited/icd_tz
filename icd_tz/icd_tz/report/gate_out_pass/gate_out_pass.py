@@ -19,7 +19,7 @@ def get_columns():
             "width": 120
         },
         {
-            "fieldname": "bl_no",
+            "fieldname": "m_bl_no",
             "label": _("M B/L No."),
             "fieldtype": "Data",
             "width": 120
@@ -86,7 +86,7 @@ def get_columns():
             "width": 150
         },
         {
-            "fieldname": "received_date",
+            "fieldname": "submitted_date",
             "label": _("Date Out"),
             "fieldtype": "Date",
             "width": 150
