@@ -255,42 +255,34 @@ class Container(Document):
 	def update_billed_days(self):
 		setting_doc = frappe.get_doc("ICD TZ Settings")
 
+		# Common calculation for all charge types
 		no_of_free_days = 0
 		no_of_single_days = 0
 		no_of_double_days = 0
+
 		for d in setting_doc.storage_days:
-			if d.destination == self.place_of_destination:
-				if d.charge == "Free":
-					no_of_free_days = d.get("to") - d.get("from") + 1
+				if d.destination == self.place_of_destination:
+						if d.charge == "Free":
+								no_of_free_days = d.get("to") - d.get("from") + 1
+						elif d.charge == "Single":
+								no_of_single_days = d.get("to") - d.get("from") + 1
+						elif d.charge == "Double":
+								no_of_double_days = d.get("to") - d.get("from") + 1
 
-				elif d.charge == "Single":
-					no_of_single_days = d.get("to") - d.get("from") + 1
-
-				elif d.charge == "Double":
-					no_of_double_days = d.get("to") - d.get("from") + 1
-		
 		free_count = 0
 		charge_count = 0
+
 		for row in self.container_dates:
-			if free_count < no_of_free_days:
-				row.is_free = 1
-				row.is_billable = 0
-				free_count += 1
-			
-			elif row.is_billable == 1  and row.is_free == 0:
-				charge_count += 1
-		
-		if charge_count == 0:
-			self.has_single_charge = 0
-			self.has_double_charge = 0
-		
-		elif charge_count > 0 and charge_count <= no_of_single_days:
-			self.has_single_charge = 1
-			self.has_double_charge = 0
-		
-		elif charge_count > no_of_single_days:
-			self.has_single_charge = 1
-			self.has_double_charge = 1
+				if free_count < no_of_free_days:
+						row.is_free = 1
+						row.is_billable = 0
+						free_count += 1
+				elif row.is_billable == 1 and row.is_free == 0:
+						charge_count += 1
+
+		# Unified charge calculation
+		self.has_single_charge = 1 if charge_count > 0 else 0
+		self.has_double_charge = 1 if charge_count > no_of_single_days else 0
 		
 	def update_billed_details(self):
 		"""Update the billed days of the container"""
