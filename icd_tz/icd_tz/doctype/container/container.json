@@ -693,7 +693,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-23 15:41:46.493973",
+ "modified": "2025-05-08 00:26:24.480012",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",
@@ -713,6 +713,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "container_no, m_bl_no, seal_no_1, size, country_of_destination, current_location, consignee",
  "sort_field": "modified",
  "sort_order": "DESC",
