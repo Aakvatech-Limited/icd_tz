@@ -29,6 +29,7 @@ def get_data(filters):
             ycb.inspection_location.as_('location'),
 			ycb.inspection_date.as_('booking_date'),
 			cn.seal_no_1.as_('seal'),
+			ycb.cargo_description
         )
 		.where(
 			(ycb.docstatus == 1)
@@ -94,6 +95,10 @@ def get_columns():
             "label": _("Date"),
             "fieldtype": "Datetime",
             "width": 150
+        },{
+            "fieldname": "cargo_description",
+            "label": _("Item Description"),
+            "fieldtype": "Small Text"
         },
     ]
     
