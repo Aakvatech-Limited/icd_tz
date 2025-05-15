@@ -19,7 +19,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Service Type",
-   "options": "\nLevy\nTransport\nVerification\nRemoval\nStripping\nShore\nStorage-Single\nStorage-Double",
+   "options": "\nLevy\nTransport\nVerification\nRemoval\nStripping\nShore\nStorage-Single\nStorage-Double\nReefer-Single\nReefer-Double",
    "reqd": 1,
    "search_index": 1
   },
@@ -64,12 +64,13 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-19 11:19:30.041378",
+ "modified": "2025-05-07 18:49:00.676748",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Loose Detail",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
