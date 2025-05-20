@@ -1,57 +1,57 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2024-09-17 09:31:15.780183",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "date",
-  "is_billable",
-  "is_free",
-  "sales_invoice"
- ],
- "fields": [
-  {
-   "fieldname": "date",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Date"
-  },
-  {
-   "fieldname": "sales_invoice",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Sales Invoice",
-   "read_only": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "is_billable",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Is Billable",
-   "read_only_depends_on": "eval: doc.is_free == 1"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_free",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Is Free",
-   "read_only": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "istable": 1,
- "links": [],
- "modified": "2024-09-25 23:43:30.652552",
- "modified_by": "Administrator",
- "module": "Icd Tz",
- "name": "Container Service Detail",
- "owner": "Administrator",
- "permissions": [],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2024-09-17 09:31:15.780183",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "is_billable",
+    "is_free",
+    "sales_invoice"
+  ],
+  "fields": [
+    {
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date"
+    },
+    {
+      "fieldname": "sales_invoice",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Storage Payment Reference",
+      "read_only": 1
+    },
+    {
+      "default": "1",
+      "fieldname": "is_billable",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "Is Billable",
+      "read_only_depends_on": "eval: doc.is_free == 1"
+    },
+    {
+      "default": "0",
+      "fieldname": "is_free",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "Is Free",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "istable": 1,
+  "links": [],
+  "modified": "2025-05-08 00:27:14.998906",
+  "modified_by": "Administrator",
+  "module": "Icd Tz",
+  "name": "Container Service Detail",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
 }

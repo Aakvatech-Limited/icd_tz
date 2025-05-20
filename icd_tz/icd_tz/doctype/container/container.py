@@ -7,17 +7,14 @@ from frappe.model.document import Document
 from frappe.utils import nowdate, getdate, add_days
 
 class Container(Document):
-	def after_insert(self):
+	def before_insert(self):
 		if self.container_no and self.container_reception:
 			self.update_m_bl_based_container_details()
 			self.update_hbl_based_container_details()
 
 			self.validate_place_of_destination()
 			
-			self.posting_date = getdate(self.creation)
-
-			self.db_update()
-			self.db_update_all()
+			self.posting_date = nowdate()
 	
 	def before_save(self):
 		self.validate_place_of_destination()
