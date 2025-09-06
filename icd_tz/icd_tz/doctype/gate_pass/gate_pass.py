@@ -170,6 +170,19 @@ class GatePass(Document):
 		self.submitted_by = get_fullname(frappe.session.user)
 		self.submitted_date = nowdate()
 		self.submitted_time = nowtime()
+
+	@frappe.whitelist()
+	def gate_out_confirm(self):
+		"""Confirm gate out by Gate Person with payment validation"""
+		# Validate payments same as submission
+		self.validate_pending_payments()
+
+		# Update workflow state to 'Gate Out Confirmed'
+		self.workflow_state = 'Gate Out Confirmed'
+		self.save(ignore_permissions=True)
+
+		frappe.msgprint("Gate Out confirmed successfully!", indicator="green")
+		return True
 	
 	def validate_mandatory_fields(self):
 		fields_str = ""
