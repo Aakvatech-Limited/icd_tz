@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_fullname, nowdate, nowtime, get_url_to_form
+from frappe.utils import get_fullname, nowdate, nowtime, get_url_to_form, add_to_date, get_datetime
 from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
 
 
@@ -20,7 +20,7 @@ class GatePass(Document):
 		self.update_container_status()
 
 	def before_cancel(self):
-		self.update_container_status("At Payments")
+		self.update_container_status("At Gatepass")
 
 	def validate_pending_payments(self):
 		"""Validate the pending payments for the Gate Pass"""
@@ -170,6 +170,42 @@ class GatePass(Document):
 		self.submitted_by = get_fullname(frappe.session.user)
 		self.submitted_date = nowdate()
 		self.submitted_time = nowtime()
+		self.set_expiry_datetime()
+
+	def set_expiry_datetime(self):
+		"""Calculate and set expiry date/time based on ICD TZ Settings"""
+		try:
+			# Get expiry hours from ICD TZ Settings
+			settings = frappe.get_single("ICD TZ Settings")
+			expiry_hours = int(settings.expiry_hours or 72)  # Default to 72 hours if not set
+
+			# Calculate expiry datetime from submission datetime
+			submission_datetime = get_datetime(f"{self.submitted_date} {self.submitted_time}")
+			expiry_datetime = add_to_date(submission_datetime, hours=expiry_hours)
+
+			# Set expiry date and time
+			self.expiry_date = expiry_datetime.date()
+			self.expiry_time = expiry_datetime.time()
+
+		except Exception as e:
+			frappe.logger().error(f"Error setting expiry datetime for Gate Pass {self.name}: {str(e)}")
+			# Set default expiry (72 hours from now) if there's an error
+			default_expiry = add_to_date(get_datetime(f"{self.submitted_date} {self.submitted_time}"), hours=72)
+			self.expiry_date = default_expiry.date()
+			self.expiry_time = default_expiry.time()
+
+	@frappe.whitelist()
+	def gate_out_confirm(self):
+		"""Confirm gate out by Gate Person with payment validation"""
+		# Validate payments same as submission
+		self.validate_pending_payments()
+
+		# Update workflow state to 'Gate Out Confirmed'
+		self.workflow_state = 'Gate Out Confirmed'
+		self.save(ignore_permissions=True)
+
+		frappe.msgprint("Gate Out confirmed successfully!", indicator="green")
+		return True
 	
 	def validate_mandatory_fields(self):
 		fields_str = ""
