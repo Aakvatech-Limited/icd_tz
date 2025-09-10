@@ -163,6 +163,9 @@ doc_events = {
 # 	],
 # }
 scheduler_events = {
+    "hourly": [
+        "icd_tz.icd_tz.doctype.gate_pass.gate_pass.auto_expire_gate_passes"
+    ],
     "cron": {
         # run after every two hours
         "0 */2 * * *": [
