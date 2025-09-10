@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_fullname, nowdate, nowtime, get_url_to_form
+from frappe.utils import get_fullname, nowdate, nowtime, now_datetime, get_url_to_form, add_to_date
 from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
 
 
@@ -19,8 +19,11 @@ class GatePass(Document):
 	def on_submit(self):
 		self.update_container_status()
 
-	def before_cancel(self):
-		self.update_container_status("At Payments")
+	def after_submit(self):
+		self.validate_pending_payments()
+
+	def on_cancel(self):
+		self.update_container_status("At Gatepass")
 
 	def validate_pending_payments(self):
 		"""Validate the pending payments for the Gate Pass"""
@@ -33,8 +36,14 @@ class GatePass(Document):
 		service_msg += self.validate_in_yard_booking()
 		service_msg += self.validate_reception_charges()
 		service_msg += self.validate_inspection_charges()
-		
-		if service_msg:
+
+		# Check workflow state and provide appropriate message
+		if self.workflow_state not in ["Approved", "Gate Out Confirmed"]:
+			frappe.msgprint("Payment validation is not required for the current stage")
+		else:
+			frappe.msgprint("Validating payments before proceeding with gate pass confirmation")
+
+		if service_msg and self.workflow_state in ["Approved", "Gate Out Confirmed"]:
 			msg = "<h4 class='text-center'>Pending Payments:</h4><hr>Payment is pending for the following services <ul> " + service_msg + " </ul>"
 
 			frappe.throw(str(msg))
@@ -170,7 +179,22 @@ class GatePass(Document):
 		self.submitted_by = get_fullname(frappe.session.user)
 		self.submitted_date = nowdate()
 		self.submitted_time = nowtime()
-	
+		self.set_expiry_datetime()
+		
+	def set_expiry_datetime(self):
+		settings = frappe.get_single("ICD TZ Settings")
+		if not settings.expiry_hours:
+			return
+
+		expiry_hours = int(settings.expiry_hours)
+
+		# Calculate expiry datetime from current datetime
+		submission_datetime = now_datetime()
+		expiry_datetime = add_to_date(submission_datetime, hours=expiry_hours)
+
+		# Set expiry date as datetime
+		self.expiry_date = expiry_datetime
+		
 	def validate_mandatory_fields(self):
 		fields_str = ""
 		fields = ["transporter", "truck", "trailer", "driver", "license_no"]
@@ -211,3 +235,29 @@ def create_getpass_for_empty_container(container_id):
 
 	return True
 
+
+@frappe.whitelist()
+def auto_expire_gate_passes():
+	"""Auto-expire and cancel Gate Passes that have exceeded their expiry time"""
+
+	current_datetime = now_datetime()
+
+	# Find submitted gate passes that have expired and are not confirmed
+	expired_gate_passes = frappe.get_all("Gate Pass",
+		filters={
+			"docstatus": 1,
+			"workflow_state": ["not in", ["Gate Out Confirmed"]],
+			"expiry_date": ["<", current_datetime]
+		},
+		fields=["name", "container_no", "expiry_date", "workflow_state"]
+	)
+
+	for gp in expired_gate_passes:
+		doc = frappe.get_doc("Gate Pass", gp.name)
+
+		# Cancel the document
+		doc.cancel()
+
+		# Add a comment after cancelling
+		doc.add_comment("Comment",
+			f"Auto-cancelled due to expiry. Gate Pass expired on {gp.expiry_date}. Container was not moved out within the agreed time stored in ICD settings.")
