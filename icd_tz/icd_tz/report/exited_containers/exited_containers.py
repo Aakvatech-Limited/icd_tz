@@ -99,7 +99,7 @@ def get_columns():
             "width": 120
         }
     ]
-    
+
 def get_data(filters):
     """
     Fetch and return report data for Exited Containers
@@ -108,9 +108,9 @@ def get_data(filters):
     Returns:
         list: List of dictionaries containing report data
     """
-    
+
     conditions = get_conditions(filters)
-        
+
     query = f"""
         SELECT
             c.m_bl_no,
@@ -127,18 +127,21 @@ def get_data(filters):
             gp.vessel_name
         FROM 
             `tabContainer` c
-        LEFT JOIN
+        JOIN
             `tabGate Pass` gp ON c.name = gp.container_id
         WHERE 
             gp.docstatus = 1 
+            AND gp.workflow_state = 'Gate Out Confirmed'
             {conditions}
         ORDER BY 
             c.modified DESC
-    """.format(conditions=conditions)
-        
+    """.format(
+        conditions=conditions
+    )
+
     data=frappe.db.sql(query, filters, as_dict=1)
     return data
-        
+
 
 def get_conditions(filters):
     """
@@ -160,4 +163,3 @@ def get_conditions(filters):
         conditions.append("c.m_bl_no = %(bl_no)s")
         
     return " AND " + " AND ".join(conditions) if conditions else ""
-

@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 
-
 import frappe
 
 def execute(filters=None):
@@ -45,18 +44,18 @@ def get_data(filters):
     from_date = filters.get('from_date')
     to_date = filters.get('to_date')
     bl_no = filters.get('bl_no')
-    
+
     conditions = ["c.freight_indicator = 'LCL'"]
-    
+
     if from_date:
         conditions.append(f"c.arrival_date >= '{from_date}'")
     if to_date:
         conditions.append(f"c.arrival_date <= '{to_date}'")
     if bl_no:
         conditions.append(f"c.m_bl_no = '{bl_no}'")
-    
+
     query_conditions = " AND ".join(conditions)
-    
+
     if report_type == 'Current Loose Stock':
         query = f"""
             SELECT 
@@ -72,7 +71,7 @@ def get_data(filters):
             WHERE {query_conditions}
             AND c.status= 'In Yard'
         """
-    
+
     elif report_type == 'Exited Loose Cargo':
         query = f"""
             SELECT 
@@ -88,9 +87,9 @@ def get_data(filters):
             FROM `tabContainer` c
             JOIN `tabGate Pass` g ON c.m_bl_no = g.bl_no
             WHERE {query_conditions}
-            AND c.status != 'In Yard'
+            AND c.status != 'In Yard' AND g.docstatus = 1 AND g.workflow_state = 'Gate Out Confirmed'
         """
-    
+
     elif report_type == 'Received Loose Cargo':
         query = f"""
             SELECT 
@@ -107,5 +106,5 @@ def get_data(filters):
             FROM `tabContainer` c
             WHERE {query_conditions}
         """
-    
+
     return frappe.db.sql(query, as_dict=1)
