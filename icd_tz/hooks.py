@@ -27,14 +27,12 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {
-    "Sales Order": "icd_tz/api/sales_order.js"
-}
+doctype_js = {"Sales Order": "icd_tz/api/sales_order.js"}
 
 doctype_list_js = {
     "Custom Field": "icd_tz/patches/custom_field.js",
     "Property Setter": "icd_tz/patches/property_setter.js",
-    "Sales Order": "icd_tz/api/sales_order_list.js"
+    "Sales Order": "icd_tz/api/sales_order_list.js",
 }
 
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -69,7 +67,7 @@ doctype_list_js = {
 # Installation
 # ------------
 
-# before_install = "icd_tz.install.before_install"
+before_install = "icd_tz.install.before_install"
 after_install = [
     "icd_tz.patches.create_custom_fields.execute",
     "icd_tz.patches.create_property_setters.execute",
@@ -132,13 +130,13 @@ after_migrate = [
 # Hook on document methods and events
 
 doc_events = {
-	"Sales Invoice": {
+    "Sales Invoice": {
         "before_save": "icd_tz.icd_tz.api.sales_invoice.before_save",
-        "on_submit": "icd_tz.icd_tz.api.sales_invoice.on_submit"
+        "on_submit": "icd_tz.icd_tz.api.sales_invoice.on_submit",
     },
     "Sales Order": {
         "before_save": "icd_tz.icd_tz.api.sales_order.before_save",
-        "on_trash": "icd_tz.icd_tz.api.sales_order.on_trash"
+        "on_trash": "icd_tz.icd_tz.api.sales_order.on_trash",
     },
 }
 
@@ -163,16 +161,14 @@ doc_events = {
 # 	],
 # }
 scheduler_events = {
-    "hourly": [
-        "icd_tz.icd_tz.doctype.gate_pass.gate_pass.auto_expire_gate_passes"
-    ],
+    "hourly": ["icd_tz.icd_tz.doctype.gate_pass.gate_pass.auto_expire_gate_passes"],
     "cron": {
         # run after every two hours
         "0 */2 * * *": [
             "icd_tz.icd_tz.doctype.container.container.daily_update_date_container_stay",
-            "icd_tz.icd_tz.doctype.consignee.consignee.create_customer"
+            "icd_tz.icd_tz.doctype.consignee.consignee.create_customer",
         ]
-    }
+    },
 }
 
 # Testing
