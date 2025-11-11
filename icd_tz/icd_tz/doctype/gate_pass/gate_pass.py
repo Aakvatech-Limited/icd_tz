@@ -11,7 +11,8 @@ from frappe.utils import (
 	nowtime,
 	now_datetime,
 	get_url_to_form,
-	add_to_date
+	add_to_date,
+	get_datetime,
 )
 
 
@@ -25,10 +26,13 @@ class GatePass(Document):
 		self.update_submitted_info()
 	
 	def on_submit(self):
-		self.update_container_status()
+		self.update_container_status("At Gate Confirmation")
 
 	def on_update_after_submit(self):
 		self.validate_pending_payments()
+
+		if self.workflow_state == "Gate Out Confirmed":
+			self.update_container_status("Delivered")
 
 	def on_cancel(self):
 		self.update_container_status("At Gatepass")
@@ -194,7 +198,7 @@ class GatePass(Document):
 		expiry_hours = settings.gate_pass_expiry_hours
 
 		# Calculate expiry datetime from current datetime
-		submission_datetime = now_datetime()
+		submission_datetime = get_datetime(f"{self.submitted_date} {self.submitted_time}")
 		expiry_datetime = add_to_date(submission_datetime, hours=expiry_hours)
 
 		# Set expiry date as datetime

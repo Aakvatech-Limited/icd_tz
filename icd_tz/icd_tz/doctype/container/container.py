@@ -27,7 +27,7 @@ class Container(Document):
 	def update_m_bl_based_container_details(self):
 		"""Update the container details from the Container Reception, Containers Detail and Container Movement Order"""
 
-		if self.status == "Delivered":
+		if self.status in ["At Gate Confirmation", "Delivered"]:
 			return
 		
 		container_reception = frappe.get_cached_doc("Container Reception", self.container_reception)
@@ -138,7 +138,7 @@ class Container(Document):
 		if self.has_hbl == 0:
 			return
 
-		if self.status == "Delivered":
+		if self.status in ["At Gate Confirmation", "Delivered"]:
 			return
 		
 		if not self.status:
@@ -300,7 +300,7 @@ class Container(Document):
 	def update_billed_details(self):
 		"""Update the billed days of the container"""
 		
-		if self.status == "Delivered":
+		if self.status in ["At Gate Confirmation", "Delivered"]:
 			return
 		
 		if len(self.container_dates) > 0:
@@ -321,7 +321,6 @@ class Container(Document):
 				
 				if row.sales_invoice:
 					no_of_billed_days += 1
-
 			
 			self.total_days = len(self.container_dates)
 			self.no_of_free_days = no_of_free_days
@@ -437,7 +436,7 @@ def daily_update_date_container_stay(container_id=None):
 	if container_id:
 		containers.append(container_id)
 	else:
-		containers = frappe.get_all("Container", filters={"status": ["!=", "Delivered"]}, pluck="name")
+		containers = frappe.get_all("Container", filters={"status": ["not in", ["At Gate Confirmation", "Delivered"]]}, pluck="name")
 	
 	for container_id in containers:
 		try:
