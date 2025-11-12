@@ -10,7 +10,6 @@
   "default_price_list",
   "column_break_8yjq8",
   "enable_signature_validation",
-  "gate_pass_expiry_hours",
   "corridor_levy_countries_section",
   "countries",
   "service_pricing_criteria_section",
@@ -90,19 +89,12 @@
    "fieldtype": "Table",
    "label": "Criteria",
    "options": "ICD TZ Loose Detail"
-  },
-  {
-   "description": "eg: 12, 24, 48, 72 etc",
-   "fieldname": "gate_pass_expiry_hours",
-   "fieldtype": "Int",
-   "label": "Gate Pass Expiry Hours",
-   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-14 15:12:14.287641",
+ "modified": "2025-11-12 10:06:23.743513",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Settings",

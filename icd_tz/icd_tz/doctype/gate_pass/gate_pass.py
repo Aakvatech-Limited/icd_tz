@@ -191,17 +191,14 @@ class GatePass(Document):
 		self.set_expiry_datetime()
 		
 	def set_expiry_datetime(self):
-		settings = frappe.get_single("ICD TZ Settings")
-		if not settings.gate_pass_expiry_hours:
-			return
+		if self.submitted_date and self.submitted_time:
+			submission_datetime = get_datetime(f"{self.submitted_date} {self.submitted_time}")
+		else:
+			submission_datetime = now_datetime()
 
-		expiry_hours = settings.gate_pass_expiry_hours
+		next_day = add_to_date(submission_datetime, days=1)
+		expiry_datetime = next_day.replace(hour=10, minute=0, second=0, microsecond=0)
 
-		# Calculate expiry datetime from current datetime
-		submission_datetime = get_datetime(f"{self.submitted_date} {self.submitted_time}")
-		expiry_datetime = add_to_date(submission_datetime, hours=expiry_hours)
-
-		# Set expiry date as datetime
 		self.expiry_date = expiry_datetime
 		
 	def validate_mandatory_fields(self):
