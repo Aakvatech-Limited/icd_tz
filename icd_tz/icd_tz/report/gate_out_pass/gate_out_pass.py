@@ -120,7 +120,7 @@ def get_data(filters=None):
     gp.submitted_date
   FROM 
     `tabGate Pass` AS gp
-  LEFT JOIN
+  JOIN
     `tabContainer` AS c ON gp.container_id = c.name
   WHERE 
     gp.docstatus = 1
