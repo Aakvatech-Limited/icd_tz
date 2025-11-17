@@ -4,12 +4,6 @@
 frappe.query_reports["Gate Out Pass"] = {
   filters: [
     {
-      fieldname: "m_bl_no",
-      label: __("M B/L No"),
-      fieldtype: "Data",
-      reqd: 0,
-    },
-    {
       fieldname: "from_date",
       label: __("From Date"),
       fieldtype: "Date",
@@ -20,6 +14,18 @@ frappe.query_reports["Gate Out Pass"] = {
       label: __("To Date"),
       fieldtype: "Date",
       reqd: 1,
+    },
+    {
+      fieldname: "m_bl_no",
+      label: __("M B/L No"),
+      fieldtype: "Data",
+      reqd: 0,
+    },
+    {
+      fieldname: "h_bl_no",
+      label: __("H B/L No"),
+      fieldtype: "Data",
+      reqd: 0,
     },
   ],
 };
