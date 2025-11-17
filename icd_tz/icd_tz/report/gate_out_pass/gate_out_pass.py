@@ -131,9 +131,14 @@ def get_data(filters=None):
 
 
 def get_conditions(filters):
+  filters = filters or {}
   conditions = []
   if filters.get("m_bl_no"):
-    conditions.append("gp.bl_no = %(m_bl_no)s")
+    conditions.append("gp.m_bl_no = %(m_bl_no)s")
+  if filters.get("h_bl_no"):
+    conditions.append("gp.h_bl_no = %(h_bl_no)s")
+  if filters.get("from_date"):
+    conditions.append("gp.submitted_date >= %(from_date)s")
+  if filters.get("to_date"):
+    conditions.append("gp.submitted_date <= %(to_date)s")
   return " AND " + " AND ".join(conditions) if conditions else ""
-
-
