@@ -32,6 +32,7 @@ class GatePass(Document):
 		self.validate_pending_payments()
 
 		if self.workflow_state == "Gate Out Confirmed":
+			self.set_gate_out_date()
 			self.update_container_status("Delivered")
 
 	def on_cancel(self):
@@ -183,6 +184,16 @@ class GatePass(Document):
 		container_doc.status = status
 		container_doc.save(ignore_permissions=True)
 		container_doc.reload()
+
+	def set_gate_out_date(self):
+		"""Stamp the gate out date once the workflow is confirmed."""
+
+		if self.gate_out_date:
+			return
+
+		gate_out_date = nowdate()
+		self.db_set("gate_out_date", gate_out_date, update_modified=False)
+		self.gate_out_date = gate_out_date
 
 	def update_submitted_info(self):
 		self.submitted_by = get_fullname(frappe.session.user)

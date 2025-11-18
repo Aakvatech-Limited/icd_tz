@@ -21,6 +21,7 @@
   "column_break_ecqj",
   "submitted_by",
   "expiry_date",
+  "gate_out_date",
   "container_details_section",
   "container_id",
   "m_bl_no",
@@ -338,13 +339,18 @@
    "fieldtype": "Datetime",
    "label": "Expiry Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "gate_out_date",
+   "fieldtype": "Date",
+   "label": "Gate Out Date"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-14 23:01:33.788141",
+ "modified": "2025-11-18 10:30:20.551426",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Gate Pass",
