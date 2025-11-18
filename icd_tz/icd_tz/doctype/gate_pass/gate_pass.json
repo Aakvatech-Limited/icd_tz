@@ -17,6 +17,7 @@
   "column_break_8s1tw",
   "submitted_date",
   "submitted_time",
+  "gate_out_date",
   "missing_booking_allowed_by",
   "column_break_ecqj",
   "submitted_by",
@@ -338,13 +339,19 @@
    "fieldtype": "Datetime",
    "label": "Expiry Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "gate_out_date",
+   "fieldtype": "Datetime",
+   "label": "Gate Out Date",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-14 23:01:33.788141",
+ "modified": "2025-11-18 11:56:21.761488",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Gate Pass",

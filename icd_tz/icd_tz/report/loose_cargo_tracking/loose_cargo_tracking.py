@@ -83,7 +83,7 @@ def get_data(filters):
                 c.consignee,
                 c.no_of_packages,
                 c.cargo_type,
-                CONCAT(g.submitted_date, ' ', g.submitted_time) as gate_out_date
+                g.gate_out_date
             FROM `tabContainer` c
             JOIN `tabGate Pass` g ON c.m_bl_no = g.bl_no
             WHERE {query_conditions}
