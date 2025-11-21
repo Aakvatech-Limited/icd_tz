@@ -117,7 +117,7 @@ def get_data(filters=None):
     c.place_of_destination,
     gp.ship_dc_date,
     c.arrival_date,
-    gp.gate_out_date
+    gp.gate_out_date AS gate_out_date
   FROM 
     `tabGate Pass` AS gp
   JOIN
@@ -138,7 +138,7 @@ def get_conditions(filters):
   if filters.get("h_bl_no"):
     conditions.append("gp.h_bl_no = %(h_bl_no)s")
   if filters.get("from_date"):
-    conditions.append("gp.gate_out_date >= %(from_date)s")
+    conditions.append("DATE(gp.gate_out_date) >= %(from_date)s")
   if filters.get("to_date"):
-    conditions.append("gp.gate_out_date <= %(to_date)s")
+    conditions.append("DATE(gp.gate_out_date) <= %(to_date)s")
   return " AND " + " AND ".join(conditions) if conditions else ""
