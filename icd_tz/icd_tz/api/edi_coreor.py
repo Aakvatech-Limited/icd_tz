@@ -38,9 +38,6 @@ class COREORGenerator:
     Based on UN/EDIFACT D00B Version (SMDG20 subset)
     """
     
-    # Receiver ID is always TZDARDSEL (Dar es Salaam Port)
-    RECEIVER_ID = "TZDARDSEL"
-    
     # Message function codes
     MESSAGE_FUNCTIONS = {
         "cancellation": "1",
@@ -145,12 +142,24 @@ class COREORGenerator:
         return "22G1"
     
     def _get_sender_id(self):
-        """Get the sender ID from company or settings"""
-        if self.container_reception and self.container_reception.company:
-            company = frappe.get_doc("Company", self.container_reception.company)
-            # Use company abbreviation or a default
-            return getattr(company, "abbr", "ICD") or "ICD"
+        """Get the sender ID from EDI Settings"""
+        try:
+            edi_settings = frappe.get_single("EDI Settings")
+            if edi_settings.sender_id:
+                return edi_settings.sender_id
+        except Exception:
+            pass
         return "ICD"
+    
+    def _get_receiver_id(self):
+        """Get the receiver ID from EDI Settings"""
+        try:
+            edi_settings = frappe.get_single("EDI Settings")
+            if edi_settings.receiver_id:
+                return edi_settings.receiver_id
+        except Exception:
+            pass
+        return "TZDARDSEL"
     
     def _add_segment(self, segment):
         """Add a segment to the message"""
@@ -167,8 +176,9 @@ class COREORGenerator:
         interchange_date = dt.strftime("%y%m%d")
         interchange_time = dt.strftime("%H%M")
         sender_id = self._get_sender_id()
+        receiver_id = self._get_receiver_id()
         
-        return f"UNB+UNOA:2+{sender_id}+{self.RECEIVER_ID}+{interchange_date}:{interchange_time}+{interchange_id}'"
+        return f"UNB+UNOA:2+{sender_id}+{receiver_id}+{interchange_date}:{interchange_time}+{interchange_id}'"
     
     def _build_unh_segment(self, message_id):
         """

@@ -47,7 +47,7 @@ class CODECOGenerator:
     # Message type codes
     MESSAGE_TYPE_CODES = {
         "gate_in": "34",   # Gate-In report
-        "gate_out": "35",  # Gate-Out report (Departure)
+        "gate_out": "36",  # Gate-Out report (Departure)
     }
     
     # Message function codes
@@ -163,26 +163,24 @@ class CODECOGenerator:
         return "22G1"
     
     def _get_sender_id(self):
-        """Get the sender ID (ICD company identifier)"""
-        company = None
-        if self.container_reception and self.container_reception.company:
-            company = frappe.get_doc("Company", self.container_reception.company)
-        elif self.gate_pass and self.gate_pass.company:
-            company = frappe.get_doc("Company", self.gate_pass.company)
-        
-        if company:
-            return getattr(company, "abbr", "ICD") or "ICD"
+        """Get the sender ID from EDI Settings"""
+        try:
+            edi_settings = frappe.get_single("EDI Settings")
+            if edi_settings.sender_id:
+                return edi_settings.sender_id
+        except Exception:
+            pass
         return "ICD"
     
     def _get_receiver_id(self):
-        """Get the receiver ID (shipping line code)"""
-        # Get shipping line from sline field
-        sline = ""
-        if self.gate_pass:
-            sline = self.gate_pass.sline or ""
-        
-        # Default to CMA if not specified
-        return sline or "CMA"
+        """Get the receiver ID from EDI Settings"""
+        try:
+            edi_settings = frappe.get_single("EDI Settings")
+            if edi_settings.receiver_id:
+                return edi_settings.receiver_id
+        except Exception:
+            pass
+        return "CMA"
     
     def _add_segment(self, segment):
         """Add a segment to the message"""
@@ -637,7 +635,7 @@ def generate_sample_codeco_gate_out():
     segments = [
         f"UNB+UNOA:4+{sample_data['sender_id']}+{sample_data['receiver_id']}+{interchange_date}:{interchange_time}+{interchange_id}'",
         f"UNH+{message_id}+CODECO:D:95B:UN:ITG14'",
-        f"BGM+35+{sample_data['receiver_id']}+9'",  # 35 = Gate-Out
+        f"BGM+36+{sample_data['receiver_id']}+9'",  # 36 = Gate-Out
         f"TDT+20++1++{sample_data['receiver_id']}:172'",
         f"NAD+CF+{sample_data['receiver_id']}:172'",
         f"NAD+MS+{sample_data['sender_id']}'",
