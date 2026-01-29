@@ -6,6 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "sender_id",
+  "column_break_odmd",
+  "receiver_id",
   "connection_section",
   "url",
   "port",
@@ -131,13 +134,29 @@
   {
    "fieldname": "column_break_drhk",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sender_id",
+   "fieldtype": "Data",
+   "label": "Sender ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "receiver_id",
+   "fieldtype": "Data",
+   "label": "Receiver ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_odmd",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-31 12:40:54.600976",
+ "modified": "2026-01-29 10:09:45.514104",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Settings",
