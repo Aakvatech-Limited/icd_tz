@@ -1,0 +1,22 @@
+{
+ "creation": "2026-02-18 00:00:00",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Gate Pass",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"Gate Pass\",\"docstatus\",\"=\",\"0\",false],[\"Gate Pass\",\"submitted_date\",\"Timespan\",\"today\",false]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Gate In",
+ "modified": "2026-02-18 09:49:24.318002",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "Gate In",
+ "owner": "Administrator",
+ "show_full_number": 0,
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

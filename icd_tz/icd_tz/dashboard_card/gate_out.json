@@ -1,0 +1,21 @@
+{
+ "creation": "2026-02-18 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Gate Pass",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"Gate Pass\",\"docstatus\",\"=\",1,false],[\"Gate Pass\",\"workflow_state\",\"=\",\"Gate Out Confirmed\",false],[\"Gate Pass\",\"gate_out_date\",\"Timespan\",\"today\",false]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Gate Out",
+ "modified": "2026-02-18 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "Gate Out",
+ "owner": "Administrator",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}
