@@ -10,13 +10,8 @@ STATUS_FLOW = (
 	"At Booking",
 	"At Inspection",
 	"At Payments",
-	"At Gate Confirmation",
 	"Delivered",
 )
-
-CHART_LABEL_MAP = {
-	"At Gate Confirmation": "At Gate Conf.",
-}
 
 
 def execute(filters=None):
@@ -73,14 +68,9 @@ def get_data():
 
 
 def get_chart_data(data):
-	labels = []
-	for row in data:
-		status = row.get("status")
-		labels.append(CHART_LABEL_MAP.get(status, status))
-
 	return {
 		"data": {
-			"labels": labels,
+			"labels": [row.get("status") for row in data],
 			"datasets": [
 				{
 					"name": _("Containers"),
@@ -90,5 +80,5 @@ def get_chart_data(data):
 		},
 		"type": "pie",
 		"height": 280,
-		"colors": ["#2563EB", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"],
+		"colors": ["#2563EB", "#22C55E", "#F59E0B", "#EF4444", "#06B6D4"],
 	}

@@ -19,16 +19,16 @@
    "width": "Full"
   },
   {
-   "chart": "Gate Issued Trend",
-   "width": "Full"
-  },
-  {
    "chart": "Containers Received",
    "width": "Half"
   },
   {
-   "chart": "Delivered",
+   "chart": "Container Delivered",
    "width": "Half"
+  },
+  {
+   "chart": "Gate Pass Issued Trend",
+   "width": "Full"
   }
  ],
  "creation": "2026-02-20 11:14:41.513493",
@@ -38,7 +38,7 @@
  "idx": 0,
  "is_default": 0,
  "is_standard": 1,
- "modified": "2026-02-20 11:41:10.577374",
+ "modified": "2026-02-20 14:29:17.116576",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Operations",
