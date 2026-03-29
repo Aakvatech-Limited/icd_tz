@@ -7,6 +7,7 @@ from frappe.model.document import Document
 from frappe.utils.background_jobs import enqueue
 from frappe.utils import get_link_to_form, nowdate, getdate, add_days
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
+from icd_tz.icd_tz.api.edi_codeco import generate_codeco_gate_in
 
 cr = DocType("Container Reception")
 
@@ -24,8 +25,35 @@ class ContainerReception(Document):
 	def before_submit(self):
 		if not self.clerk:
 			frappe.throw("Clerk is missing, Please select clerk to proceed..!")
+			
+		edi_settings = frappe.get_single("EDI Settings")
+		if edi_settings.enable_edi and edi_settings.connection_type == "SMTP":
+			self.receiver_email = edi_settings.receiver_email
+			self.receiver_cc_email = edi_settings.receiver_cc_email
+
+		try:
+			edi_data = generate_codeco_gate_in(self.name, file_type="txt")
+			if edi_data and edi_data.get("edi_content"):
+				file_doc = frappe.get_doc({
+					"doctype": "File",
+					"file_name": edi_data.get("filename"),
+					"content": edi_data.get("edi_content"),
+					"attached_to_doctype": self.doctype,
+					"attached_to_name": self.name,
+					"is_private": 1
+				})
+				file_doc.insert(ignore_permissions=True)
+				self.edi_file = file_doc.file_url
+		except Exception as e:
+			traceback = frappe.get_traceback()
+			msg = f"Failed to generate Gate In EDI: {str(e)}\n\nTraceback: {traceback}"
+			frappe.log_error(title="Failed to generate Gate In EDI", message=msg, reference=self.name, reference_doctype=self.doctype)
 
 	def on_submit(self):
+		edi_settings = frappe.get_single("EDI Settings")
+		if edi_settings.enable_edi and not self.edi_file:
+			frappe.throw("EDI File is missing. Cannot submit when EDI is enabled.")
+
 		self.create_mbl_container()
 		self.create_hbl_container()
 		self.update_container_storage_days()
