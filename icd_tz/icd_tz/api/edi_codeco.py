@@ -507,7 +507,7 @@ class CODECOGenerator:
 
 
 @frappe.whitelist()
-def generate_codeco_gate_in(container_reception, message_function="original"):
+def generate_codeco_gate_in(container_reception, message_function="original", file_type="edi"):
     """
     API method to generate CODECO Gate-In EDI message.
     
@@ -523,7 +523,7 @@ def generate_codeco_gate_in(container_reception, message_function="original"):
     edi_content = generator.generate(message_function)
     
     timestamp = now_datetime().strftime("%Y%m%d_%H%M%S")
-    filename = f"CODECO_GATEIN_{container_reception}_{timestamp}.edi"
+    filename = f"CODECO_GATEIN_{container_reception}_{timestamp}.{file_type}"
     
     return {
         "edi_content": edi_content,
@@ -533,7 +533,7 @@ def generate_codeco_gate_in(container_reception, message_function="original"):
 
 
 @frappe.whitelist()
-def generate_codeco_gate_out(gate_pass, message_function="original"):
+def generate_codeco_gate_out(gate_pass, message_function="original", file_type="edi"):
     """
     API method to generate CODECO Gate-Out EDI message.
     
@@ -549,7 +549,7 @@ def generate_codeco_gate_out(gate_pass, message_function="original"):
     edi_content = generator.generate(message_function)
     
     timestamp = now_datetime().strftime("%Y%m%d_%H%M%S")
-    filename = f"CODECO_GATEOUT_{gate_pass}_{timestamp}.edi"
+    filename = f"CODECO_GATEOUT_{gate_pass}_{timestamp}.{file_type}"
     
     return {
         "edi_content": edi_content,
