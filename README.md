@@ -80,7 +80,7 @@ ICD TZ comes pre-packaged with a suite of critical operational and financial rep
 Ensure you have a configured [Frappe Bench](https://frappeframework.com) environment running.
 
 ```bash
-bench get-app https://github.com/av-dev2/icd_tz.git
+bench get-app https://github.com/Aakvatech-Limited/icd_tz
 bench --site [your-site-name] install-app icd_tz
 ```
 
