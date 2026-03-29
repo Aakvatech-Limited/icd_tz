@@ -14,6 +14,7 @@ from frappe.utils import (
 	add_to_date,
 	get_datetime,
 )
+from icd_tz.icd_tz.api.edi_codeco import generate_codeco_gate_out
 
 
 class GatePass(Document):
@@ -24,8 +25,35 @@ class GatePass(Document):
 		self.validate_pending_payments()
 		self.validate_mandatory_fields()
 		self.update_submitted_info()
+
+		edi_settings = frappe.get_single("EDI Settings")
+		if edi_settings.enable_edi and edi_settings.connection_type == "SMTP":
+			self.receiver_email = edi_settings.receiver_email
+			self.receiver_cc_email = edi_settings.receiver_cc_email
+
+		try:
+			edi_data = generate_codeco_gate_out(self.name, file_type="txt")
+			if edi_data and edi_data.get("edi_content"):
+				file_doc = frappe.get_doc({
+					"doctype": "File",
+					"file_name": edi_data.get("filename"),
+					"content": edi_data.get("edi_content"),
+					"attached_to_doctype": self.doctype,
+					"attached_to_name": self.name,
+					"is_private": 1
+				})
+				file_doc.insert(ignore_permissions=True)
+				self.edi_file = file_doc.file_url
+		except Exception as e:
+			traceback = frappe.get_traceback()
+			msg = f"Failed to generate Gate Out EDI: {str(e)}\n\nTraceback: {traceback}"
+			frappe.log_error(title="Failed to generate Gate Out EDI", message=msg, reference=self.name, reference_doctype=self.doctype)
 	
 	def on_submit(self):
+		edi_settings = frappe.get_single("EDI Settings")
+		if edi_settings.enable_edi and not self.edi_file:
+			frappe.throw("EDI File is missing. Cannot submit when EDI is enabled.")
+
 		self.update_container_status("At Gate Confirmation")
 
 	def on_update_after_submit(self):
