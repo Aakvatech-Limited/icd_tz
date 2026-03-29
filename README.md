@@ -2,7 +2,7 @@
 
 Inland Container Depot (ICD) Management Application tailored for operations in Tanzania.
 
-![ICD TZ Dashboard](./docs/dashboard.png)
+![ICD TZ Dashboard](./icd_tz/docs/dashboard.png)
 
 ## Overview
 
