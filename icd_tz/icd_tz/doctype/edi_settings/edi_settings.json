@@ -107,7 +107,7 @@
    "fieldname": "password",
    "fieldtype": "Password",
    "label": "Password",
-   "mandatory_depends_on": "eval:doc.authentication_method=='Password'"
+   "mandatory_depends_on": "eval:doc.authentication_method=='Password' && doc.connection_type == 'SFTP'"
   },
   {
    "depends_on": "eval:doc.authentication_method=='Key'",
@@ -204,7 +204,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-30 00:36:13.310230",
+ "modified": "2026-03-30 10:14:02.994484",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Settings",
