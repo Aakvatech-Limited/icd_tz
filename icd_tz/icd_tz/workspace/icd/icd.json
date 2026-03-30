@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"xraZ1tJXMG\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\"><b>Inland Container Department (ICD)</b></span><br>\",\"col\":12}},{\"id\":\"nLVmIZJPv4\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"Au6M4U4qzX\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b><i>Container Operations</i></b></span>\",\"col\":12}},{\"id\":\"PRkGHOZAYq\",\"type\":\"card\",\"data\":{\"card_name\":\"Container Movement Handling\",\"col\":4}},{\"id\":\"CmeBOl_oWt\",\"type\":\"card\",\"data\":{\"card_name\":\"Container & consignee\",\"col\":4}},{\"id\":\"l1DAhMDrzy\",\"type\":\"card\",\"data\":{\"card_name\":\"Booking and Inspection\",\"col\":4}},{\"id\":\"ByXRzhdpRx\",\"type\":\"card\",\"data\":{\"card_name\":\"Billing Part\",\"col\":4}},{\"id\":\"eyMVmzivWl\",\"type\":\"card\",\"data\":{\"card_name\":\"Checkpoint\",\"col\":4}},{\"id\":\"XHY-Mb3_v_\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"TEgLj1j5T6\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h4\\\" style=\\\"\\\"><b><i>ICD Master Data</i></b></span>\",\"col\":12}},{\"id\":\"sZxq6GjpBw\",\"type\":\"card\",\"data\":{\"card_name\":\"Transport Info\",\"col\":4}},{\"id\":\"hv_MgvcYUO\",\"type\":\"card\",\"data\":{\"card_name\":\"Clearing and Forwarding \",\"col\":4}},{\"id\":\"yxEyn-5gKp\",\"type\":\"card\",\"data\":{\"card_name\":\"Man Power\",\"col\":4}},{\"id\":\"PW6_Em27w7\",\"type\":\"card\",\"data\":{\"card_name\":\"Condition & Location\",\"col\":4}},{\"id\":\"-X2iyCIs5m\",\"type\":\"card\",\"data\":{\"card_name\":\"Item & Prices\",\"col\":4}},{\"id\":\"UX_Uty0KFH\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}}]",
- "creation": "2024-07-10 16:13:04.844773",
+ "content": "[{\"id\":\"xraZ1tJXMG\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\"><b>Inland Container Department (ICD)</b></span><br>\",\"col\":12}},{\"id\":\"nLVmIZJPv4\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"icdDashboardTitle\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b><i>Dashboards</i></b></span>\",\"col\":12}},{\"id\":\"icdDashboardShortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}},{\"id\":\"icdDashboardSpacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"Au6M4U4qzX\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b><i>Container Operations</i></b></span>\",\"col\":12}},{\"id\":\"PRkGHOZAYq\",\"type\":\"card\",\"data\":{\"card_name\":\"Container Movement Handling\",\"col\":4}},{\"id\":\"CmeBOl_oWt\",\"type\":\"card\",\"data\":{\"card_name\":\"Container & consignee\",\"col\":4}},{\"id\":\"l1DAhMDrzy\",\"type\":\"card\",\"data\":{\"card_name\":\"Booking and Inspection\",\"col\":4}},{\"id\":\"ByXRzhdpRx\",\"type\":\"card\",\"data\":{\"card_name\":\"Billing Part\",\"col\":4}},{\"id\":\"eyMVmzivWl\",\"type\":\"card\",\"data\":{\"card_name\":\"Checkpoint\",\"col\":4}},{\"id\":\"XHY-Mb3_v_\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"TEgLj1j5T6\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h4\\\" style=\\\"\\\"><b><i>ICD Master Data</i></b></span>\",\"col\":12}},{\"id\":\"sZxq6GjpBw\",\"type\":\"card\",\"data\":{\"card_name\":\"Transport Info\",\"col\":4}},{\"id\":\"hv_MgvcYUO\",\"type\":\"card\",\"data\":{\"card_name\":\"Clearing and Forwarding \",\"col\":4}},{\"id\":\"yxEyn-5gKp\",\"type\":\"card\",\"data\":{\"card_name\":\"Man Power\",\"col\":4}},{\"id\":\"PW6_Em27w7\",\"type\":\"card\",\"data\":{\"card_name\":\"Condition & Location\",\"col\":4}},{\"id\":\"-X2iyCIs5m\",\"type\":\"card\",\"data\":{\"card_name\":\"Item & Prices\",\"col\":4}},{\"id\":\"UX_Uty0KFH\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}}]",
+ "creation": "2026-02-20 10:24:01.248682",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -373,6 +373,14 @@
  "quick_lists": [],
  "roles": [],
  "sequence_id": 1.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Dashboard",
+   "link_to": "ICD TZ Operations",
+   "type": "Dashboard"
+  }
+ ],
  "title": "ICD"
 }
