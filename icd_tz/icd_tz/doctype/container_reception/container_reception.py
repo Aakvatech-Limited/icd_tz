@@ -18,6 +18,16 @@ class ContainerReception(Document):
 		
 		if not self.posting_date:
 			self.posting_date = nowdate()
+		
+		if self.m_bl_no and not self.shipping_line_code:
+			shipping_line_code = frappe.db.get_value(
+				"Master BL", 
+				{"parent": self.manifest, "m_bl_no": self.m_bl_no}, 
+				"shipping_agent_code"
+			)
+
+			if shipping_line_code:
+				self.shipping_line_code = shipping_line_code
 
 	def validate(self):
 		self.validate_duplicate_cr()

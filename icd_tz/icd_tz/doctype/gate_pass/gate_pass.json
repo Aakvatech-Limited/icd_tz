@@ -32,6 +32,7 @@
   "size",
   "seal_no",
   "container_status",
+  "shipping_line_code",
   "column_break_phfzs",
   "c_and_f_company",
   "clearing_agent",
@@ -160,7 +161,7 @@
    "fetch_from": "container_id.sline",
    "fieldname": "sline",
    "fieldtype": "Data",
-   "label": "Sline"
+   "label": "Shipping line"
   },
   {
    "fetch_from": "manifest.vessel_name",
@@ -368,13 +369,19 @@
    "hidden": 1,
    "label": "Receiver CC Email",
    "options": "Email"
+  },
+  {
+   "fetch_from": "container_id.sline_code",
+   "fieldname": "shipping_line_code",
+   "fieldtype": "Data",
+   "label": "Shipping Line Code"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-30 00:24:19.486954",
+ "modified": "2026-04-16 16:29:22.325154",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Gate Pass",
