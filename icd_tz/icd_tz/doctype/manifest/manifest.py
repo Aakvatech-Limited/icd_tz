@@ -34,56 +34,93 @@ class Manifest(Document):
     
     @frappe.whitelist()
     def extract_data_from_manifest_file(self):
-        if self.manifest:
-            file_url = self.manifest
-            file_path = frappe.get_site_path('private', 'files', file_url.split('/files/')[-1])
-            
-            # Load the Excel file
-            workbook = load_workbook(file_path, data_only=True)
-
-            # Function to convert dates
-            def convert_date(excel_date):
-                if isinstance(excel_date, datetime):
-                    return excel_date.strftime('%Y-%m-%d')
-                if isinstance(excel_date, str):
-                    try:
-                        return datetime.strptime(excel_date, '%d/%m/%Y').strftime('%Y-%m-%d')
-                    except ValueError:
-                        return None
-                return None
-
-            # Process the MRN Detail (1) sheet
-            vessel_info_sheet = workbook['MRN Detail (1)']
-            vessel_info_row = next(vessel_info_sheet.iter_rows(min_row=4, values_only=True))
-            self.mrn = vessel_info_row[0]
-            self.vessel_name = vessel_info_row[1]
-            self.call_sign = vessel_info_row[2]
-            self.voyage_no = vessel_info_row[3]
-            self.arrival_date = convert_date(vessel_info_row[5])
-            self.tpa_uid = vessel_info_row[6]
-
-            # Process the Container (2) sheet
-            containers_sheet = workbook['Container (2)']
-            self.update_container_details(containers_sheet)
-
-            # Process the HBL Container (3) sheet
-            hbl_containers_sheet = workbook['HBL Container (3)']
-            self.update_hbl_containers(hbl_containers_sheet)
-            
-            # Process the Master BL List (4) sheet
-            master_bl_sheet = workbook['Master BL List (4)']
-            self.update_master_bl_details(master_bl_sheet)
-
-            # Process the House BL List (5) sheet
-            house_bl_sheet = workbook['House BL List (5)']
-            self.update_house_bl_details(house_bl_sheet)
+        if not self.manifest:
+            frappe.throw("<b>Manifest File</b> is missing, Please attach the manifest file before extracting data.")
         
-            # self.save()
-            return False
+        # ICD Code validation
+        icd_code = frappe.db.get_single_value("ICD TZ Settings", "icd_code")
+        if not icd_code:
+            frappe.throw(
+                "ICD Code is not configured. Please set it in "
+                "<b>ICD TZ Settings</b> before extracting manifest data."
+            )
+        icd_code = icd_code.strip()
+
+        file_url = self.manifest
+        file_path = frappe.get_site_path('private', 'files', file_url.split('/files/')[-1])
+        
+        # Load the Excel file
+        workbook = load_workbook(file_path, data_only=True)
+
+        # Function to convert dates
+        def convert_date(excel_date):
+            if isinstance(excel_date, datetime):
+                return excel_date.strftime('%Y-%m-%d')
+            if isinstance(excel_date, str):
+                try:
+                    return datetime.strptime(excel_date, '%d/%m/%Y').strftime('%Y-%m-%d')
+                except ValueError:
+                    return None
+            return None
+
+        # Process the MRN Detail (1) sheet
+        vessel_info_sheet = workbook['MRN Detail (1)']
+        vessel_info_row = next(vessel_info_sheet.iter_rows(min_row=4, values_only=True))
+        self.mrn = vessel_info_row[0]
+        self.vessel_name = vessel_info_row[1]
+        self.call_sign = vessel_info_row[2]
+        self.voyage_no = vessel_info_row[3]
+        self.arrival_date = convert_date(vessel_info_row[5])
+        self.tpa_uid = vessel_info_row[6]
+
+        # Build ICD allowlist from Master BL List (4) first — col[4] is place_of_delivery
+        master_bl_sheet = workbook['Master BL List (4)']
+        allowed_mbl_nos = self._get_allowed_mbl_nos(master_bl_sheet, icd_code)
+        if not allowed_mbl_nos:
+            frappe.throw(
+                f"No records found for ICD Code <b>{icd_code}</b> in this manifest file. "
+                "Please verify the ICD Code in <b>ICD TZ Settings</b> matches the "
+                "'Place of Delivery' values in the Master BL sheet."
+            )
+
+        # Process the Container (2) sheet
+        containers_sheet = workbook['Container (2)']
+        self.update_container_details(containers_sheet, allowed_mbl_nos)
+
+        # Process the HBL Container (3) sheet
+        hbl_containers_sheet = workbook['HBL Container (3)']
+        self.update_hbl_containers(hbl_containers_sheet, allowed_mbl_nos)
+        
+        # Process the Master BL List (4) sheet — reuse already-loaded sheet
+        self.update_master_bl_details(master_bl_sheet, allowed_mbl_nos)
+
+        # Process the House BL List (5) sheet
+        house_bl_sheet = workbook['House BL List (5)']
+        self.update_house_bl_details(house_bl_sheet, allowed_mbl_nos)
     
-    def update_container_details(self, containers_sheet):
+        # self.save()
+        return False
+    
+    def _get_allowed_mbl_nos(self, master_bl_sheet, icd_code: str) -> set:
+        """Return the set of M B/L Nos whose Place of Delivery matches icd_code.
+
+        Column layout in Master BL List (4) — 0-indexed:
+          col[0] = M B/L No
+          col[4] = Place of Delivery  ← holds the ICD code (e.g. WITZDL019)
+        """
+        allowed = set()
+        for row in master_bl_sheet.iter_rows(min_row=4, values_only=True):
+            if row[0] and row[4] and str(row[4]).strip() == icd_code:
+                allowed.add(str(row[0]).strip())
+        return allowed
+
+    def update_container_details(self, containers_sheet, allowed_mbl_nos: set):
         self.containers = []
         for row in containers_sheet.iter_rows(min_row=4, values_only=True):
+            # Skip rows whose M BL No is not in the ICD allowlist
+            if not row[0] or str(row[0]).strip() not in allowed_mbl_nos:
+                continue
+
             container = self.append("containers", {})
             container.m_bl_no = row[0]
             container.type_of_container = row[1]
@@ -103,9 +140,13 @@ class Manifest(Document):
             container.minimum_temperature = row[13]
             container.maximum_temperature = row[14]
 
-    def update_hbl_containers(self, hbl_containers_sheet):
+    def update_hbl_containers(self, hbl_containers_sheet, allowed_mbl_nos: set):
         self.hbl_containers = []
         for row in hbl_containers_sheet.iter_rows(min_row=4, values_only=True):
+            # Skip rows whose M BL No is not in the ICD allowlist
+            if not row[0] or str(row[0]).strip() not in allowed_mbl_nos:
+                continue
+
             hbicontainer = self.append("hbl_containers", {})
             hbicontainer.m_bl_no = row[0]
             hbicontainer.h_bl_no = row[1]
@@ -126,9 +167,13 @@ class Manifest(Document):
             hbicontainer.minimum_temperature = row[14]
             hbicontainer.maximum_temperature = row[15]
 
-    def update_master_bl_details(self, master_bl_sheet):
+    def update_master_bl_details(self, master_bl_sheet, allowed_mbl_nos: set):
         self.master_bl = []
         for row in master_bl_sheet.iter_rows(min_row=4, values_only=True):
+            # Skip rows whose M BL No is not in the ICD allowlist
+            if not row[0] or str(row[0]).strip() not in allowed_mbl_nos:
+                continue
+
             master_bl = self.append("master_bl", {})
             master_bl.m_bl_no = row[0]
             master_bl.cargo_classification = row[1]
@@ -172,9 +217,13 @@ class Manifest(Document):
             master_bl.net_weight = row[39]
             master_bl.net_weight_unit = row[40]
 
-    def update_house_bl_details(self, house_bl_sheet):
+    def update_house_bl_details(self, house_bl_sheet, allowed_mbl_nos: set):
         self.house_bl = []
         for row in house_bl_sheet.iter_rows(min_row=4, values_only=True):
+            # Skip rows whose M BL No is not in the ICD allowlist
+            if not row[0] or str(row[0]).strip() not in allowed_mbl_nos:
+                continue
+
             house_bl = self.append("house_bl", {})
             house_bl.m_bl_no = row[0]
             house_bl.h_bl_no = row[1]
