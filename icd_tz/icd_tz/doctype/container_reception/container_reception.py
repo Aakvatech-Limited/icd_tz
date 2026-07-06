@@ -142,11 +142,12 @@ class ContainerReception(Document):
 		if self.freight_indicator != "LCL":
 			return
 
-		# Find all records from 'HBL Container' doctypes using filters of container_no and manifest
+		# Find all records from 'HBL Container' doctypes using filters of container_no, m_bl_no and manifest
 		hbl_containers = frappe.db.get_all(
 			"HBL Container",
 			filters={
 				"container_no": self.container_no,
+				"m_bl_no": self.m_bl_no,
 				"parent": self.manifest
 			},
 			fields=["*"]
