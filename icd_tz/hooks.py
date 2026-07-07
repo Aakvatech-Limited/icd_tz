@@ -31,6 +31,7 @@ doctype_js = {
     "Sales Order": "icd_tz/api/sales_order.js",
     "Driver": "public/js/driver.js",
     "Vehicle": "public/js/vehicle.js",
+    "Contract": "public/js/contract.js",
 }
 
 doctype_list_js = {
@@ -141,6 +142,9 @@ doc_events = {
     "Sales Order": {
         "before_save": "icd_tz.icd_tz.api.sales_order.before_save",
         "on_trash": "icd_tz.icd_tz.api.sales_order.on_trash",
+    },
+    "Contract": {
+        "validate": "icd_tz.icd_tz.api.contract.validate",
     },
 }
 
