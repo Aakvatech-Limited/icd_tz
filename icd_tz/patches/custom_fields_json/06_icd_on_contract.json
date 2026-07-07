@@ -1,0 +1,12 @@
+[
+  {
+    "dt": "Contract",
+    "fieldname": "price_list",
+    "fieldtype": "Link",
+    "options": "Price List",
+    "label": "Price List",
+    "insert_after": "party_type",
+    "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company'",
+    "mandatory_depends_on": "eval:doc.party_type=='Clearing and Forwarding Company'"
+  }
+]

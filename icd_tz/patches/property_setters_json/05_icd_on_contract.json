@@ -1,0 +1,23 @@
+[
+  {
+    "doc_type": "Contract",
+    "field_name": "party_type",
+    "property": "options",
+    "property_type": "Text",
+    "value": "Customer\nSupplier\nEmployee\nClearing and Forwarding Company"
+  },
+  {
+    "doc_type": "Contract",
+    "field_name": "start_date",
+    "property": "mandatory_depends_on",
+    "property_type": "Code",
+    "value": "eval:doc.party_type=='Clearing and Forwarding Company'"
+  },
+  {
+    "doc_type": "Contract",
+    "field_name": "end_date",
+    "property": "mandatory_depends_on",
+    "property_type": "Code",
+    "value": "eval:doc.party_type=='Clearing and Forwarding Company'"
+  }
+]
