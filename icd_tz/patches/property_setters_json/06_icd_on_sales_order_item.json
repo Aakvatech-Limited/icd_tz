@@ -1,0 +1,23 @@
+[
+  {
+    "doc_type": "Sales Order Item",
+    "field_name": "item_code",
+    "property": "read_only",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "Sales Order Item",
+    "field_name": "qty",
+    "property": "read_only",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "Sales Order Item",
+    "field_name": "rate",
+    "property": "read_only",
+    "property_type": "Check",
+    "value": "1"
+  }
+]
