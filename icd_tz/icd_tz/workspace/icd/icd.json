@@ -113,7 +113,7 @@
    "is_query_report": 0,
    "label": "Transport Company",
    "link_count": 0,
-   "link_to": "Transporter",
+   "link_to": "Supplier",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
