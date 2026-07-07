@@ -39,6 +39,14 @@ frappe.ui.form.on('Container Reception', {
                 }
             }
         });
+        frm.set_query("transporter", () => {
+            return {
+                filters: {
+                    "disabled": 0,
+                    "is_transporter": 1
+                }
+            }
+        });
         frm.set_query("driver", () => {
             return {
                 filters: {
@@ -77,7 +85,7 @@ frappe.ui.form.on('Container Reception', {
                 callback: (r) => {
                     if (r.message) {
                         let data = r.message;
-                        
+
                         frm.set_value("size", data.container_size)
                         frm.set_value("volume", data.volume)
                         frm.set_value("volume", data.volume)

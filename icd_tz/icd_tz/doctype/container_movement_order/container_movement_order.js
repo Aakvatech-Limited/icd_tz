@@ -10,7 +10,7 @@ frappe.ui.form.on("Container Movement Order", {
         if (!frm.doc.company) {
             frm.set_value("company", frappe.defaults.get_user_default("Company"));
         }
-        
+
         frm.trigger("set_queries");
         frm.trigger("create_container_reception");
     },
@@ -25,7 +25,8 @@ frappe.ui.form.on("Container Movement Order", {
         frm.set_query("transporter", () => {
             return {
                 filters: {
-                    "disabled": 0
+                    "disabled": 0,
+                    "is_transporter": 1
                 }
             }
         });
@@ -279,7 +280,7 @@ var show_dialog = (frm, data) => {
                 if (records.length > 0) {
                     let html = show_details(records);
                     wrapper.html(html);
-                    attachCheckboxListener(wrapper); 
+                    attachCheckboxListener(wrapper);
                 } else {
                     wrapper.html("");
                     wrapper.append(`<div class="multiselect-empty-state"
