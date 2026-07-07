@@ -7,20 +7,21 @@ from openpyxl import load_workbook
 from frappe.model.document import Document
 from frappe.core.doctype.file.utils import delete_file
 
+
 class Manifest(Document):
     def before_save(self):
         if not self.manifest and self.is_new():
             frappe.throw("Please attach the manifest file before saving.")
-        
+
         if not self.is_new() and not self.manifest:
             frappe.throw(
                 "You cannot remove the manifest file once it has been attached.<br>\
                 Please delete the record and create a new one."
             )
-        
+
         if not self.company:
             self.company = frappe.defaults.get_user_default("Company")
-    
+
     def before_submit(self):
         if not self.port:
             frappe.throw("Please fill the <b>Port</b> before submitting.")
@@ -31,12 +32,14 @@ class Manifest(Document):
     def on_trash(self):
         if self.manifest:
             delete_file(self.manifest)
-    
+
     @frappe.whitelist()
     def extract_data_from_manifest_file(self):
         if not self.manifest:
-            frappe.throw("<b>Manifest File</b> is missing, Please attach the manifest file before extracting data.")
-        
+            frappe.throw(
+                "<b>Manifest File</b> is missing, Please attach the manifest file before extracting data."
+            )
+
         # ICD Code validation
         icd_code = frappe.db.get_single_value("ICD TZ Settings", "icd_code")
         if not icd_code:
@@ -47,24 +50,28 @@ class Manifest(Document):
         icd_code = icd_code.strip()
 
         file_url = self.manifest
-        file_path = frappe.get_site_path('private', 'files', file_url.split('/files/')[-1])
-        
+        file_path = frappe.get_site_path(
+            "private", "files", file_url.split("/files/")[-1]
+        )
+
         # Load the Excel file
         workbook = load_workbook(file_path, data_only=True)
 
         # Function to convert dates
         def convert_date(excel_date):
             if isinstance(excel_date, datetime):
-                return excel_date.strftime('%Y-%m-%d')
+                return excel_date.strftime("%Y-%m-%d")
             if isinstance(excel_date, str):
                 try:
-                    return datetime.strptime(excel_date, '%d/%m/%Y').strftime('%Y-%m-%d')
+                    return datetime.strptime(excel_date, "%d/%m/%Y").strftime(
+                        "%Y-%m-%d"
+                    )
                 except ValueError:
                     return None
             return None
 
         # Process the MRN Detail (1) sheet
-        vessel_info_sheet = workbook['MRN Detail (1)']
+        vessel_info_sheet = workbook["MRN Detail (1)"]
         vessel_info_row = next(vessel_info_sheet.iter_rows(min_row=4, values_only=True))
         self.mrn = vessel_info_row[0]
         self.vessel_name = vessel_info_row[1]
@@ -74,7 +81,7 @@ class Manifest(Document):
         self.tpa_uid = vessel_info_row[6]
 
         # Build ICD allowlist from Master BL List (4) first — col[4] is place_of_delivery
-        master_bl_sheet = workbook['Master BL List (4)']
+        master_bl_sheet = workbook["Master BL List (4)"]
         allowed_mbl_nos = self._get_allowed_mbl_nos(master_bl_sheet, icd_code)
         if not allowed_mbl_nos:
             frappe.throw(
@@ -84,23 +91,23 @@ class Manifest(Document):
             )
 
         # Process the Container (2) sheet
-        containers_sheet = workbook['Container (2)']
+        containers_sheet = workbook["Container (2)"]
         self.update_container_details(containers_sheet, allowed_mbl_nos)
 
         # Process the HBL Container (3) sheet
-        hbl_containers_sheet = workbook['HBL Container (3)']
+        hbl_containers_sheet = workbook["HBL Container (3)"]
         self.update_hbl_containers(hbl_containers_sheet, allowed_mbl_nos)
-        
+
         # Process the Master BL List (4) sheet — reuse already-loaded sheet
         self.update_master_bl_details(master_bl_sheet, allowed_mbl_nos)
 
         # Process the House BL List (5) sheet
-        house_bl_sheet = workbook['House BL List (5)']
+        house_bl_sheet = workbook["House BL List (5)"]
         self.update_house_bl_details(house_bl_sheet, allowed_mbl_nos)
-    
+
         # self.save()
         return False
-    
+
     def _get_allowed_mbl_nos(self, master_bl_sheet, icd_code: str) -> set:
         """Return the set of M B/L Nos whose Place of Delivery matches icd_code.
 
@@ -263,30 +270,79 @@ class Manifest(Document):
             house_bl.notify_tin = row[35]
             house_bl.shipping_mark = row[36]
             house_bl.oil_type = row[37]
-    
+
     def create_consignees(self):
         def create_consignee(row):
-            consignee = frappe.get_doc({
-                "doctype": "Consignee",
-                "consignee_name": row.consignee_name,
-                "consignee_tel": row.consignee_tel,
-                "consignee_tin": row.consignee_tin,
-                "consignee_address": row.consignee_address,
-            })
+            consignee = frappe.get_doc(
+                {
+                    "doctype": "Consignee",
+                    "consignee_name": row.consignee_name,
+                    "consignee_tel": row.consignee_tel,
+                    "consignee_tin": row.consignee_tin,
+                    "consignee_address": row.consignee_address,
+                }
+            )
             consignee.insert(ignore_permissions=True)
-        
+
         for row in self.master_bl:
             if not row.consignee_name:
                 continue
 
             if not frappe.db.exists("Consignee", row.consignee_name):
                 create_consignee(row)
-        
+
         for row in self.house_bl:
             if not row.consignee_name:
                 continue
 
             if not frappe.db.exists("Consignee", row.consignee_name):
                 create_consignee(row)
-        
-        
+
+    @frappe.whitelist()
+    def get_dashboard_data(self):
+        total_units = len(self.containers)
+
+        # Identify HBLs to determine LCL
+        hbl_container_nos = set(
+            c.container_no for c in self.hbl_containers if c.container_no
+        )
+
+        total_loose = 0
+        total_empty = 0
+        total_lcl = 0
+        total_fcl = 0
+
+        for c in self.containers:
+            cno = (c.container_no or "").upper()
+
+            # Empty Container
+            if c.freight_indicator == "EMP" or "MTY" in cno or "EMPTY" in cno:
+                total_empty += 1
+            # LCL Container (has House Bills)
+            elif c.container_no in hbl_container_nos:
+                total_lcl += 1
+            # FCL Container (Physical container, not empty, no HBLs)
+            elif c.type_of_container == "C":
+                total_fcl += 1
+            # Loose Cargo / Vehicles / Other
+            else:
+                total_loose += 1
+
+        # Count received physical units/cargo directly from Container Reception
+        received_units = frappe.db.count(
+            "Container Reception", {"manifest": self.name, "docstatus": 1}
+        )
+
+        pending_units = total_units - received_units
+        if pending_units < 0:
+            pending_units = 0
+
+        return {
+            "total_containers": total_units,
+            "total_fcl": total_fcl,
+            "total_lcl": total_lcl,
+            "total_empty": total_empty,
+            "total_loose": total_loose,
+            "received_containers": received_units,
+            "pending_containers": pending_units,
+        }
