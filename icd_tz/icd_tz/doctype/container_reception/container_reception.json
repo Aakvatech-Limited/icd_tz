@@ -454,7 +454,7 @@
    "fieldname": "transporter",
    "fieldtype": "Link",
    "label": "Transporter",
-   "options": "Transporter",
+   "options": "Supplier",
    "read_only": 1,
    "search_index": 1
   },
