@@ -37,15 +37,18 @@ class Manifest(Document):
     def extract_data_from_manifest_file(self):
         if not self.manifest:
             frappe.throw(
-                "<b>Manifest File</b> is missing, Please attach the manifest file before extracting data."
+                frappe._(
+                    "<b>Manifest File</b> is missing, Please attach the manifest file before extracting data."
+                )
             )
 
         # ICD Code validation
         icd_code = frappe.db.get_single_value("ICD TZ Settings", "icd_code")
         if not icd_code:
             frappe.throw(
-                "ICD Code is not configured. Please set it in "
-                "<b>ICD TZ Settings</b> before extracting manifest data."
+                frappe._(
+                    "ICD Code is not configured. Please set it in <b>ICD TZ Settings</b> before extracting manifest data."
+                )
             )
         icd_code = icd_code.strip()
 
