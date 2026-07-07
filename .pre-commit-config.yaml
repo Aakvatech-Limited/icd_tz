@@ -36,4 +36,4 @@ repos:
     rev: v1.168.0
     hooks:
       - id: semgrep
-        args: ['--config', '/home/elius-dev/projects/semgrep-rules/rules', '--error']
+        args: ['--config', 'https://github.com/frappe/semgrep-rules', '--error']
