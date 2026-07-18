@@ -6,6 +6,19 @@ from datetime import datetime
 from openpyxl import load_workbook
 from frappe.model.document import Document
 from frappe.core.doctype.file.utils import delete_file
+from frappe.utils import escape_html
+
+
+def get_sheet(workbook, seq_no):
+    suffix = f"({seq_no})"
+    matches = [ws for ws in workbook.worksheets if ws.title.strip().endswith(suffix)]
+    if len(matches) != 1:
+        sheet_names = escape_html(", ".join(workbook.sheetnames))
+        frappe.throw(
+            f"Expected exactly one sheet ending with <b>({seq_no})</b> in the "
+            f"manifest file, found {len(matches)}. Sheets found: {sheet_names}"
+        )
+    return matches[0]
 
 
 class Manifest(Document):
@@ -74,7 +87,7 @@ class Manifest(Document):
             return None
 
         # Process the MRN Detail (1) sheet
-        vessel_info_sheet = workbook["MRN Detail (1)"]
+        vessel_info_sheet = get_sheet(workbook, 1)
         vessel_info_row = next(vessel_info_sheet.iter_rows(min_row=4, values_only=True))
         self.mrn = vessel_info_row[0]
         self.vessel_name = vessel_info_row[1]
@@ -84,7 +97,7 @@ class Manifest(Document):
         self.tpa_uid = vessel_info_row[6]
 
         # Build ICD allowlist from Master BL List (4) first — col[4] is place_of_delivery
-        master_bl_sheet = workbook["Master BL List (4)"]
+        master_bl_sheet = get_sheet(workbook, 4)
         allowed_mbl_nos = self._get_allowed_mbl_nos(master_bl_sheet, icd_code)
         if not allowed_mbl_nos:
             frappe.throw(
@@ -94,18 +107,18 @@ class Manifest(Document):
             )
 
         # Process the Container (2) sheet
-        containers_sheet = workbook["Container (2)"]
+        containers_sheet = get_sheet(workbook, 2)
         self.update_container_details(containers_sheet, allowed_mbl_nos)
 
         # Process the HBL Container (3) sheet
-        hbl_containers_sheet = workbook["HBL Container (3)"]
+        hbl_containers_sheet = get_sheet(workbook, 3)
         self.update_hbl_containers(hbl_containers_sheet, allowed_mbl_nos)
 
         # Process the Master BL List (4) sheet — reuse already-loaded sheet
         self.update_master_bl_details(master_bl_sheet, allowed_mbl_nos)
 
         # Process the House BL List (5) sheet
-        house_bl_sheet = workbook["House BL List (5)"]
+        house_bl_sheet = get_sheet(workbook, 5)
         self.update_house_bl_details(house_bl_sheet, allowed_mbl_nos)
 
         # self.save()
