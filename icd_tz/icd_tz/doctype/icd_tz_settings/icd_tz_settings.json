@@ -12,6 +12,7 @@
   "column_break_8yjq8",
   "enable_signature_validation",
   "gate_pass_expiry_hours",
+  "received_date_threshold_hours",
   "corridor_levy_countries_section",
   "countries",
   "service_pricing_criteria_section",
@@ -105,6 +106,14 @@
    "fieldname": "gate_pass_expiry_hours",
    "fieldtype": "Int",
    "label": "Gate Pass Expiry Hours",
+   "reqd": 1
+  },
+  {
+   "default": "48",
+   "description": "Used on Container Reception: if Posting Date is this many hours or more after Ship D/C Date, Received Date is set to Posting Date, otherwise to Ship D/C Date",
+   "fieldname": "received_date_threshold_hours",
+   "fieldtype": "Int",
+   "label": "Received Date Threshold Hours",
    "reqd": 1
   }
  ],
