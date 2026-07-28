@@ -6,3 +6,4 @@ icd_tz.patches.create_icd_services
 icd_tz.patches.create_container_states
 icd_tz.patches.update_icd_settings
 icd_tz.patches.migrate_transporters_to_suppliers
+icd_tz.patches.set_received_date_threshold_hours
