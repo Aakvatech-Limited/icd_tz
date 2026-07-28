@@ -2,12 +2,13 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.query_builder import DocType
 from frappe.model.document import Document
+from frappe.query_builder import DocType
+from frappe.utils import get_link_to_form, getdate, nowdate, time_diff_in_hours
 from frappe.utils.background_jobs import enqueue
-from frappe.utils import get_link_to_form, nowdate, getdate, add_days, time_diff_in_hours
-from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
+
 from icd_tz.icd_tz.api.edi_codeco import generate_codeco_gate_in
+from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 
 cr = DocType("Container Reception")
 
@@ -84,7 +85,7 @@ class ContainerReception(Document):
 
 	def before_cancel(self):
 		self.cancel_linked_docs()
-	
+
 	def on_cancel(self):
 		self.update_cmo_status()
 
@@ -152,7 +153,7 @@ class ContainerReception(Document):
 
 	def create_hbl_container(self):
 		"""Create a HBL Container record based on freight indicator on container reception"""
-		
+
 		if self.freight_indicator != "LCL":
 			return
 
@@ -217,7 +218,7 @@ class ContainerReception(Document):
 				method=daily_update_date_container_stay,
 				container_id=container.name
 			)
-		
+
 		if count > 0:
 			frappe.msgprint(f"HBL records: {count} were created for container {self.container_no}", alert=True)
 
@@ -256,7 +257,7 @@ class ContainerReception(Document):
 			)
 			if len(container_ids) == 0:
 				continue
-			
+
 			for container_id in container_ids:
 				container_doc = frappe.get_doc("Container", container_id)
 				container_doc.container_dates = []
