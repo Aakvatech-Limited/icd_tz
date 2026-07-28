@@ -76,6 +76,7 @@
    "search_index": 1
   },
   {
+   "default": "Today",
    "fieldname": "movement_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -308,15 +309,14 @@
    "label": "Select Container"
   },
   {
-   "description": "Ship Arrival Date",
-   "fetch_from": "manifest.arrival_date",
-   "fetch_if_empty": 1,
+   "description": "Port discharge date",
    "fieldname": "ship_dc_date",
    "fieldtype": "Date",
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Ship D/C Date",
    "read_only": 1,
+   "reqd": 1,
    "search_index": 1
   },
   {
@@ -342,13 +342,14 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-04-18 12:11:52.411058",
+ "modified": "2026-07-28 05:49:46.088764",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Movement Order",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "search_fields": "manifest, container_no, movement_date, ship_dc_date, transporter, driver, driver_license, truck, trailer",
  "sort_field": "modified",
  "sort_order": "DESC",
