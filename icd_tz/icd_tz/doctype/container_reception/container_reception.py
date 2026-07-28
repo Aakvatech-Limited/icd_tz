@@ -5,7 +5,7 @@ import frappe
 from frappe.query_builder import DocType
 from frappe.model.document import Document
 from frappe.utils.background_jobs import enqueue
-from frappe.utils import get_link_to_form, nowdate, getdate, add_days
+from frappe.utils import get_link_to_form, nowdate, getdate, add_days, time_diff_in_hours
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 from icd_tz.icd_tz.api.edi_codeco import generate_codeco_gate_in
 
@@ -15,27 +15,40 @@ class ContainerReception(Document):
 	def before_save(self):
 		if not self.company:
 			self.company = frappe.defaults.get_user_default("Company")
-		
+
 		if not self.posting_date:
 			self.posting_date = nowdate()
-		
+
 		if self.m_bl_no and not self.shipping_line_code:
 			shipping_line_code = frappe.db.get_value(
-				"Master BL", 
-				{"parent": self.manifest, "m_bl_no": self.m_bl_no}, 
+				"Master BL",
+				{"parent": self.manifest, "m_bl_no": self.m_bl_no},
 				"shipping_agent_code"
 			)
 
 			if shipping_line_code:
 				self.shipping_line_code = shipping_line_code
 
+		self.set_received_date()
+
+	def set_received_date(self):
+		"""Received date is posting_date if it is past the settings threshold after ship_dc_date, otherwise ship_dc_date"""
+
+		if not self.ship_dc_date or not self.posting_date:
+			return
+
+		self.received_date = get_received_date(self.posting_date, self.ship_dc_date)
+
 	def validate(self):
 		self.validate_duplicate_cr()
 
 	def before_submit(self):
+		if not self.received_date:
+			frappe.throw("Received Date is missing, Please make sure Ship D/C Date and Posting Date are set to proceed..!")
+
 		if not self.clerk:
 			frappe.throw("Clerk is missing, Please select clerk to proceed..!")
-			
+
 		edi_settings = frappe.get_single("EDI Settings")
 		if edi_settings.enable_edi and edi_settings.connection_type == "SMTP":
 			self.receiver_email = edi_settings.receiver_email
@@ -108,7 +121,8 @@ class ContainerReception(Document):
 		container.seal_no_2 = self.seal_no_2
 		container.seal_no_3 = self.seal_no_3
 		container.port_of_destination = self.port
-		container.arrival_date = self.ship_dc_date
+		container.arrival_date = frappe.db.get_value("Manifest", self.manifest, "arrival_date")
+		container.ship_dc_date = self.ship_dc_date
 		container.received_date = self.received_date
 		container.original_location = self.container_location
 		container.current_location = self.container_location
@@ -172,7 +186,8 @@ class ContainerReception(Document):
 			container.seal_no_2 = hbl_container.seal_no2
 			container.seal_no_3 = hbl_container.seal_no3
 			container.port_of_destination = self.port
-			container.arrival_date = self.ship_dc_date
+			container.arrival_date = frappe.db.get_value("Manifest", self.manifest, "arrival_date")
+			container.ship_dc_date = self.ship_dc_date
 			container.received_date = self.received_date
 			container.original_location = self.container_location
 			container.current_location = self.container_location
@@ -426,10 +441,95 @@ class ContainerReception(Document):
 	def update_cmo_status(self, status="Pending"):
 		if not self.movement_order:
 			return
-		
+
 		doc = frappe.get_cached_doc("Container Movement Order", self.movement_order)
 		doc.status = status
 		doc.save(ignore_permissions=True)
+
+	def correct_ship_dc_date(self, new_ship_dc_date):
+		"""Correct a mistakenly filled Ship D/C Date, propagating it to the Container Movement Order,
+		this Container Reception, and any Container records already created from it"""
+
+		new_ship_dc_date = getdate(new_ship_dc_date)
+		if new_ship_dc_date == getdate(self.ship_dc_date):
+			frappe.throw("New Ship D/C Date is the same as the current Ship D/C Date")
+
+		old_ship_dc_date = self.ship_dc_date
+		new_received_date = get_received_date(self.posting_date, new_ship_dc_date)
+
+		if self.movement_order:
+			self.update_cmo_ship_dc_date(old_ship_dc_date, new_ship_dc_date)
+
+		self.db_set("ship_dc_date", new_ship_dc_date, update_modified=False)
+		self.db_set("received_date", new_received_date, update_modified=False)
+		self.add_comment(
+			"Comment",
+			f"Ship D/C Date changed from <b>{old_ship_dc_date}</b> to <b>{new_ship_dc_date}</b>, "
+			f"Received Date recalculated to <b>{new_received_date}</b>"
+		)
+
+		if self.docstatus == 1:
+			self.update_containers_received_date(new_ship_dc_date, new_received_date)
+
+	def update_cmo_ship_dc_date(self, old_ship_dc_date, new_ship_dc_date):
+		frappe.db.set_value(
+			"Container Movement Order",
+			self.movement_order,
+			"ship_dc_date",
+			new_ship_dc_date,
+			update_modified=False
+		)
+		frappe.get_doc({
+			"doctype": "Comment",
+			"comment_type": "Comment",
+			"comment_email": frappe.session.user,
+			"reference_doctype": "Container Movement Order",
+			"reference_name": self.movement_order,
+			"content": (
+				f"Ship D/C Date changed from <b>{old_ship_dc_date}</b> to <b>{new_ship_dc_date}</b> "
+				f"via Container Reception {get_link_to_form('Container Reception', self.name)}"
+			)
+		}).insert(ignore_permissions=True)
+
+	def update_containers_received_date(self, new_ship_dc_date, new_received_date):
+		container_ids = frappe.db.get_all(
+			"Container",
+			{"container_reception": self.name},
+			["name"]
+		)
+
+		for container_id in container_ids:
+			container_doc = frappe.get_doc("Container", container_id.name)
+			container_doc.ship_dc_date = new_ship_dc_date
+			container_doc.received_date = new_received_date
+			container_doc.container_dates = []
+			container_doc.append("container_dates", {
+				"date": new_received_date,
+			})
+			container_doc.save(ignore_permissions=True)
+
+			enqueue(
+				method=daily_update_date_container_stay,
+				container_id=container_doc.name
+			)
+
+def get_received_date(posting_date, ship_dc_date):
+	"""Received date is posting_date if it is past the settings threshold after ship_dc_date, otherwise ship_dc_date"""
+
+	threshold_hours = frappe.db.get_single_value("ICD TZ Settings", "received_date_threshold_hours")
+	hours_after_ship_dc_date = time_diff_in_hours(posting_date, ship_dc_date)
+	if hours_after_ship_dc_date >= threshold_hours:
+		return getdate(posting_date)
+
+	return getdate(ship_dc_date)
+
+@frappe.whitelist()
+def update_ship_dc_date(container_reception, new_ship_dc_date):
+	"""Correct the Ship D/C Date on a Container Reception and its linked Container Movement Order"""
+
+	doc = frappe.get_doc("Container Reception", container_reception)
+	doc.check_permission("write")
+	doc.correct_ship_dc_date(new_ship_dc_date)
 
 @frappe.whitelist()
 def get_container_details(manifest, container_no):
