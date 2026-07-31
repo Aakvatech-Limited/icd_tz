@@ -1,0 +1,249 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-28 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sales_order",
+  "customer",
+  "company",
+  "column_break_qcyn",
+  "m_bl_no",
+  "h_bl_no",
+  "consignee",
+  "column_break_fokn",
+  "posting_date",
+  "posting_time",
+  "amounts_section",
+  "grand_total",
+  "net_total",
+  "column_break_htdb",
+  "apply_discount_on",
+  "additional_discount_percentage",
+  "discount_amount",
+  "section_break_ktxz",
+  "waiver_reason",
+  "column_break_yuju",
+  "decision",
+  "rejection_remarks",
+  "section_break_users",
+  "requested_by",
+  "amended_from",
+  "column_break_users",
+  "decided_by",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "sales_order.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_order.company",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qcyn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amounts_section",
+   "fieldtype": "Section Break",
+   "label": "Discount"
+  },
+  {
+   "fetch_from": "sales_order.grand_total",
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_order.net_total",
+   "fieldname": "net_total",
+   "fieldtype": "Currency",
+   "label": "Net Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_htdb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "apply_discount_on",
+   "fieldtype": "Select",
+   "label": "Apply Discount On",
+   "options": "\nGrand Total\nNet Total",
+   "reqd": 1
+  },
+  {
+   "fieldname": "additional_discount_percentage",
+   "fieldtype": "Float",
+   "label": "Discount (%)"
+  },
+  {
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "Discount Amount",
+   "options": "currency"
+  },
+  {
+   "bold": 1,
+   "description": "Reason why this Sales Order is requesting a waiver",
+   "fieldname": "waiver_reason",
+   "fieldtype": "Small Text",
+   "label": "Waiver Reason",
+   "reqd": 1
+  },
+  {
+   "description": "Set to Approved or Rejected before submitting this waiver request",
+   "fieldname": "decision",
+   "fieldtype": "Select",
+   "label": "Decision",
+   "options": "\nApproved\nRejected"
+  },
+  {
+   "depends_on": "eval:doc.decision == \"Rejected\"",
+   "fieldname": "rejection_remarks",
+   "fieldtype": "Small Text",
+   "label": "Rejection Remarks"
+  },
+  {
+   "fieldname": "section_break_users",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Data",
+   "label": "Requested By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_users",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "decided_by",
+   "fieldtype": "Data",
+   "label": "Decided By",
+   "read_only": 1
+  },
+  {
+   "default": "ICD-WVR-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "ICD-WVR-.YYYY.-",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Waiver Request",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_order.m_bl_no",
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "M BL No",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "sales_order.h_bl_no",
+   "fieldname": "h_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "H BL No",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_fokn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sales_order.consignee",
+   "fieldname": "consignee",
+   "fieldtype": "Data",
+   "label": "Consignee",
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_ktxz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_yuju",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-07-31 18:13:11.009106",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "Waiver Request",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
