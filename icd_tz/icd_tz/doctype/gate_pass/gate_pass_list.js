@@ -1,7 +1,7 @@
 frappe.listview_settings['Gate Pass'] = {
     add_fields: [],
     hide_name_column: true,
-    
+
     onload: (listview) => {
         $('button[data-label="Add Gate Pass"]').hide();
 

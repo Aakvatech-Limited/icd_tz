@@ -11,7 +11,7 @@ frappe.query_reports["Loose Cargo Tracking"] = {
             "fieldtype": "Select",
             "options": [
                 "Current Loose Stock",
-                "Exited Loose Cargo", 
+                "Exited Loose Cargo",
                 "Received Loose Cargo"
             ],
             "default": "Current Loose Stock",

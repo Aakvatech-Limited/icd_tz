@@ -1,7 +1,7 @@
 frappe.listview_settings['Container Inspection'] = {
     add_fields: [],
     hide_name_column: true,
-    
+
     onload: (listview) => {
         $('button[data-label="Add Container Inspection"]').hide();
 

@@ -23,23 +23,25 @@ class IntegrationTestEDISettings(IntegrationTestCase):
 	def setUp(self):
 		"""Set up test data before each test."""
 		pass
-	
+
 	def tearDown(self):
 		"""Clean up test data after each test."""
 		pass
-	
+
 	def test_edi_settings_creation(self):
 		"""Test creating a new EDI Settings."""
 		# Create test document
-		doc = frappe.get_doc({
-			"doctype": "EDI Settings",
-			# Add required fields here
-		})
+		doc = frappe.get_doc(
+			{
+				"doctype": "EDI Settings",
+				# Add required fields here
+			}
+		)
 		doc.insert()
-		
+
 		# Assertions
 		self.assertEqual(doc.doctype, "EDI Settings")
 		self.assertIsNotNone(doc.name)
-		
+
 		# Clean up
 		doc.delete()

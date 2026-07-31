@@ -9,37 +9,32 @@ from frappe.utils import now_datetime, nowdate
 class InYardContainerBooking(Document):
 	def before_insert(self):
 		self.posting_datetime = now_datetime()
-	
+
 	def after_insert(self):
-		frappe.db.set_value(
-			"Container",
-			self.container_id,
-			"status",
-			"At Booking"
-		)
-	
+		frappe.db.set_value("Container", self.container_id, "status", "At Booking")
+
 	def before_save(self):
 		if not self.company:
 			self.company = frappe.defaults.get_user_default("Company")
-		
+
 	def validate(self):
 		validate_cf_agent(self.c_and_f_company, self.clearing_agent)
-	
+
 	def before_submit(self):
 		self.posting_datetime = now_datetime()
-	
+
 	def on_submit(self):
-		frappe.db.set_value("Container", self.container_id, {
-			"booking_date": nowdate()
-		})
+		frappe.db.set_value("Container", self.container_id, {"booking_date": nowdate()})
 
 
 def validate_cf_agent(c_and_f_company, clearing_agent):
 	if c_and_f_company and clearing_agent:
 		cf_company = frappe.get_cached_value("Clearing Agent", clearing_agent, "c_and_f_company")
-	
+
 		if c_and_f_company != cf_company:
-			frappe.throw(f"The selected Clearing Agent: <b>{clearing_agent}</b> does not belong to the selected Clearing and Forwarding Company: <b>{c_and_f_company}</b>")
+			frappe.throw(
+				f"The selected Clearing Agent: <b>{clearing_agent}</b> does not belong to the selected Clearing and Forwarding Company: <b>{c_and_f_company}</b>"
+			)
 
 
 @frappe.whitelist()
@@ -57,18 +52,14 @@ def create_bulk_bookings(data):
 	elif data.get("h_bl_no"):
 		filters["h_bl_no"] = data.get("h_bl_no")
 		filters["has_hbl"] = 1
-	
-	containers = frappe.db.get_all(
-		"Container", 
-		filters=filters,
-		pluck="name"
-	)
+
+	containers = frappe.db.get_all("Container", filters=filters, pluck="name")
 	msg = ""
 	if data.get("m_bl_no"):
 		msg = f"M BL No: <b>{data.get('m_bl_no')}</b>"
 	elif data.get("h_bl_no"):
 		msg = f"H BL No: <b>{data.get('h_bl_no')}</b>"
-	
+
 	if len(containers) == 0:
 		frappe.msgprint(f"No Containers found for {msg}")
 		return

@@ -4,7 +4,6 @@
 import frappe
 from frappe import _
 
-
 STATUS_FLOW = (
 	"In Yard",
 	"At Booking",

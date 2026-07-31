@@ -12,6 +12,7 @@ from icd_tz.icd_tz.doctype.container.container import daily_update_date_containe
 
 cr = DocType("Container Reception")
 
+
 class ContainerReception(Document):
 	def before_save(self):
 		if not self.company:
@@ -22,9 +23,7 @@ class ContainerReception(Document):
 
 		if self.m_bl_no and not self.shipping_line_code:
 			shipping_line_code = frappe.db.get_value(
-				"Master BL",
-				{"parent": self.manifest, "m_bl_no": self.m_bl_no},
-				"shipping_agent_code"
+				"Master BL", {"parent": self.manifest, "m_bl_no": self.m_bl_no}, "shipping_agent_code"
 			)
 
 			if shipping_line_code:
@@ -45,7 +44,9 @@ class ContainerReception(Document):
 
 	def before_submit(self):
 		if not self.received_date:
-			frappe.throw("Received Date is missing, Please make sure Ship D/C Date and Posting Date are set to proceed..!")
+			frappe.throw(
+				"Received Date is missing, Please make sure Ship D/C Date and Posting Date are set to proceed..!"
+			)
 
 		if not self.clerk:
 			frappe.throw("Clerk is missing, Please select clerk to proceed..!")
@@ -58,20 +59,27 @@ class ContainerReception(Document):
 		try:
 			edi_data = generate_codeco_gate_in(self.name, file_type="txt")
 			if edi_data and edi_data.get("edi_content"):
-				file_doc = frappe.get_doc({
-					"doctype": "File",
-					"file_name": edi_data.get("filename"),
-					"content": edi_data.get("edi_content"),
-					"attached_to_doctype": self.doctype,
-					"attached_to_name": self.name,
-					"is_private": 1
-				})
+				file_doc = frappe.get_doc(
+					{
+						"doctype": "File",
+						"file_name": edi_data.get("filename"),
+						"content": edi_data.get("edi_content"),
+						"attached_to_doctype": self.doctype,
+						"attached_to_name": self.name,
+						"is_private": 1,
+					}
+				)
 				file_doc.insert(ignore_permissions=True)
 				self.edi_file = file_doc.file_url
 		except Exception as e:
 			traceback = frappe.get_traceback()
-			msg = f"Failed to generate Gate In EDI: {str(e)}\n\nTraceback: {traceback}"
-			frappe.log_error(title="Failed to generate Gate In EDI", message=msg, reference=self.name, reference_doctype=self.doctype)
+			msg = f"Failed to generate Gate In EDI: {e!s}\n\nTraceback: {traceback}"
+			frappe.log_error(
+				title="Failed to generate Gate In EDI",
+				message=msg,
+				reference=self.name,
+				reference_doctype=self.doctype,
+			)
 
 	def on_submit(self):
 		edi_settings = frappe.get_single("EDI Settings")
@@ -94,13 +102,8 @@ class ContainerReception(Document):
 		if self.movement_order:
 			duplicates = (
 				frappe.qb.from_(cr)
-				.select(
-					cr.name
-				)
-				.where(
-					(cr.movement_order == self.movement_order)
-					& (cr.name != self.name)
-				)
+				.select(cr.name)
+				.where((cr.movement_order == self.movement_order) & (cr.name != self.name))
 			).run(as_dict=True)
 
 			if len(duplicates) > 0:
@@ -139,15 +142,15 @@ class ContainerReception(Document):
 		if self.freight_indicator == "LCL":
 			container.is_empty_container = 1
 
-		container.append("container_dates", {
-			"date": self.received_date,
-		})
+		container.append(
+			"container_dates",
+			{
+				"date": self.received_date,
+			},
+		)
 		container.save(ignore_permissions=True)
 
-		enqueue(
-			method=daily_update_date_container_stay,
-			container_id=container.name
-		)
+		enqueue(method=daily_update_date_container_stay, container_id=container.name)
 
 		return container.name
 
@@ -160,16 +163,14 @@ class ContainerReception(Document):
 		# Find all records from 'HBL Container' doctypes using filters of container_no, m_bl_no and manifest
 		hbl_containers = frappe.db.get_all(
 			"HBL Container",
-			filters={
-				"container_no": self.container_no,
-				"m_bl_no": self.m_bl_no,
-				"parent": self.manifest
-			},
-			fields=["*"]
+			filters={"container_no": self.container_no, "m_bl_no": self.m_bl_no, "parent": self.manifest},
+			fields=["*"],
 		)
 
 		if len(hbl_containers) == 0:
-			frappe.msgprint(f"No HBL Container records found for Container No: <b>{self.container_no}</b> in Manifest: <b>{self.manifest}</b>")
+			frappe.msgprint(
+				f"No HBL Container records found for Container No: <b>{self.container_no}</b> in Manifest: <b>{self.manifest}</b>"
+			)
 			return
 
 		# Create containers based on the information found
@@ -206,30 +207,30 @@ class ContainerReception(Document):
 			container.maximum_temperature = hbl_container.maximum_temperature
 			container.container_count = 1
 
-			container.append("container_dates", {
-				"date": self.received_date,
-			})
+			container.append(
+				"container_dates",
+				{
+					"date": self.received_date,
+				},
+			)
 
 			container.save(ignore_permissions=True)
 			container.reload()
 			count += 1
 
-			enqueue(
-				method=daily_update_date_container_stay,
-				container_id=container.name
-			)
+			enqueue(method=daily_update_date_container_stay, container_id=container.name)
 
 		if count > 0:
-			frappe.msgprint(f"HBL records: {count} were created for container {self.container_no}", alert=True)
+			frappe.msgprint(
+				f"HBL records: {count} were created for container {self.container_no}", alert=True
+			)
 
 	def update_container_storage_days(self):
 		"""Update the storage days of the containers based on the current received date and m_bl_no"""
 
 		records = (
 			frappe.qb.from_(cr)
-			.select(
-				cr.name
-			)
+			.select(cr.name)
 			.where(
 				(cr.name != self.name)
 				& (cr.m_bl_no == self.m_bl_no)
@@ -243,18 +244,10 @@ class ContainerReception(Document):
 
 		for record in records:
 			frappe.db.set_value(
-				"Container Reception",
-				record.name,
-				"received_date",
-				self.received_date,
-				update_modified=False
+				"Container Reception", record.name, "received_date", self.received_date, update_modified=False
 			)
 
-			container_ids = frappe.db.get_all(
-				"Container",
-				{"container_reception": record.name},
-				["name"]
-			)
+			container_ids = frappe.db.get_all("Container", {"container_reception": record.name}, ["name"])
 			if len(container_ids) == 0:
 				continue
 
@@ -263,22 +256,18 @@ class ContainerReception(Document):
 				container_doc.container_dates = []
 				container_doc.arrival_date = self.ship_dc_date
 				container_doc.received_date = self.received_date
-				container_doc.append("container_dates", {
-					"date": self.received_date,
-				})
+				container_doc.append(
+					"container_dates",
+					{
+						"date": self.received_date,
+					},
+				)
 				container_doc.save(ignore_permissions=True)
 
-				enqueue(
-					method=daily_update_date_container_stay,
-					container_id=container_doc.name
-				)
+				enqueue(method=daily_update_date_container_stay, container_id=container_doc.name)
 
 	def cancel_linked_docs(self):
-		container_id = frappe.db.get_value(
-			"Container",
-			{"container_reception": self.name},
-			["name"]
-		)
+		container_id = frappe.db.get_value("Container", {"container_reception": self.name}, ["name"])
 
 		if not container_id:
 			return
@@ -291,7 +280,7 @@ class ContainerReception(Document):
 		service_orders = frappe.db.get_all(
 			"Service Order",
 			filters={"container_id": container_id},
-			fields=["name", "sales_invoice",  "sales_order"]
+			fields=["name", "sales_invoice", "sales_order"],
 		)
 
 		sales_order_ids = []
@@ -299,12 +288,14 @@ class ContainerReception(Document):
 			if service_order.sales_invoice:
 				service_order_url = get_link_to_form("Service Order", service_order.name)
 				invoice_url = get_link_to_form("Sales Invoice", service_order.sales_invoice)
-				error_messages.append(f"Service Order <a href='{service_order_url}'>{service_order.name}</a> has invoice: <a href='{invoice_url}'>{service_order.sales_invoice}</a>")
+				error_messages.append(
+					f"Service Order <a href='{service_order_url}'>{service_order.name}</a> has invoice: <a href='{invoice_url}'>{service_order.sales_invoice}</a>"
+				)
 			else:
 				if (
-					not service_order.sales_invoice and
-					service_order.sales_order and
-					service_order.sales_order not in sales_order_ids
+					not service_order.sales_invoice
+					and service_order.sales_order
+					and service_order.sales_order not in sales_order_ids
 				):
 					sales_order_ids.append(service_order.sales_order)
 
@@ -312,9 +303,7 @@ class ContainerReception(Document):
 
 		# Check Container Inspection
 		inspections = frappe.db.get_all(
-			"Container Inspection",
-			filters={"container_id": container_id},
-			fields=["name"]
+			"Container Inspection", filters={"container_id": container_id}, fields=["name"]
 		)
 
 		for inspection in inspections:
@@ -330,7 +319,9 @@ class ContainerReception(Document):
 
 			if len(invoice_links) > 0:
 				inspection_url = get_link_to_form("Container Inspection", inspection.name)
-				error_messages.append(f"Container Inspection <a href='{inspection_url}'>{inspection.name}</a> has the following invoices:")
+				error_messages.append(
+					f"Container Inspection <a href='{inspection_url}'>{inspection.name}</a> has the following invoices:"
+				)
 				for service_name, invoice_id in invoice_links:
 					invoice_url = get_link_to_form("Sales Invoice", invoice_id)
 					error_messages.append(f"- {service_name}: <a href='{invoice_url}'>{invoice_id}</a>")
@@ -341,7 +332,7 @@ class ContainerReception(Document):
 		bookings = frappe.db.get_all(
 			"In Yard Container Booking",
 			filters={"container_id": container_id},
-			fields=["name", "s_sales_invoice", "cv_sales_invoice"]
+			fields=["name", "s_sales_invoice", "cv_sales_invoice"],
 		)
 
 		for booking in bookings:
@@ -353,7 +344,9 @@ class ContainerReception(Document):
 
 			if len(invoice_links) > 0:
 				booking_url = get_link_to_form("In Yard Container Booking", booking.name)
-				error_messages.append(f"In Yard Container Booking <a href='{booking_url}'>{booking.name}</a> has the following invoices:")
+				error_messages.append(
+					f"In Yard Container Booking <a href='{booking_url}'>{booking.name}</a> has the following invoices:"
+				)
 				for charge_type, invoice_id in invoice_links:
 					invoice_url = get_link_to_form("Sales Invoice", invoice_id)
 					error_messages.append(f"- {charge_type}: <a href='{invoice_url}'>{invoice_id}</a>")
@@ -362,24 +355,17 @@ class ContainerReception(Document):
 				docs_to_cancel.append({"doc_type": "In Yard Container Booking", "doc_name": booking.name})
 
 		# Check Gate Pass
-		gate_passes = frappe.db.get_all(
-			"Gate Pass",
-			filters={"container_id": container_id},
-			fields=["name"]
-		)
+		gate_passes = frappe.db.get_all("Gate Pass", filters={"container_id": container_id}, fields=["name"])
 
 		if gate_passes:
 			for gate_pass in gate_passes:
 				docs_to_cancel.append({"doc_type": "Gate Pass", "doc_name": gate_pass.name})
 
-
 		# Check Sales Orders and Sales Invoices using m_bl_no
 		if self.m_bl_no:
 			# Check Sales Invoices
 			sales_invoices = frappe.db.get_all(
-				"Sales Invoice",
-				filters={"m_bl_no": self.m_bl_no, "docstatus": 0},
-				fields=["name"]
+				"Sales Invoice", filters={"m_bl_no": self.m_bl_no, "docstatus": 0}, fields=["name"]
 			)
 
 			if sales_invoices:
@@ -396,8 +382,6 @@ class ContainerReception(Document):
 
 			# for sales_order in sales_orders:
 			# 	docs_to_cancel.append({"doc_type": "Sales Order", "doc_name": sales_order.name})
-
-
 
 		# If there are any error messages, throw them to prevent cancellation
 		if error_messages:
@@ -420,10 +404,7 @@ class ContainerReception(Document):
 					doc.cancel()
 					doc.reload()
 				except Exception as e:
-					frappe.log_error(
-						title=f"Error while canceling {doc.doctype} {doc.name}",
-						message=str(e)
-					)
+					frappe.log_error(title=f"Error while canceling {doc.doctype} {doc.name}", message=str(e))
 					if doc.doctype == "Sales Order":
 						doc.db_set("status", "Closed")
 						continue
@@ -433,11 +414,7 @@ class ContainerReception(Document):
 			doc.delete()
 			count += 1
 
-		frappe.delete_doc(
-			"Container",
-			container_id,
-			ignore_permissions=True
-		)
+		frappe.delete_doc("Container", container_id, ignore_permissions=True)
 
 	def update_cmo_status(self, status="Pending"):
 		if not self.movement_order:
@@ -466,7 +443,7 @@ class ContainerReception(Document):
 		self.add_comment(
 			"Comment",
 			f"Ship D/C Date changed from <b>{old_ship_dc_date}</b> to <b>{new_ship_dc_date}</b>, "
-			f"Received Date recalculated to <b>{new_received_date}</b>"
+			f"Received Date recalculated to <b>{new_received_date}</b>",
 		)
 
 		if self.docstatus == 1:
@@ -478,41 +455,40 @@ class ContainerReception(Document):
 			self.movement_order,
 			"ship_dc_date",
 			new_ship_dc_date,
-			update_modified=False
+			update_modified=False,
 		)
-		frappe.get_doc({
-			"doctype": "Comment",
-			"comment_type": "Comment",
-			"comment_email": frappe.session.user,
-			"reference_doctype": "Container Movement Order",
-			"reference_name": self.movement_order,
-			"content": (
-				f"Ship D/C Date changed from <b>{old_ship_dc_date}</b> to <b>{new_ship_dc_date}</b> "
-				f"via Container Reception {get_link_to_form('Container Reception', self.name)}"
-			)
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Comment",
+				"comment_type": "Comment",
+				"comment_email": frappe.session.user,
+				"reference_doctype": "Container Movement Order",
+				"reference_name": self.movement_order,
+				"content": (
+					f"Ship D/C Date changed from <b>{old_ship_dc_date}</b> to <b>{new_ship_dc_date}</b> "
+					f"via Container Reception {get_link_to_form('Container Reception', self.name)}"
+				),
+			}
+		).insert(ignore_permissions=True)
 
 	def update_containers_received_date(self, new_ship_dc_date, new_received_date):
-		container_ids = frappe.db.get_all(
-			"Container",
-			{"container_reception": self.name},
-			["name"]
-		)
+		container_ids = frappe.db.get_all("Container", {"container_reception": self.name}, ["name"])
 
 		for container_id in container_ids:
 			container_doc = frappe.get_doc("Container", container_id.name)
 			container_doc.ship_dc_date = new_ship_dc_date
 			container_doc.received_date = new_received_date
 			container_doc.container_dates = []
-			container_doc.append("container_dates", {
-				"date": new_received_date,
-			})
+			container_doc.append(
+				"container_dates",
+				{
+					"date": new_received_date,
+				},
+			)
 			container_doc.save(ignore_permissions=True)
 
-			enqueue(
-				method=daily_update_date_container_stay,
-				container_id=container_doc.name
-			)
+			enqueue(method=daily_update_date_container_stay, container_id=container_doc.name)
+
 
 def get_received_date(posting_date, ship_dc_date):
 	"""Received date is posting_date if it is past the settings threshold after ship_dc_date, otherwise ship_dc_date"""
@@ -524,6 +500,7 @@ def get_received_date(posting_date, ship_dc_date):
 
 	return getdate(ship_dc_date)
 
+
 @frappe.whitelist()
 def update_ship_dc_date(container_reception, new_ship_dc_date):
 	"""Correct the Ship D/C Date on a Container Reception and its linked Container Movement Order"""
@@ -532,29 +509,24 @@ def update_ship_dc_date(container_reception, new_ship_dc_date):
 	doc.check_permission("write")
 	doc.correct_ship_dc_date(new_ship_dc_date)
 
+
 @frappe.whitelist()
 def get_container_details(manifest, container_no):
 	"""Get the details of a container based on the container no and manifest"""
 
 	container = frappe.db.get_all(
-		"Containers Detail",
-		filters={"parent": manifest, "container_no": container_no},
-		fields=["*"]
+		"Containers Detail", filters={"parent": manifest, "container_no": container_no}, fields=["*"]
 	)
 
 	if len(container) > 0:
 		container_row = container[0]
 		abbr_for_destination = frappe.db.get_value(
-			"Master BL",
-			{"parent": manifest, "m_bl_no": container_row.m_bl_no},
-			"place_of_destination"
+			"Master BL", {"parent": manifest, "m_bl_no": container_row.m_bl_no}, "place_of_destination"
 		)
 		container_row["abbr_for_destination"] = abbr_for_destination
 
 		country_code = str(abbr_for_destination)[:2]
-		country_of_destination = frappe.get_cached_value(
-			"Country", {"code": country_code.lower()}, "name"
-		)
+		country_of_destination = frappe.get_cached_value("Country", {"code": country_code.lower()}, "name")
 		container_row["country_of_destination"] = country_of_destination
 
 		place_of_destination = ""
