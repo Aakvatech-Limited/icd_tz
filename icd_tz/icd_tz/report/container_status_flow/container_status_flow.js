@@ -4,4 +4,3 @@
 frappe.query_reports["Container Status Flow"] = {
 	filters: [],
 };
-

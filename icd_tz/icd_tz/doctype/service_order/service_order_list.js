@@ -86,7 +86,7 @@ var show_dialog = (listview) => {
                     });
                     return;
                 }
-                
+
                 frappe.call({
                     method: 'icd_tz.icd_tz.doctype.service_order.service_order.create_bulk_service_orders',
                     args: {

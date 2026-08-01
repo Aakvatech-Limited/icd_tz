@@ -52,7 +52,7 @@ var show_dialog = () => {
                     });
                     return;
                 }
-                
+
                 frappe.call({
                     method: 'icd_tz.icd_tz.api.sales_order.create_sales_order',
                     args: {

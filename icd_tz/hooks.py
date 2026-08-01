@@ -28,16 +28,16 @@ app_license = "MIT"
 
 # include js in doctype views
 doctype_js = {
-    "Sales Order": "icd_tz/api/sales_order.js",
-    "Driver": "public/js/driver.js",
-    "Vehicle": "public/js/vehicle.js",
-    "Contract": "public/js/contract.js",
+	"Sales Order": "icd_tz/api/sales_order.js",
+	"Driver": "public/js/driver.js",
+	"Vehicle": "public/js/vehicle.js",
+	"Contract": "public/js/contract.js",
 }
 
 doctype_list_js = {
-    "Custom Field": "icd_tz/patches/custom_field.js",
-    "Property Setter": "icd_tz/patches/property_setter.js",
-    "Sales Order": "icd_tz/api/sales_order_list.js",
+	"Custom Field": "icd_tz/patches/custom_field.js",
+	"Property Setter": "icd_tz/patches/property_setter.js",
+	"Sales Order": "icd_tz/api/sales_order_list.js",
 }
 
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -74,12 +74,12 @@ doctype_list_js = {
 
 before_install = "icd_tz.install.before_install"
 after_install = [
-    "icd_tz.patches.create_custom_fields.execute",
-    "icd_tz.patches.create_property_setters.execute",
+	"icd_tz.patches.create_custom_fields.execute",
+	"icd_tz.patches.create_property_setters.execute",
 ]
 after_migrate = [
-    "icd_tz.patches.create_custom_fields.execute",
-    "icd_tz.patches.create_property_setters.execute",
+	"icd_tz.patches.create_custom_fields.execute",
+	"icd_tz.patches.create_property_setters.execute",
 ]
 
 # Uninstallation
@@ -135,18 +135,18 @@ after_migrate = [
 # Hook on document methods and events
 
 doc_events = {
-    "Sales Invoice": {
-        "before_save": "icd_tz.icd_tz.api.sales_invoice.before_save",
-        "on_submit": "icd_tz.icd_tz.api.sales_invoice.on_submit",
-    },
-    "Sales Order": {
-        "before_save": "icd_tz.icd_tz.api.sales_order.before_save",
-        "before_submit": "icd_tz.icd_tz.api.sales_order.before_submit",
-        "on_trash": "icd_tz.icd_tz.api.sales_order.on_trash",
-    },
-    "Contract": {
-        "validate": "icd_tz.icd_tz.api.contract.validate",
-    },
+	"Sales Invoice": {
+		"before_save": "icd_tz.icd_tz.api.sales_invoice.before_save",
+		"on_submit": "icd_tz.icd_tz.api.sales_invoice.on_submit",
+	},
+	"Sales Order": {
+		"before_save": "icd_tz.icd_tz.api.sales_order.before_save",
+		"before_submit": "icd_tz.icd_tz.api.sales_order.before_submit",
+		"on_trash": "icd_tz.icd_tz.api.sales_order.on_trash",
+	},
+	"Contract": {
+		"validate": "icd_tz.icd_tz.api.contract.validate",
+	},
 }
 
 # Scheduled Tasks
@@ -170,14 +170,14 @@ doc_events = {
 # 	],
 # }
 scheduler_events = {
-    "hourly": ["icd_tz.icd_tz.doctype.gate_pass.gate_pass.auto_expire_gate_passes"],
-    "cron": {
-        # run after every two hours
-        "0 */2 * * *": [
-            "icd_tz.icd_tz.doctype.container.container.daily_update_date_container_stay",
-            "icd_tz.icd_tz.doctype.consignee.consignee.create_customer",
-        ]
-    },
+	"hourly": ["icd_tz.icd_tz.doctype.gate_pass.gate_pass.auto_expire_gate_passes"],
+	"cron": {
+		# run after every two hours
+		"0 */2 * * *": [
+			"icd_tz.icd_tz.doctype.container.container.daily_update_date_container_stay",
+			"icd_tz.icd_tz.doctype.consignee.consignee.create_customer",
+		]
+	},
 }
 
 # Testing
