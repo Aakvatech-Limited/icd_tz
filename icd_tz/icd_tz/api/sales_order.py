@@ -192,15 +192,19 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 
 	containers = frappe.db.get_all("Container", filters=filters, fields=["name", "days_to_be_billed"])
 	if len(containers) == 0:
-		return
+		return []
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
 
 	for container in containers:
+		container_doc = frappe.get_doc("Container", container.name)
+
+		cancellation_service = get_gatepass_cancellation_service(container_doc, settings_doc)
+		if cancellation_service:
+			services.append(cancellation_service)
+
 		if container.days_to_be_billed == 0:
 			continue
-
-		container_doc = frappe.get_doc("Container", container.name)
 
 		single_days, double_days = get_container_days_to_be_billed(container_doc, settings_doc)
 
@@ -322,6 +326,23 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 			)
 
 	return services
+
+
+def get_gatepass_cancellation_service(container_doc, settings_doc):
+	"""Charge row for a container whose Gate Pass was cancelled and is not yet invoiced"""
+
+	if container_doc.has_cancellation_charge != 1 or container_doc.g_sales_invoice:
+		return {}
+
+	if not settings_doc.gatepass_cancellation_item:
+		frappe.throw("Gatepass Cancellation Item is not set in ICD TZ Settings, Please set it to continue")
+
+	return {
+		"item_code": settings_doc.gatepass_cancellation_item,
+		"qty": 1,
+		"container_no": container_doc.container_no,
+		"container_id": container_doc.name,
+	}
 
 
 def get_container_days_to_be_billed(container_doc, settings_doc):
