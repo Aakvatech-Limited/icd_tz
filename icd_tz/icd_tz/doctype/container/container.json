@@ -58,13 +58,14 @@
   "cargo_description",
   "date_reference_section",
   "arrival_date",
-  "departure_date",
+  "ship_dc_date",
   "column_break_votc",
   "received_date",
-  "booking_date",
-  "column_break_ztec",
   "posting_date",
+  "column_break_ztec",
+  "booking_date",
   "last_inspection_date",
+  "departure_date",
   "movement_details_section",
   "original_location",
   "current_location",
@@ -171,7 +172,6 @@
    "width": "1"
   },
   {
-   "description": "Ship D/C Date",
    "fieldname": "arrival_date",
    "fieldtype": "Date",
    "label": "Arrival Date",
@@ -688,12 +688,20 @@
    "label": "Posting Date",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "description": "Port discharge date",
+   "fieldname": "ship_dc_date",
+   "fieldtype": "Date",
+   "label": "Ship D/C Date",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-11 09:35:59.405320",
+ "modified": "2026-07-28 06:11:32.326550",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",

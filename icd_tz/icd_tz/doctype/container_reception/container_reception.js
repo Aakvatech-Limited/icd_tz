@@ -126,5 +126,34 @@ frappe.ui.form.on('Container Reception', {
                 }
             }
         });
+    },
+    update_ship_dc_date: (frm) => {
+        frappe.prompt(
+            [
+                {
+                    fieldname: "new_ship_dc_date",
+                    fieldtype: "Date",
+                    label: "Correct Ship D/C Date",
+                    reqd: 1,
+                    default: frm.doc.ship_dc_date
+                }
+            ],
+            (values) => {
+                frappe.call({
+                    method: "icd_tz.icd_tz.doctype.container_reception.container_reception.update_ship_dc_date",
+                    args: {
+                        container_reception: frm.doc.name,
+                        new_ship_dc_date: values.new_ship_dc_date
+                    },
+                    freeze: true,
+                    freeze_message: __("Updating Ship D/C Date..."),
+                    callback: () => {
+                        frm.reload_doc();
+                    }
+                });
+            },
+            __("Update Ship D/C Date"),
+            __("Update")
+        );
     }
 });
