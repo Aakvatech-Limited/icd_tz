@@ -8,6 +8,13 @@ def before_save(doc, method):
     validate_qty_storage_item(doc)
 
 
+def before_submit(doc, method):
+    if doc.waiver_status == "Pending":
+        frappe.throw(
+            "This Sales Order has a pending Waiver Request. Please wait for it to be Approved or Rejected before submitting."
+        )
+
+
 def on_trash(doc, method):
     unlink_sales_order(doc)
 

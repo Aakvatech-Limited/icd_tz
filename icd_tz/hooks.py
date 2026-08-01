@@ -141,6 +141,7 @@ doc_events = {
     },
     "Sales Order": {
         "before_save": "icd_tz.icd_tz.api.sales_order.before_save",
+        "before_submit": "icd_tz.icd_tz.api.sales_order.before_submit",
         "on_trash": "icd_tz.icd_tz.api.sales_order.on_trash",
     },
     "Contract": {
