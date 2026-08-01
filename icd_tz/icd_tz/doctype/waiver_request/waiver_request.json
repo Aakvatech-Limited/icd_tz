@@ -20,8 +20,17 @@
   "net_total",
   "column_break_htdb",
   "apply_discount_on",
+  "discount_criteria",
   "additional_discount_percentage",
   "discount_amount",
+  "items_section",
+  "items",
+  "totals_section",
+  "total_actual_amount",
+  "column_break_totals_a",
+  "total_discounted_amount",
+  "column_break_totals_b",
+  "total_amount_after_discount",
   "section_break_ktxz",
   "waiver_reason",
   "column_break_yuju",
@@ -29,10 +38,10 @@
   "rejection_remarks",
   "section_break_users",
   "requested_by",
-  "amended_from",
   "column_break_users",
   "decided_by",
-  "naming_series"
+  "naming_series",
+  "amended_from"
  ],
  "fields": [
   {
@@ -62,6 +71,35 @@
   {
    "fieldname": "column_break_qcyn",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sales_order.m_bl_no",
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "M BL No",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "sales_order.h_bl_no",
+   "fieldname": "h_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "H BL No",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_fokn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sales_order.consignee",
+   "fieldname": "consignee",
+   "fieldtype": "Data",
+   "label": "Consignee",
+   "search_index": 1
   },
   {
    "fieldname": "posting_date",
@@ -104,19 +142,83 @@
    "fieldname": "apply_discount_on",
    "fieldtype": "Select",
    "label": "Apply Discount On",
-   "options": "\nGrand Total\nNet Total",
+   "options": "\nGrand Total\nNet Total\nSingle Item",
    "reqd": 1
   },
   {
-   "fieldname": "additional_discount_percentage",
-   "fieldtype": "Float",
-   "label": "Discount (%)"
+   "fieldname": "discount_criteria",
+   "fieldtype": "Select",
+   "label": "Discount Criteria",
+   "options": "\nWaiver Based on Percentage\nWaiver Based on Actual Amount",
+   "reqd": 1
   },
   {
+   "depends_on": "eval:doc.discount_criteria == \"Waiver Based on Percentage\"",
+   "fieldname": "additional_discount_percentage",
+   "fieldtype": "Float",
+   "label": "Discount (%)",
+   "mandatory_depends_on": "eval:doc.discount_criteria == \"Waiver Based on Percentage\""
+  },
+  {
+   "depends_on": "eval:doc.discount_criteria == \"Waiver Based on Actual Amount\"",
    "fieldname": "discount_amount",
    "fieldtype": "Currency",
    "label": "Discount Amount",
+   "mandatory_depends_on": "eval:doc.discount_criteria == \"Waiver Based on Actual Amount\"",
    "options": "currency"
+  },
+  {
+   "depends_on": "eval:doc.apply_discount_on == \"Single Item\"",
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "mandatory_depends_on": "eval:doc.apply_discount_on == \"Single Item\"",
+   "options": "Waiver Request Item"
+  },
+  {
+   "depends_on": "eval:doc.apply_discount_on == \"Single Item\" && doc.items && doc.items.length",
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_actual_amount",
+   "fieldtype": "Currency",
+   "label": "Total Actual Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_discounted_amount",
+   "fieldtype": "Currency",
+   "label": "Total Discounted Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals_b",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_amount_after_discount",
+   "fieldtype": "Currency",
+   "label": "Total Amount After Discount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ktxz",
+   "fieldtype": "Section Break",
+   "label": "Reason"
   },
   {
    "bold": 1,
@@ -125,6 +227,10 @@
    "fieldtype": "Small Text",
    "label": "Waiver Reason",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_yuju",
+   "fieldtype": "Column Break"
   },
   {
    "description": "Set to Approved or Rejected before submitting this waiver request",
@@ -176,49 +282,12 @@
    "options": "Waiver Request",
    "print_hide": 1,
    "read_only": 1
-  },
-  {
-   "fetch_from": "sales_order.m_bl_no",
-   "fieldname": "m_bl_no",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "M BL No",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fetch_from": "sales_order.h_bl_no",
-   "fieldname": "h_bl_no",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "H BL No",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "column_break_fokn",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "sales_order.consignee",
-   "fieldname": "consignee",
-   "fieldtype": "Data",
-   "label": "Consignee",
-   "search_index": 1
-  },
-  {
-   "fieldname": "section_break_ktxz",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_yuju",
-   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-31 18:13:11.009106",
+ "modified": "2026-07-31 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Waiver Request",
@@ -241,7 +310,6 @@
    "write": 1
   }
  ],
- "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
