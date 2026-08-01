@@ -4,7 +4,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from icd_tz.icd_tz.doctype.waiver_request.waiver_request import create_waiver_request
+from icd_tz.icd_tz.doctype.waiver_request.waiver_request import create_waiver_request, get_items
 
 
 class TestWaiverRequest(FrappeTestCase):
@@ -15,7 +15,9 @@ class TestWaiverRequest(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_creating_waiver_request_marks_sales_order_pending(self):
-		waiver_request = frappe.get_doc(create_and_get_waiver_request(self.sales_order.name))
+		waiver_request = frappe.get_doc(
+			"Waiver Request", create_and_get_waiver_request(self.sales_order.name)
+		)
 
 		self.sales_order.reload()
 		self.assertEqual(self.sales_order.waiver_status, "Pending")
@@ -24,7 +26,7 @@ class TestWaiverRequest(FrappeTestCase):
 
 	def test_approving_waiver_request_applies_discount_on_sales_order(self):
 		waiver_request = frappe.get_doc(
-			create_and_get_waiver_request(self.sales_order.name, discount_amount=50)
+			"Waiver Request", create_and_get_waiver_request(self.sales_order.name, discount_amount=50)
 		)
 		waiver_request.decision = "Approved"
 		waiver_request.submit()
@@ -38,7 +40,7 @@ class TestWaiverRequest(FrappeTestCase):
 
 	def test_rejecting_waiver_request_does_not_apply_discount(self):
 		waiver_request = frappe.get_doc(
-			create_and_get_waiver_request(self.sales_order.name, discount_amount=50)
+			"Waiver Request", create_and_get_waiver_request(self.sales_order.name, discount_amount=50)
 		)
 		waiver_request.decision = "Rejected"
 		waiver_request.submit()
@@ -49,15 +51,49 @@ class TestWaiverRequest(FrappeTestCase):
 		self.sales_order.submit()
 		self.assertEqual(self.sales_order.docstatus, 1)
 
+	def test_approving_single_item_waiver_discounts_only_that_item(self):
+		items = get_items(self.sales_order.name)
+		target = items[0]
+
+		name = create_waiver_request(
+			sales_order=self.sales_order.name,
+			apply_discount_on="Single Item",
+			discount_criteria="Waiver Based on Actual Amount",
+			waiver_reason="Customer requested a waiver on one item",
+			discount_amount=20,
+			items=[
+				{
+					"item_code": target["item_code"],
+					"item_name": target["item_name"],
+					"actual_price": target["actual_price"],
+					"discount_amount": 20,
+					"amount_after_discount": target["actual_price"] - 20,
+					"so_detail": target["so_detail"],
+				}
+			],
+		)
+		waiver_request = frappe.get_doc("Waiver Request", name)
+		self.assertEqual(waiver_request.total_actual_amount, target["actual_price"])
+		self.assertEqual(waiver_request.total_discounted_amount, 20)
+
+		waiver_request.decision = "Approved"
+		waiver_request.submit()
+
+		self.sales_order.reload()
+		item_row = next(row for row in self.sales_order.items if row.name == target["so_detail"])
+		self.assertEqual(item_row.rate, target["actual_price"] - 20)
+		self.assertEqual(item_row.discount_amount, 20)
+		self.assertEqual(self.sales_order.waiver_status, "Approved")
+
 
 def create_and_get_waiver_request(sales_order, discount_amount=0):
-	name = create_waiver_request(
+	return create_waiver_request(
 		sales_order=sales_order,
 		apply_discount_on="Grand Total",
+		discount_criteria="Waiver Based on Actual Amount",
 		waiver_reason="Customer requested a waiver",
 		discount_amount=discount_amount,
 	)
-	return "Waiver Request", name
 
 
 def make_test_sales_order():
@@ -67,8 +103,8 @@ def make_test_sales_order():
 		.insert(ignore_permissions=True)
 		.name
 	)
-	item = frappe.db.get_value("Item", {"is_sales_item": 1}, "name") or frappe.db.get_value(
-		"Item", {}, "name"
+	item = frappe.db.get_value("Item", {"is_sales_item": 1, "disabled": 0}, "name") or frappe.db.get_value(
+		"Item", {"disabled": 0}, "name"
 	)
 
 	sales_order = frappe.get_doc(
