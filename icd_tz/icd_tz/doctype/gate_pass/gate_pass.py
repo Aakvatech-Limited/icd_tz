@@ -89,31 +89,72 @@ class GatePass(Document):
 		if self.is_empty_container == 1:
 			return
 
-		service_msg = ""
-		service_msg += self.validate_container_charges()
-		service_msg += self.validate_in_yard_booking()
-		service_msg += self.validate_reception_charges()
-		service_msg += self.validate_inspection_charges()
+		charges = [
+			self.validate_container_charges(),
+			self.validate_in_yard_booking(),
+			self.validate_reception_charges(),
+			self.validate_inspection_charges(),
+		]
 
+		service_msg = ""
+		invoices = []
+		for charge_msg, charge_invoices in charges:
+			service_msg += charge_msg
+			invoices += charge_invoices
+
+		msg = ""
 		if service_msg:
-			msg = (
+			msg += (
 				"<h4 class='text-center'>Pending Payments:</h4><hr>Payment is pending for the following services <ul> "
 				+ service_msg
 				+ " </ul>"
 			)
 
-			if self.meta.has_field("workflow_state"):
-				if self.get("workflow_state") in ["Approved", "Gate Out Confirmed"]:
-					frappe.throw(str(msg))
-				else:
-					frappe.msgprint(str(msg))
-			else:
+		msg += self.get_unpaid_invoices_message(invoices)
+
+		if not msg:
+			return
+
+		if self.meta.has_field("workflow_state"):
+			if self.get("workflow_state") in ["Approved", "Gate Out Confirmed"]:
 				frappe.throw(str(msg))
+			else:
+				frappe.msgprint(str(msg))
+		else:
+			frappe.throw(str(msg))
+
+	def get_unpaid_invoices_message(self, invoices):
+		"""Message section for the collected Sales Invoices that are not in Paid status"""
+
+		unpaid_msg = ""
+		invoices = set(invoices)
+
+		for invoice_id in invoices:
+			if not invoice_id:
+				continue
+
+			status = frappe.db.get_value("Sales Invoice", invoice_id, "status")
+			if status == "Paid":
+				continue
+
+			url = get_url_to_form("Sales Invoice", invoice_id)
+			unpaid_msg += f"<li><a href='{url}'><b>{invoice_id}</b></a>: {status or 'Not Found'}</li>"
+
+		if not unpaid_msg:
+			return ""
+
+		return (
+			"<h4 class='text-center'>Unpaid Invoices:</h4><hr>The following invoices are not paid yet, "
+			"they must have <b>Paid</b> status, Inform Finance Department to look into this <ul> "
+			+ unpaid_msg
+			+ " </ul>"
+		)
 
 	def validate_container_charges(self):
-		"""Validate the storage payments for the Gate Pass"""
+		"""Validate the storage payments for the Gate Pass and return its linked invoices"""
 
 		msg = ""
+		invoices = []
 
 		container_info = frappe.db.get_value(
 			"Container",
@@ -142,12 +183,24 @@ class GatePass(Document):
 		if container_info.has_cancellation_charge == 1 and not container_info.g_sales_invoice:
 			msg += "<li>Gate Pass Cancellation Charges</li>"
 
-		return msg
+		invoices.append(container_info.r_sales_invoice)
+		invoices.append(container_info.c_sales_invoice)
+		invoices.append(container_info.g_sales_invoice)
+		invoices.extend(
+			frappe.db.get_all(
+				"Container Service Detail",
+				filters={"parent": self.container_id, "parenttype": "Container"},
+				pluck="sales_invoice",
+			)
+		)
+
+		return msg, invoices
 
 	def validate_in_yard_booking(self):
-		"""Validate the In Yard Container Booking for the Gate Pass"""
+		"""Validate the In Yard Container Booking for the Gate Pass and return its linked invoices"""
 
 		msg = ""
+		invoices = []
 
 		booking_info = frappe.db.get_all(
 			"In Yard Container Booking",
@@ -180,16 +233,20 @@ class GatePass(Document):
 			if row.has_custom_verification_charges == "Yes" and not row.cv_sales_invoice:
 				msg += "<li>Custom Verification Charges</li>"
 
-		return msg
+			invoices.append(row.s_sales_invoice)
+			invoices.append(row.cv_sales_invoice)
+
+		return msg, invoices
 
 	def validate_reception_charges(self):
-		"""Validate the Reception Charges for the Gate Pass"""
+		"""Validate the Reception Charges for the Gate Pass and return its linked invoices"""
 
 		msg = ""
+		invoices = []
 
 		container_reception = frappe.db.get_value("Container", self.container_id, "container_reception")
 		if not container_reception:
-			return ""
+			return "", []
 
 		reception_info = frappe.db.get_value(
 			"Container Reception",
@@ -215,30 +272,34 @@ class GatePass(Document):
 		if reception_info.has_shore_handling_charges == "Yes" and not reception_info.s_sales_invoice:
 			msg += "<li>Shore Handling Charges</li>"
 
-		return msg
+		invoices.append(reception_info.t_sales_invoice)
+		invoices.append(reception_info.s_sales_invoice)
+
+		return msg, invoices
 
 	def validate_inspection_charges(self):
-		"""Validate the Inspection Charges for the Gate Pass"""
+		"""Validate the Inspection Charges for the Gate Pass and return its linked invoices"""
 
 		msg = ""
+		invoices = []
 
 		inspection_info = frappe.db.get_all(
 			"Container Inspection", {"container_id": self.container_id}, pluck="name"
 		)
 		if len(inspection_info) == 0:
-			return ""
+			return "", []
 
 		for inspection in inspection_info:
 			inspection_doc = frappe.get_doc("Container Inspection", inspection)
 
 			for d in inspection_doc.get("services"):
-				if "off" in str(d.get("service")).lower() and not d.get("sales_invoice"):
+				service = str(d.get("service")).lower()
+				if ("off" in service or "status" in service) and not d.get("sales_invoice"):
 					msg += f"<li>{d.get('service')}</li>"
 
-				if "status" in str(d.get("service")).lower() and not d.get("sales_invoice"):
-					msg += f"<li>{d.get('service')}</li>"
+				invoices.append(d.get("sales_invoice"))
 
-		return msg
+		return msg, invoices
 
 	def update_container_status(self, status="Delivered"):
 		if not self.container_id:
