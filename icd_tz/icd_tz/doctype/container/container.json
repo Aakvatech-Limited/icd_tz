@@ -97,6 +97,9 @@
   "column_break_iv6ai",
   "has_corridor_levy_charges",
   "c_sales_invoice",
+  "column_break_gpcnl",
+  "has_cancellation_charge",
+  "g_sales_invoice",
   "column_break_qjlyx",
   "has_single_charge",
   "has_double_charge",
@@ -452,6 +455,24 @@
    "read_only": 1
   },
   {
+   "fieldname": "column_break_gpcnl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_cancellation_charge",
+   "fieldtype": "Check",
+   "label": "Has Cancellation Charge",
+   "read_only": 1
+  },
+  {
+   "description": "Invoice for gatepass cancellation charges",
+   "fieldname": "g_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Sales Invoice",
+   "read_only": 1
+  },
+  {
    "fieldname": "no_of_free_days",
    "fieldtype": "Int",
    "label": "No of Free Days",
@@ -701,7 +722,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-28 06:11:32.326550",
+ "modified": "2026-08-01 14:26:58.618264",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",

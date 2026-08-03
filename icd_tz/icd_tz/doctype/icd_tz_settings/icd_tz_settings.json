@@ -13,8 +13,10 @@
   "enable_signature_validation",
   "gate_pass_expiry_hours",
   "received_date_threshold_hours",
-  "corridor_levy_countries_section",
+  "corridor_sec",
   "countries",
+  "column_break_ixzw",
+  "gatepass_cancellation_item",
   "service_pricing_criteria_section",
   "service_types",
   "lcl_service_pricing_criteria_section",
@@ -68,15 +70,14 @@
    "label": "Enable Signature Validation"
   },
   {
-   "fieldname": "corridor_levy_countries_section",
-   "fieldtype": "Section Break",
-   "label": "Corridor Levy Countries"
+   "fieldname": "corridor_sec",
+   "fieldtype": "Section Break"
   },
   {
    "description": "Countries eligible to pay Corridor Levy",
    "fieldname": "countries",
    "fieldtype": "Table MultiSelect",
-   "label": "countries",
+   "label": "Corridor Levy Countries",
    "options": "Corridor Levy Country"
   },
   {
@@ -115,12 +116,23 @@
    "fieldtype": "Int",
    "label": "Received Date Threshold Hours",
    "reqd": 1
+  },
+  {
+   "description": "Item charged when a Gate Pass is cancelled after expiry",
+   "fieldname": "gatepass_cancellation_item",
+   "fieldtype": "Link",
+   "label": "Gatepass Cancellation Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "column_break_ixzw",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-06 12:26:00.096156",
+ "modified": "2026-08-01 14:22:39.921653",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Settings",

@@ -24,5 +24,13 @@ frappe.ui.form.on('ICD TZ Settings', {
 				}
 			};
 		});
+
+		frm.set_query("gatepass_cancellation_item", () => {
+			return {
+				filters: {
+					"item_group": "ICD Services"
+				}
+			};
+		});
 	}
 });

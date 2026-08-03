@@ -73,6 +73,15 @@ class GatePass(Document):
 
 	def on_cancel(self):
 		self.update_container_status("At Gatepass")
+		self.flag_gatepass_cancellation_charge()
+
+	def flag_gatepass_cancellation_charge(self):
+		"""Mark the container as chargeable once its Gate Pass is cancelled."""
+
+		if not self.container_id:
+			return
+
+		frappe.db.set_value("Container", self.container_id, "has_cancellation_charge", 1)
 
 	def validate_pending_payments(self):
 		"""Validate the pending payments for the Gate Pass"""
@@ -93,10 +102,13 @@ class GatePass(Document):
 				+ " </ul>"
 			)
 
-			if self.workflow_state in ["Approved", "Gate Out Confirmed"]:
-				frappe.throw(str(msg))
+			if self.meta.has_field("workflow_state"):
+				if self.get("workflow_state") in ["Approved", "Gate Out Confirmed"]:
+					frappe.throw(str(msg))
+				else:
+					frappe.msgprint(str(msg))
 			else:
-				frappe.msgprint(str(msg))
+				frappe.throw(str(msg))
 
 	def validate_container_charges(self):
 		"""Validate the storage payments for the Gate Pass"""
@@ -111,6 +123,8 @@ class GatePass(Document):
 				"r_sales_invoice",
 				"has_corridor_levy_charges",
 				"c_sales_invoice",
+				"has_cancellation_charge",
+				"g_sales_invoice",
 				"days_to_be_billed",
 			],
 			as_dict=True,
@@ -124,6 +138,9 @@ class GatePass(Document):
 
 		if container_info.has_corridor_levy_charges == "Yes" and not container_info.c_sales_invoice:
 			msg += "<li>Corridor Levy Charges</li>"
+
+		if container_info.has_cancellation_charge == 1 and not container_info.g_sales_invoice:
+			msg += "<li>Gate Pass Cancellation Charges</li>"
 
 		return msg
 

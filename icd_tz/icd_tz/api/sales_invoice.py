@@ -61,6 +61,8 @@ def update_sales_references(doc):
 	]
 	shore_services += [row.service_name for row in settings_doc.loose_types if row.service_type == "Shore"]
 
+	gatepass_cancellation_item = settings_doc.gatepass_cancellation_item
+
 	for item in doc.items:
 		if item.item_code in transport_services:
 			update_container_reception(item.container_id, invoice_id, "t_sales_invoice")
@@ -79,6 +81,9 @@ def update_sales_references(doc):
 
 		elif item.item_code in corridor_services:
 			update_container_refs(item.container_id, invoice_id, "c_sales_invoice")
+
+		elif gatepass_cancellation_item and item.item_code == gatepass_cancellation_item:
+			update_container_refs(item.container_id, invoice_id, "g_sales_invoice")
 
 		elif item.item_code in storage_services:
 			update_storage_date_refs(item.container_id, invoice_id, item.container_child_refs)
