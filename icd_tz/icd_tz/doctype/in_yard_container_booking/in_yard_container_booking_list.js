@@ -159,8 +159,8 @@ var show_dialog = (listview) => {
                                 message: __("{0} Bookings Created successfully", [r.message]),
                                 indicator: 'green'
                             }, 10);
-                            listview.refresh();
                         }
+                        listview.refresh();
                     }
                 });
             }
