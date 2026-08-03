@@ -5,11 +5,17 @@ import frappe
 from frappe.model.document import Document
 
 from icd_tz.icd_tz.api.sales_order import get_container_days_to_be_billed
-from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
+from icd_tz.icd_tz.api.utils import (
+	DELIVERED_CONTAINER_STATUSES,
+	validate_cf_agent,
+	validate_delivered_container,
+	validate_draft_doc,
+)
 
 
 class ServiceOrder(Document):
 	def before_insert(self):
+		validate_delivered_container(self.container_id, self.container_no)
 		self.set_missing_values()
 		self.validate_draft_references()
 		self.get_services()
@@ -31,6 +37,7 @@ class ServiceOrder(Document):
 		self.create_getpass()
 
 	def before_cancel(self):
+		validate_delivered_container(self.container_id, self.container_no, action="cancelled")
 		self.check_for_gate_pass()
 
 	def check_for_gate_pass(self):
@@ -452,7 +459,10 @@ class ServiceOrder(Document):
 def create_bulk_service_orders(data):
 	data = frappe.parse_json(data)
 
-	filters = {}
+	filters = {
+		"status": ["not in", DELIVERED_CONTAINER_STATUSES],
+	}
+
 	if data.get("m_bl_no"):
 		filters["m_bl_no"] = data.get("m_bl_no")
 		filters["has_hbl"] = 0
@@ -469,7 +479,7 @@ def create_bulk_service_orders(data):
 		msg = f"H BL No: <b>{data.get('h_bl_no')}</b>"
 
 	if len(containers) == 0:
-		frappe.msgprint(f"No Containers found for {msg}")
+		frappe.msgprint(f"No Containers found for {msg}, or their containers have already been delivered")
 		return
 
 	count = 0
