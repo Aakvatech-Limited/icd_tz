@@ -32,6 +32,7 @@
   "inspection_comments",
   "post_inspection_location",
   "new_container_location",
+  "is_additional_inspection",
   "column_break_gdea",
   "additional_note",
   "services_tab",
@@ -224,6 +225,14 @@
    "search_index": 1
   },
   {
+   "default": "0",
+   "description": "Set when this inspection comes from an additional Booking",
+   "fieldname": "is_additional_inspection",
+   "fieldtype": "Check",
+   "label": "Is Additional Inspection",
+   "read_only": 1
+  },
+  {
    "fetch_from": "container_id.original_location",
    "fieldname": "current_container_location",
    "fieldtype": "Link",
@@ -262,7 +271,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-04-19 01:29:31.280659",
+ "modified": "2026-08-03 16:00:08.108628",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Inspection",
@@ -283,6 +292,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

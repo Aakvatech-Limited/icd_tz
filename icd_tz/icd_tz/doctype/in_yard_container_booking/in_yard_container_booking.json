@@ -44,7 +44,10 @@
   "column_break_unre",
   "container_inspection",
   "naming_series",
-  "amended_from"
+  "amended_from",
+  "column_break_hopp",
+  "is_additional_booking",
+  "source_container_inspection"
  ],
  "fields": [
   {
@@ -273,6 +276,21 @@
    "search_index": 1
   },
   {
+   "default": "0",
+   "description": "Set when this booking is raised from a Container Inspection because the first inspection was not satisfactory",
+   "fieldname": "is_additional_booking",
+   "fieldtype": "Check",
+   "label": "Is Additional Booking",
+   "read_only": 1
+  },
+  {
+   "depends_on": "is_additional_booking",
+   "fieldname": "source_container_inspection",
+   "fieldtype": "Data",
+   "label": "Source Container Inspection",
+   "read_only": 1
+  },
+  {
    "fetch_from": "container_id.m_bl_no",
    "fieldname": "m_bl_no",
    "fieldtype": "Data",
@@ -313,12 +331,16 @@
    "label": "H BL No",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "column_break_hopp",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-04-19 00:40:16.361549",
+ "modified": "2026-08-03 15:51:42.128059",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "In Yard Container Booking",
@@ -338,6 +360,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

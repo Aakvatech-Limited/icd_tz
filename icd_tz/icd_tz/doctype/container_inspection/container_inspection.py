@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import nowdate
+from frappe.utils import get_url_to_form, nowdate
 
 from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
 
@@ -23,6 +23,50 @@ class ContainerInspection(Document):
 	def validate(self):
 		validate_draft_doc("In Yard Container Booking", self.in_yard_container_booking)
 		validate_cf_agent(self)
+		self.set_additional_inspection()
+		self.validate_duplicate_inspection()
+
+	def set_additional_inspection(self):
+		"""An inspection raised from an additional booking is itself an additional inspection"""
+
+		if not self.in_yard_container_booking:
+			return
+
+		booking = frappe.db.get_value(
+			"In Yard Container Booking",
+			self.in_yard_container_booking,
+			["container_id", "is_additional_booking"],
+			as_dict=True,
+		)
+
+		self.is_additional_inspection = booking.is_additional_booking
+		if not self.container_id:
+			self.container_id = booking.container_id
+
+	def validate_duplicate_inspection(self):
+		"""Allow one inspection per container, a repeat one must come from an additional booking"""
+
+		if self.is_additional_inspection == 1:
+			return
+
+		existing_inspections = frappe.db.get_all(
+			"Container Inspection",
+			filters={
+				"container_id": self.container_id,
+				"docstatus": ["!=", 2],
+				"name": ["!=", self.name],
+			},
+			pluck="name",
+		)
+		if len(existing_inspections) == 0:
+			return
+
+		url = get_url_to_form("Container Inspection", existing_inspections[0])
+		frappe.throw(
+			f"Inspection <a href='{url}'><b>{existing_inspections[0]}</b></a> already exists for Container: "
+			f"<b>{self.container_no}</b>.<br>If another inspection is needed, create an additional Booking "
+			"from that Container Inspection record first."
+		)
 
 	def on_submit(self):
 		self.update_container_doc()
@@ -120,7 +164,15 @@ def create_bulk_inspections(data):
 		filters["h_bl_no"] = data.get("h_bl_no")
 
 	bookings = frappe.db.get_all(
-		"In Yard Container Booking", filters=filters, fields=["name", "container_id", "inspection_date"]
+		"In Yard Container Booking",
+		filters=filters,
+		fields=[
+			"name",
+			"container_id",
+			"inspection_date",
+			"container_inspection",
+			"is_additional_booking",
+		],
 	)
 	if len(bookings) == 0:
 		msg = ""
@@ -132,8 +184,28 @@ def create_bulk_inspections(data):
 		frappe.msgprint(f"No submitted Container Bookings found for {msg}")
 		return
 
+	inspected_containers = frappe.db.get_all(
+		"Container Inspection",
+		filters={
+			"container_id": ["in", [booking.container_id for booking in bookings]],
+			"docstatus": ["!=", 2],
+		},
+		fields=["container_id"],
+		pluck="container_id",
+	)
+
 	count = 0
+	skipped = 0
 	for booking in bookings:
+		if booking.container_inspection:
+			skipped += 1
+			continue
+
+		# an additional booking always needs its own inspection
+		if booking.is_additional_booking != 1 and booking.container_id in inspected_containers:
+			skipped += 1
+			continue
+
 		doc = frappe.new_doc("Container Inspection")
 		doc.in_yard_container_booking = booking.name
 		doc.container_id = booking.container_id
@@ -146,5 +218,11 @@ def create_bulk_inspections(data):
 
 		if doc.get("name"):
 			count += 1
+
+	if skipped > 0:
+		frappe.msgprint(
+			f"Skipped <b>{skipped}</b> of <b>{len(bookings)}</b> Booking(s), "
+			"they already have an Inspection"
+		)
 
 	return count

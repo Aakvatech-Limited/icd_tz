@@ -107,8 +107,8 @@ var show_dialog = (listview) => {
                                 message: __("{0} Inspections Created successfully", [r.message]),
                                 indicator: 'green'
                             }, 10);
-                            listview.refresh();
                         }
+                        listview.refresh();
                     }
                 });
             }
