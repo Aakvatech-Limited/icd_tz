@@ -100,7 +100,6 @@ frappe.ui.form.on("Container Movement Order", {
                         frm.set_value("company", data[0].company);
                         frm.set_value("ship", data[0].vessel_name);
                         frm.set_value("voyage_no", data[0].voyage_no);
-                        frm.set_value("ship_dc_date", data[0].arrival_date);
 
                         frm.refresh_fields();
 
