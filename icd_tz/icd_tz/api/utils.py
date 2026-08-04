@@ -34,6 +34,23 @@ def get_delivered_containers(container_ids):
 	)
 
 
+def validate_delivered_containers(container_ids, action="cancelled"):
+	"""Block a document that carries containers which have already moved out of the ICD"""
+
+	delivered_containers = get_delivered_containers(container_ids)
+	if len(delivered_containers) == 0:
+		return
+
+	container_nos = frappe.db.get_all(
+		"Container", filters={"name": ["in", delivered_containers]}, pluck="container_no"
+	)
+
+	frappe.throw(
+		f"Container: <b>{', '.join(container_nos)}</b> has already been moved out of the ICD, "
+		f"this record cannot be {action}."
+	)
+
+
 def validate_cf_agent(doc):
 	"""
 	Validate the Clearing and Forwarding Agent
