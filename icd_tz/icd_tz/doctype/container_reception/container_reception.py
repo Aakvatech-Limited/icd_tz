@@ -8,6 +8,7 @@ from frappe.utils import get_link_to_form, getdate, nowdate, time_diff_in_hours
 from frappe.utils.background_jobs import enqueue
 
 from icd_tz.icd_tz.api.edi_codeco import generate_codeco_gate_in
+from icd_tz.icd_tz.api.utils import validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 
 cr = DocType("Container Reception")
@@ -92,7 +93,15 @@ class ContainerReception(Document):
 		self.update_cmo_status("Received")
 
 	def before_cancel(self):
+		self.validate_delivered_containers()
 		self.cancel_linked_docs()
+
+	def validate_delivered_containers(self):
+		"""Cancelling cascades to the linked documents, a container that left must keep them"""
+
+		validate_delivered_containers(
+			frappe.db.get_all("Container", {"container_reception": self.name}, pluck="name")
+		)
 
 	def on_cancel(self):
 		self.update_cmo_status()
