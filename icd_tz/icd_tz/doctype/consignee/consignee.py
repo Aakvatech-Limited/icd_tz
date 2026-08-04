@@ -19,25 +19,39 @@ def create_customer():
 
 	for records in create_batch(consignees, 100):
 		for row in records:
-			customer = frappe.get_doc(
-				{
-					"doctype": "Customer",
-					"customer_name": row.consignee_name,
-					"customer_group": "All Customer Groups",
-					"territory": "All Territories",
-					"customer_type": "Company",
-					"mobile_no": row.consignee_tel,
-					"tax_id": row.consignee_tin,
-					"primary_address": row.consignee_address,
-				}
-			)
+			if not row.consignee_name:
+				continue
 
-			if frappe.get_meta("Customer").get_field("vfd_cust_id"):
-				customer.vfd_cust_id = row.consignee_tin
-				customer.vfd_cust_id_type = "1- TIN"
+			# the customer may already exist, from an earlier consignee or from being added by hand
+			customer_id = frappe.db.get_value("Customer", {"customer_name": row.consignee_name}, "name")
 
-			customer.flags.ignore_permissions = True
-			customer.insert()
-			customer.reload()
+			if not customer_id:
+				customer_id = create_customer_from_consignee(row)
 
-			frappe.db.set_value("Consignee", row.name, "customer", customer.name)
+			frappe.db.set_value("Consignee", row.name, "customer", customer_id)
+
+
+def create_customer_from_consignee(consignee):
+	"""Create the customer a consignee is billed through"""
+
+	customer = frappe.get_doc(
+		{
+			"doctype": "Customer",
+			"customer_name": consignee.consignee_name,
+			"customer_group": "All Customer Groups",
+			"territory": "All Territories",
+			"customer_type": "Company",
+			"mobile_no": consignee.consignee_tel,
+			"tax_id": consignee.consignee_tin,
+			"primary_address": consignee.consignee_address,
+		}
+	)
+
+	if frappe.get_meta("Customer").get_field("vfd_cust_id"):
+		customer.vfd_cust_id = consignee.consignee_tin
+		customer.vfd_cust_id_type = "1- TIN"
+
+	customer.flags.ignore_permissions = True
+	customer.insert()
+
+	return customer.name
