@@ -8,3 +8,4 @@ icd_tz.patches.update_icd_settings
 icd_tz.patches.migrate_transporters_to_suppliers
 icd_tz.patches.backfill_container_ship_dc_date
 icd_tz.patches.backfill_container_gate_out_date
+icd_tz.patches.create_manifest_accounting_dimension
