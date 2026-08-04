@@ -6,6 +6,8 @@ from frappe.model.document import Document
 from frappe.query_builder import DocType
 from frappe.utils import cint, get_url_to_form
 
+from icd_tz.icd_tz.api.tanesw import get_discharge_date
+
 mf = DocType("Manifest")
 mb = DocType("Master BL")
 cd = DocType("Containers Detail")
@@ -15,10 +17,13 @@ cmo = DocType("Container Movement Order")
 class ContainerMovementOrder(Document):
 	def before_insert(self):
 		self.update_container_count()
+		self.set_ship_dc_date()
 
 	def before_save(self):
 		if not self.company:
 			self.company = frappe.defaults.get_user_default("Company")
+
+		self.set_ship_dc_date()
 
 	def validate(self):
 		if self.container_no:
@@ -27,8 +32,24 @@ class ContainerMovementOrder(Document):
 
 	def before_submit(self):
 		self.validate_signature()
+		self.validate_ship_dc_date()
 
 		self.status = "Pending"
+
+	def set_ship_dc_date(self):
+		"""Fetch the discharge date from TANeSW, a date already on the document is kept"""
+
+		if self.ship_dc_date:
+			return
+
+		self.ship_dc_date = get_discharge_date(self.container_no, self.m_bl_no)
+
+	def validate_ship_dc_date(self):
+		if not self.ship_dc_date:
+			frappe.throw(
+				"Ship D/C Date could not be fetched from TANeSW for Container: "
+				f"<b>{self.container_no}</b>, Please fill it before submitting this document"
+			)
 
 	def on_submit(self):
 		self.update_container_has_order()
