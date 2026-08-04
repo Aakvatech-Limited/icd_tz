@@ -9,6 +9,7 @@ from frappe.utils import (
 	get_datetime,
 	get_fullname,
 	get_url_to_form,
+	getdate,
 	now_datetime,
 	nowdate,
 	nowtime,
@@ -318,6 +319,9 @@ class GatePass(Document):
 
 		gate_out_datetime = now_datetime()
 		self.db_set("gate_out_date", gate_out_datetime)
+
+		if self.container_id:
+			frappe.db.set_value("Container", self.container_id, "gate_out_date", getdate(gate_out_datetime))
 
 	def update_submitted_info(self):
 		self.submitted_by = get_fullname(frappe.session.user)
