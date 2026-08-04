@@ -1,9 +1,11 @@
 # Copyright (c) 2025, elius mgani and contributors
 # For license information, please see license.txt
 import frappe
+from frappe.query_builder import Order
 
 
 def execute(filters=None):
+	filters = filters or {}
 	columns = get_columns()
 	data = get_data(filters)
 	return columns, data
@@ -11,37 +13,44 @@ def execute(filters=None):
 
 def get_columns():
 	return [
-		{"label": "M B/L Number", "fieldname": "m_bl_no", "fieldtype": "Data", "width": 150},
+		{"label": "M B/L No", "fieldname": "m_bl_no", "fieldtype": "Data", "width": 150},
 		{"label": "Container No", "fieldname": "container_no", "fieldtype": "Data", "width": 150},
 		{"label": "Size", "fieldname": "size", "fieldtype": "Data", "width": 100},
-		{"label": "Carry Out Date", "fieldname": "posting_datetime", "fieldtype": "Date", "width": 120},
+		{"label": "Carry Out Date", "fieldname": "gate_out_date", "fieldtype": "Date", "width": 120},
 		{"label": "Carry In Date", "fieldname": "received_date", "fieldtype": "Date", "width": 120},
 		{"label": "Stripped Date", "fieldname": "last_inspection_date", "fieldtype": "Date", "width": 120},
 	]
 
 
 def get_data(filters):
-	conditions = []
+	inspection = frappe.qb.DocType("Container Inspection")
+	container = frappe.qb.DocType("Container")
+
+	query = (
+		frappe.qb.from_(inspection)
+		.inner_join(container)
+		.on(inspection.container_id == container.name)
+		.select(
+			container.m_bl_no,
+			container.container_no,
+			container.size,
+			container.gate_out_date,
+			container.received_date,
+			container.last_inspection_date,
+		)
+		.where(inspection.docstatus == 1)
+		.where(container.has_hbl == 0)
+		.orderby(container.last_inspection_date, order=Order.desc)
+	)
+
+	# last_inspection_date is stamped once the inspection is done, it is the stripping date
 	if filters.get("from_date"):
-		conditions.append(f"c.arrival_date >= '{filters['from_date']}'")
+		query = query.where(container.last_inspection_date >= filters.get("from_date"))
+
 	if filters.get("to_date"):
-		conditions.append(f"c.arrival_date <= '{filters['to_date']}'")
+		query = query.where(container.last_inspection_date <= filters.get("to_date"))
+
 	if filters.get("m_bl_no"):
-		conditions.append(f"g.m_bl_no = '{filters['m_bl_no']}'")
+		query = query.where(container.m_bl_no == filters.get("m_bl_no"))
 
-	query_conditions = " AND ".join(conditions)
-	query = f"""
-        SELECT
-            g.m_bl_no,
-            g.container_no,
-            c.size,
-            g.posting_datetime,
-            c.received_date,
-            c.last_inspection_date
-        FROM `tabContainer Inspection` g
-        JOIN `tabContainer` c ON g.container_id = c.name
-        WHERE 1=1
-        {' AND ' + query_conditions if query_conditions else ''}
-    """
-
-	return frappe.db.sql(query, as_dict=1)
+	return query.run(as_dict=True)
