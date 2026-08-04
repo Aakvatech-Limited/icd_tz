@@ -7,6 +7,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
+from icd_tz.icd_tz.api.utils import validate_delivered_container
+
 
 class Container(Document):
 	def before_insert(self):
@@ -25,6 +27,9 @@ class Container(Document):
 		self.update_billed_details()
 		self.check_corridor_levy_eligibility()
 		self.check_removal_charges_elibility()
+
+	def on_trash(self):
+		validate_delivered_container(self.name, self.container_no, action="deleted")
 
 	def update_m_bl_based_container_details(self):
 		"""Update the container details from the Container Reception, Containers Detail and Container Movement Order"""
