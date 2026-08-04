@@ -10,9 +10,20 @@ ycb = DocType("In Yard Container Booking")
 
 
 def execute(filters=None):
+	filters = filters or {}
+	validate_filters(filters)
+
 	columns = get_columns()
 	data = get_data(filters)
 	return columns, data
+
+
+def validate_filters(filters):
+	if not filters.get("from_date") or not filters.get("to_date"):
+		frappe.throw(_("Please set both <b>From Date</b> and <b>To Date</b> to run this report"))
+
+	if filters.get("from_date") > filters.get("to_date"):
+		frappe.throw(_("<b>From Date</b> cannot be after <b>To Date</b>"))
 
 
 def get_data(filters):
