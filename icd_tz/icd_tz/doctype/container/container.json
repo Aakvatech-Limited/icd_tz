@@ -65,7 +65,7 @@
   "column_break_ztec",
   "booking_date",
   "last_inspection_date",
-  "departure_date",
+  "gate_out_date",
   "movement_details_section",
   "original_location",
   "current_location",
@@ -184,13 +184,6 @@
   {
    "fieldname": "column_break_qkrn",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "departure_date",
-   "fieldtype": "Date",
-   "label": "Departure Date",
-   "read_only": 1,
-   "search_index": 1
   },
   {
    "fieldname": "last_inspection_date",
@@ -717,12 +710,19 @@
    "label": "Ship D/C Date",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "gate_out_date",
+   "fieldtype": "Date",
+   "label": "Gate Out Date",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-01 14:26:58.618264",
+ "modified": "2026-08-04 09:14:16.744506",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",
