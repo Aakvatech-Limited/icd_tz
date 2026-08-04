@@ -39,7 +39,7 @@ frappe.ui.form.on("In Yard Container Booking", {
 		frm.set_query("container_id", () => {
 			return {
 				filters: {
-					"status": ["!=", "Delivered"],
+					"status": ["not in", ["At Gate Confirmation", "Delivered"]],
 				}
 			};
 		});

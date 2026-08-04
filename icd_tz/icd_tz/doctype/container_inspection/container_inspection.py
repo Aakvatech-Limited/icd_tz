@@ -5,12 +5,20 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form, nowdate
 
-from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
+from icd_tz.icd_tz.api.utils import (
+	get_delivered_containers,
+	validate_cf_agent,
+	validate_delivered_container,
+	validate_draft_doc,
+)
 
 
 class ContainerInspection(Document):
 	def before_insert(self):
 		self.get_custom_verification_services()
+
+	def before_cancel(self):
+		validate_delivered_container(self.container_id, self.container_no, action="cancelled")
 
 	def after_insert(self):
 		self.update_in_yard_booking(value=self.name)
@@ -24,6 +32,11 @@ class ContainerInspection(Document):
 		validate_draft_doc("In Yard Container Booking", self.in_yard_container_booking)
 		validate_cf_agent(self)
 		self.set_additional_inspection()
+
+		# container_id is fetched from the booking, so check only after it is resolved
+		if self.is_new():
+			validate_delivered_container(self.container_id, self.container_no)
+
 		self.validate_duplicate_inspection()
 
 	def set_additional_inspection(self):
@@ -184,19 +197,24 @@ def create_bulk_inspections(data):
 		frappe.msgprint(f"No submitted Container Bookings found for {msg}")
 		return
 
-	inspected_containers = frappe.db.get_all(
-		"Container Inspection",
-		filters={
-			"container_id": ["in", [booking.container_id for booking in bookings]],
-			"docstatus": ["!=", 2],
-		},
-		fields=["container_id"],
-		pluck="container_id",
+	container_ids = [booking.container_id for booking in bookings]
+	inspected_containers = set(
+		frappe.db.get_all(
+			"Container Inspection",
+			filters={"container_id": ["in", container_ids], "docstatus": ["!=", 2]},
+			fields=["container_id"],
+			pluck="container_id",
+		)
 	)
+	delivered_containers = set(get_delivered_containers(container_ids))
 
 	count = 0
 	skipped = 0
 	for booking in bookings:
+		if booking.container_id in delivered_containers:
+			skipped += 1
+			continue
+
 		if booking.container_inspection:
 			skipped += 1
 			continue
@@ -221,8 +239,8 @@ def create_bulk_inspections(data):
 
 	if skipped > 0:
 		frappe.msgprint(
-			f"Skipped <b>{skipped}</b> of <b>{len(bookings)}</b> Booking(s), "
-			"they already have an Inspection"
+			f"Skipped <b>{skipped}</b> of <b>{len(bookings)}</b> Booking(s), they already have an Inspection "
+			"or their containers have already been delivered"
 		)
 
 	return count

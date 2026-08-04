@@ -5,10 +5,19 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form, now_datetime, nowdate
 
+from icd_tz.icd_tz.api.utils import (
+	DELIVERED_CONTAINER_STATUSES,
+	validate_delivered_container,
+)
+
 
 class InYardContainerBooking(Document):
 	def before_insert(self):
+		validate_delivered_container(self.container_id, self.container_no)
 		self.posting_datetime = now_datetime()
+
+	def before_cancel(self):
+		validate_delivered_container(self.container_id, self.container_no, action="cancelled")
 
 	def after_insert(self):
 		frappe.db.set_value("Container", self.container_id, "status", "At Booking")
@@ -69,7 +78,7 @@ def create_bulk_bookings(data):
 	validate_cf_agent(data.get("c_and_f_company"), data.get("clearing_agent"))
 
 	filters = {
-		"status": ["!=", "Delivered"],
+		"status": ["not in", DELIVERED_CONTAINER_STATUSES],
 	}
 
 	if data.get("m_bl_no"):
@@ -87,13 +96,15 @@ def create_bulk_bookings(data):
 		msg = f"H BL No: <b>{data.get('h_bl_no')}</b>"
 
 	if len(containers) == 0:
-		frappe.msgprint(f"No Containers found for {msg}")
+		frappe.msgprint(f"No Containers found for {msg} or they have already been delivered")
 		return
 
-	booked_containers = frappe.db.get_all(
-		"In Yard Container Booking",
-		filters={"container_id": ["in", containers], "docstatus": ["!=", 2]},
-		pluck="container_id",
+	booked_containers = set(
+		frappe.db.get_all(
+			"In Yard Container Booking",
+			filters={"container_id": ["in", containers], "docstatus": ["!=", 2]},
+			pluck="container_id",
+		)
 	)
 
 	count = 0

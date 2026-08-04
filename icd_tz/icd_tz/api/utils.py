@@ -1,6 +1,38 @@
 import frappe
 from frappe.utils import cint, nowdate
 
+# Containers on these statuses are leaving or have left the ICD
+DELIVERED_CONTAINER_STATUSES = ["At Gate Confirmation", "Delivered"]
+
+
+def validate_delivered_container(container_id, container_no=None, action="created"):
+	"""Block records that would change a container which has already moved out of the ICD"""
+
+	if not container_id:
+		return
+
+	status = frappe.db.get_value("Container", container_id, "status")
+	if status not in DELIVERED_CONTAINER_STATUSES:
+		return
+
+	frappe.throw(
+		f"Container: <b>{container_no or container_id}</b> is on <b>{status}</b> status, "
+		f"this record cannot be {action}."
+	)
+
+
+def get_delivered_containers(container_ids):
+	"""Containers that have moved out of the ICD, they must be left out of bulk creation"""
+
+	if len(container_ids) == 0:
+		return []
+
+	return frappe.db.get_all(
+		"Container",
+		filters={"name": ["in", container_ids], "status": ["in", DELIVERED_CONTAINER_STATUSES]},
+		pluck="name",
+	)
+
 
 def validate_cf_agent(doc):
 	"""
