@@ -6,6 +6,7 @@ import frappe
 
 
 def execute(filters=None):
+	filters = filters or {}
 	columns = get_columns(filters)
 	data = get_data(filters)
 	return columns, data
@@ -17,7 +18,7 @@ def get_columns(filters):
 	base_columns = [
 		{"label": "M B/L Number", "fieldname": "bl_no", "fieldtype": "Data", "width": 150},
 		{"label": "H B/L No", "fieldname": "h_bl_no", "fieldtype": "Data", "width": 150},
-		{"label": "Discharge Date", "fieldname": "arrival_date", "fieldtype": "Date", "width": 120},
+		{"label": "Discharge Date", "fieldname": "ship_dc_date", "fieldtype": "Date", "width": 120},
 		{"label": "Carry In Date", "fieldname": "received_date", "fieldtype": "Date", "width": 120},
 		{
 			"label": "Description of Goods",
@@ -32,7 +33,7 @@ def get_columns(filters):
 
 	if report_type == "Exited Loose Cargo":
 		base_columns.append(
-			{"label": "Gate Out Date", "fieldname": "gate_out_date", "fieldtype": "Datetime", "width": 150}
+			{"label": "Gate Out Date", "fieldname": "gate_out_date", "fieldtype": "Date", "width": 150}
 		)
 
 	if report_type == "Received Loose Cargo":
@@ -48,70 +49,45 @@ def get_columns(filters):
 
 def get_data(filters):
 	report_type = filters.get("report_type", "Current Loose Stock")
-	from_date = filters.get("from_date")
-	to_date = filters.get("to_date")
-	bl_no = filters.get("bl_no")
 
-	conditions = ["c.freight_indicator = 'LCL'"]
+	container = frappe.qb.DocType("Container")
 
-	if from_date:
-		conditions.append(f"c.arrival_date >= '{from_date}'")
-	if to_date:
-		conditions.append(f"c.arrival_date <= '{to_date}'")
-	if bl_no:
-		conditions.append(f"c.m_bl_no = '{bl_no}'")
+	query = (
+		frappe.qb.from_(container)
+		.select(
+			container.m_bl_no.as_("bl_no"),
+			container.h_bl_no,
+			container.ship_dc_date,
+			container.received_date,
+			container.cargo_description,
+			container.consignee,
+			container.no_of_packages,
+			container.cargo_type,
+		)
+		.where(container.freight_indicator == "LCL")
+		.where(container.has_hbl == 1)
+	)
 
-	query_conditions = " AND ".join(conditions)
-
-	if report_type == "Current Loose Stock":
-		query = f"""
-            SELECT
-                c.m_bl_no as bl_no,
-                c.h_bl_no,
-                c.arrival_date,
-                c.received_date,
-                c.cargo_description,
-                c.consignee,
-                c.no_of_packages,
-                c.cargo_type
-            FROM `tabContainer` c
-            WHERE {query_conditions}
-            AND c.status= 'In Yard'
-        """
-
-	elif report_type == "Exited Loose Cargo":
-		query = f"""
-            SELECT
-                c.m_bl_no as bl_no,
-                c.h_bl_no,
-                c.arrival_date,
-                c.received_date,
-                c.cargo_description,
-                c.consignee,
-                c.no_of_packages,
-                c.cargo_type,
-                g.gate_out_date
-            FROM `tabContainer` c
-            JOIN `tabGate Pass` g ON c.m_bl_no = g.bl_no
-            WHERE {query_conditions}
-            AND c.status != 'In Yard' AND g.docstatus = 1 AND g.workflow_state = 'Gate Out Confirmed'
-        """
+	# each report type is filtered on the date that drives it
+	if report_type == "Exited Loose Cargo":
+		query = query.select(container.gate_out_date).where(container.status == "Delivered")
+		date_field = container.gate_out_date
 
 	elif report_type == "Received Loose Cargo":
-		query = f"""
-            SELECT
-                c.m_bl_no as bl_no,
-                c.h_bl_no,
-                c.arrival_date,
-                c.received_date,
-                c.cargo_description,
-                c.consignee,
-                c.no_of_packages,
-                c.size,
-                c.container_no,
-                c.cargo_type
-            FROM `tabContainer` c
-            WHERE {query_conditions}
-        """
+		query = query.select(container.size, container.container_no)
+		date_field = container.posting_date
 
-	return frappe.db.sql(query, as_dict=1)
+	else:
+		query = query.where(container.status != "Delivered")
+		date_field = container.received_date
+
+	if filters.get("from_date"):
+		query = query.where(date_field >= filters.get("from_date"))
+
+	if filters.get("to_date"):
+		query = query.where(date_field <= filters.get("to_date"))
+
+	if filters.get("bl_no"):
+		query = query.where(container.m_bl_no == filters.get("bl_no"))
+
+	return query.run(as_dict=True)
