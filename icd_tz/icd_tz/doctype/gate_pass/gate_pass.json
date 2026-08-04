@@ -13,6 +13,7 @@
   "column_break_t0ure",
   "voyage_no",
   "ship_dc_date",
+  "received_date",
   "action_for_missing_booking",
   "column_break_8s1tw",
   "submitted_date",
@@ -278,7 +279,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "manifest.arrival_date",
+   "fetch_from": "container_id.ship_dc_date",
    "fieldname": "ship_dc_date",
    "fieldtype": "Date",
    "label": "Ship D/C Date",
@@ -375,13 +376,21 @@
    "fieldname": "shipping_line_code",
    "fieldtype": "Data",
    "label": "Shipping Line Code"
+  },
+  {
+   "fetch_from": "container_id.received_date",
+   "fieldname": "received_date",
+   "fieldtype": "Date",
+   "label": "Received Date",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-16 16:29:22.325154",
+ "modified": "2026-08-04 09:25:02.624091",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Gate Pass",
