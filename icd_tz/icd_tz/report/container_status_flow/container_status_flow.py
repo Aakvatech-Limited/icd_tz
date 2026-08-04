@@ -3,35 +3,24 @@
 
 import frappe
 from frappe import _
+from frappe.query_builder.functions import Count
 
-STATUS_FLOW = (
-	"In Yard",
-	"At Booking",
-	"At Inspection",
-	"At Payments",
-	"Delivered",
-)
+# At Gate Confirmation is reported together with At Gatepass
+STATUS_FLOW = {
+	"In Yard": ["In Yard"],
+	"At Booking": ["At Booking"],
+	"At Inspection": ["At Inspection"],
+	"At Payments": ["At Payments"],
+	"At Gatepass": ["At Gatepass", "At Gate Confirmation"],
+	"Delivered": ["Delivered"],
+}
 
 
 def execute(filters=None):
-	filters = normalize_filters(filters)
 	columns = get_columns()
 	data = get_data()
 	chart = get_chart_data(data)
 	return columns, data, None, chart
-
-
-def normalize_filters(filters):
-	"""Handle dashboard/chart filters that may come as JSON string or list."""
-	if not filters:
-		return frappe._dict()
-
-	parsed_filters = frappe.parse_json(filters) if isinstance(filters, str) else filters
-	if isinstance(parsed_filters, dict):
-		return frappe._dict(parsed_filters)
-
-	# Ignore list-style filters for this fixed-order report.
-	return frappe._dict()
 
 
 def get_columns():
@@ -43,8 +32,14 @@ def get_columns():
 			"width": 190,
 		},
 		{
-			"fieldname": "count",
+			"fieldname": "containers",
 			"label": _("Containers"),
+			"fieldtype": "Int",
+			"width": 130,
+		},
+		{
+			"fieldname": "loose_cargo",
+			"label": _("Loose Cargo"),
 			"fieldtype": "Int",
 			"width": 130,
 		},
@@ -52,16 +47,25 @@ def get_columns():
 
 
 def get_data():
+	container = frappe.qb.DocType("Container")
+
+	counts = (
+		frappe.qb.from_(container)
+		.select(container.status, container.has_hbl, Count(container.name).as_("total"))
+		.groupby(container.status, container.has_hbl)
+	).run(as_dict=True)
+
 	rows = []
-	for status in STATUS_FLOW:
-		count = frappe.db.count(
-			"Container",
+	for status, grouped_statuses in STATUS_FLOW.items():
+		matched = [count for count in counts if count.status in grouped_statuses]
+
+		rows.append(
 			{
-				"docstatus": ["!=", 2],
 				"status": status,
-			},
+				"containers": sum(count.total for count in matched if count.has_hbl == 0),
+				"loose_cargo": sum(count.total for count in matched if count.has_hbl == 1),
+			}
 		)
-		rows.append({"status": status, "count": count})
 
 	return rows
 
@@ -73,11 +77,15 @@ def get_chart_data(data):
 			"datasets": [
 				{
 					"name": _("Containers"),
-					"values": [row.get("count") for row in data],
-				}
+					"values": [row.get("containers") for row in data],
+				},
+				{
+					"name": _("Loose Cargo"),
+					"values": [row.get("loose_cargo") for row in data],
+				},
 			],
 		},
-		"type": "pie",
+		"type": "bar",
 		"height": 280,
-		"colors": ["#2563EB", "#22C55E", "#F59E0B", "#EF4444", "#06B6D4"],
+		"colors": ["#2563EB", "#F59E0B"],
 	}
