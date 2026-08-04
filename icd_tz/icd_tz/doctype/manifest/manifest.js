@@ -143,3 +143,68 @@ frappe.ui.form.on('Manifest', {
 		});
 	}
 });
+
+frappe.ui.form.on("Master BL", {
+    update_values: (frm, cdt, cdn) => {
+        show_master_bl_dialog(frm, locals[cdt][cdn]);
+    }
+});
+
+var show_master_bl_dialog = (frm, row) => {
+    let d = new frappe.ui.Dialog({
+        title: __("Update Values: {0}", [row.m_bl_no]),
+        fields: [
+            // {
+            //     fieldname: "row_id",
+            //     fieldtype: "Data",
+            //     default: row.name,
+            //     hidden: 1
+            // },
+            {
+                label: __("Cargo Classification"),
+                fieldname: "cargo_classification",
+                fieldtype: "Select",
+                options: ["", "TR", "IM"],
+                default: row.cargo_classification,
+                reqd: 1
+            },
+            {
+                fieldname: "cb_country",
+                fieldtype: "Column Break"
+            },
+            {
+                label: __("Place of Destination"),
+                fieldname: "place_of_destination",
+                fieldtype: "Data",
+                default: row.place_of_destination,
+                reqd: 1
+            }
+        ],
+        size: "small",
+        primary_action_label: __("Update"),
+        primary_action(values) {
+            frappe.call({
+                method: "icd_tz.icd_tz.doctype.manifest.manifest.update_master_bl_values",
+                args: {
+                    row_id: row.name,
+                    cargo_classification: values.cargo_classification,
+                    place_of_destination: values.place_of_destination
+                },
+                freeze: true,
+                freeze_message: __('<i class="fa fa-spinner fa-spin fa-4x"></i>'),
+                callback: (r) => {
+                    if (r.message) {
+                        d.hide();
+                        frappe.show_alert({
+                            message: __("Master BL: {0} updated successfully", [r.message]),
+                            indicator: "green"
+                        }, 7);
+                        frm.reload_doc();
+                    }
+                }
+            });
+        }
+    });
+
+    d.show();
+}
