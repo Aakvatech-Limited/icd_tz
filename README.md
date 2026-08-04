@@ -389,7 +389,6 @@ Most parent DocTypes in the repository grant System Manager permissions by defau
 | Daily Stripped Containers | Gate Pass |
 | Loose Cargo Tracking | Gate Pass |
 | Container Booking | In Yard Container Booking |
-| Container and Interchange Document Booking Datewise | In Yard Container Booking |
 | Revenue Summary | Sales Invoice |
 
 ### Dashboards and Cards
