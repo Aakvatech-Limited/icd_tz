@@ -5,6 +5,7 @@
 
 import frappe
 from frappe import _
+from frappe.query_builder import Order
 
 
 def execute(filters=None):
@@ -32,8 +33,8 @@ def get_columns():
 		{"fieldname": "container_no", "label": _("Container No"), "fieldtype": "Data", "width": 120},
 		{"fieldname": "cargo_type", "label": _("Cargo Type"), "fieldtype": "Data", "width": 100},
 		{"fieldname": "received_date", "label": _("Carry In Date"), "fieldtype": "Date", "width": 100},
-		{"fieldname": "arrival_date", "label": _("Ship D/C Date"), "fieldtype": "Date", "width": 100},
-		{"fieldname": "submitted_date", "label": _("Carryout Date"), "fieldtype": "Date", "width": 100},
+		{"fieldname": "ship_dc_date", "label": _("Ship D/C Date"), "fieldtype": "Date", "width": 100},
+		{"fieldname": "gate_out_date", "label": _("Carryout Date"), "fieldtype": "Date", "width": 100},
 		{"fieldname": "port_of_destination", "label": _("Port Operator"), "fieldtype": "Data", "width": 150},
 		{"fieldname": "consignee", "label": _("Consignee Name"), "fieldtype": "Data", "width": 200},
 		{
@@ -47,7 +48,7 @@ def get_columns():
 	]
 
 
-def get_data(filters):
+def get_data(filters=None):
 	"""
 	Fetch and return report data for Exited Containers
 	Args:
@@ -55,56 +56,38 @@ def get_data(filters):
 	Returns:
 	    list: List of dictionaries containing report data
 	"""
+	filters = filters or {}
 
-	conditions = get_conditions(filters)
+	container = frappe.qb.DocType("Container")
 
-	query = f"""
-        SELECT
-            c.m_bl_no,
-            c.h_bl_no,
-            c.container_no,
-            c.cargo_type,
-            c.received_date,
-            c.arrival_date,
-            gp.submitted_date,
-            c.port_of_destination,
-            IFNULL(c.consignee, gp.consignee),
-            IFNULL(gp.goods_description, c.cargo_description) as goods_description,
-            IFNULL(c.sline, gp.sline) as shipping_line,
-            gp.vessel_name
-        FROM
-            `tabContainer` c
-        JOIN
-            `tabGate Pass` gp ON c.name = gp.container_id
-        WHERE
-            gp.docstatus = 1
-            AND gp.workflow_state = 'Gate Out Confirmed'
-            {conditions}
-        ORDER BY
-            c.modified DESC
-    """.format(conditions=conditions)
-
-	data = frappe.db.sql(query, filters, as_dict=1)
-	return data
-
-
-def get_conditions(filters):
-	"""
-	Generate SQL conditions based on filters
-	Args:
-	    filters (dict): Filter parameters
-	Returns:
-	    str: SQL WHERE conditions
-	"""
-	conditions = []
+	query = (
+		frappe.qb.from_(container)
+		.select(
+			container.m_bl_no,
+			container.h_bl_no,
+			container.container_no,
+			container.cargo_type,
+			container.received_date,
+			container.ship_dc_date,
+			container.gate_out_date,
+			container.port_of_destination,
+			container.consignee,
+			container.cargo_description.as_("goods_description"),
+			container.sline.as_("shipping_line"),
+			container.ship.as_("vessel_name"),
+		)
+		.where(container.status == "Delivered")
+		.where(container.has_hbl == 0)
+		.orderby(container.gate_out_date, order=Order.desc)
+	)
 
 	if filters.get("from_date"):
-		conditions.append("c.arrival_date >= %(from_date)s")
+		query = query.where(container.gate_out_date >= filters.get("from_date"))
 
 	if filters.get("to_date"):
-		conditions.append("c.arrival_date <= %(to_date)s")
+		query = query.where(container.gate_out_date <= filters.get("to_date"))
 
 	if filters.get("bl_no"):
-		conditions.append("c.m_bl_no = %(bl_no)s")
+		query = query.where(container.m_bl_no == filters.get("bl_no"))
 
-	return " AND " + " AND ".join(conditions) if conditions else ""
+	return query.run(as_dict=True)
