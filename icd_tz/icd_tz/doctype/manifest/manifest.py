@@ -355,3 +355,25 @@ class Manifest(Document):
 			"received_containers": received_units,
 			"pending_containers": pending_units,
 		}
+
+
+@frappe.whitelist()
+def update_master_bl_values(row_id, cargo_classification, place_of_destination):
+	"""Set the classification and destination of a Master BL row of an already submitted Manifest"""
+
+	if cargo_classification not in ["IM", "TR"]:
+		frappe.throw(f"Cargo Classification must be one of: <b>{', '.join(["IM", "TR"])}</b>")
+
+	if not place_of_destination:
+		frappe.throw("Please select a Country to set the Place of Destination")
+
+	frappe.db.set_value(
+		"Master BL",
+		row_id,
+		{
+			"cargo_classification": cargo_classification,
+			"place_of_destination": place_of_destination,
+		},
+	)
+
+	return True
