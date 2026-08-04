@@ -243,6 +243,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 					else len(single_days),
 					"container_no": container_doc.container_no,
 					"container_id": container_doc.name,
+					"manifest": container_doc.manifest,
 					"container_child_refs": ",".join(single_days),
 				}
 
@@ -284,6 +285,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 					else len(double_days),
 					"container_no": container_doc.container_no,
 					"container_id": container_doc.name,
+					"manifest": container_doc.manifest,
 					"container_child_refs": ",".join(double_days),
 				}
 
@@ -322,6 +324,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 					"qty": container_doc.gross_volume if container_doc.freight_indicator == "LCL" else 1,
 					"container_no": container_doc.container_no,
 					"container_id": container_doc.name,
+					"manifest": container_doc.manifest,
 				}
 			)
 
@@ -342,6 +345,7 @@ def get_gatepass_cancellation_service(container_doc, settings_doc):
 		"qty": 1,
 		"container_no": container_doc.container_no,
 		"container_id": container_doc.name,
+		"manifest": container_doc.manifest,
 	}
 
 
@@ -450,6 +454,7 @@ def get_items(doc):
 			"qty": item.get("qty"),
 			"container_no": doc.container_no,
 			"container_id": doc.container_id,
+			"manifest": doc.manifest,
 		}
 		items.append(row_item)
 
