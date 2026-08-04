@@ -20,12 +20,14 @@ frappe.query_reports["Loose Cargo Tracking"] = {
         {
             "fieldname": "from_date",
             "label": "From Date",
-            "fieldtype": "Date"
+            "fieldtype": "Date",
+            "reqd": 1
         },
         {
             "fieldname": "to_date",
             "label": "To Date",
-            "fieldtype": "Date"
+            "fieldtype": "Date",
+            "reqd": 1
         },
         {
             "fieldname": "bl_no",
