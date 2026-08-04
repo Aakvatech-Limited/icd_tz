@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "m_bl_no",
+  "update_values",
   "cargo_classification",
   "bl_type",
   "port_of_loading",
@@ -59,6 +60,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "M B/L No"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "update_values",
+   "fieldtype": "Button",
+   "label": "Update Values",
+   "permlevel": 1
   },
   {
    "fieldname": "cargo_classification",
