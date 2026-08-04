@@ -362,7 +362,7 @@ def update_master_bl_values(row_id, cargo_classification, place_of_destination):
 	"""Set the classification and destination of a Master BL row of an already submitted Manifest"""
 
 	if cargo_classification not in ["IM", "TR"]:
-		frappe.throw(f"Cargo Classification must be one of: <b>{', '.join(["IM", "TR"])}</b>")
+		frappe.throw("Cargo Classification must be one of: <b>IM, TR</b>")
 
 	if not place_of_destination:
 		frappe.throw("Please select a Country to set the Place of Destination")
