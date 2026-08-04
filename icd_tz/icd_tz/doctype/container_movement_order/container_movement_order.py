@@ -7,6 +7,7 @@ from frappe.query_builder import DocType
 from frappe.utils import cint, get_url_to_form
 
 from icd_tz.icd_tz.api.tanesw import get_discharge_date
+from icd_tz.icd_tz.api.utils import validate_delivered_containers
 
 mf = DocType("Manifest")
 mb = DocType("Master BL")
@@ -55,7 +56,17 @@ class ContainerMovementOrder(Document):
 		self.update_container_has_order()
 
 	def before_cancel(self):
+		self.validate_delivered_containers()
 		self.validate_cmo_links()
+
+	def validate_delivered_containers(self):
+		"""A movement order of a container that has left the ICD must stay as it is"""
+
+		validate_delivered_containers(
+			frappe.db.get_all(
+				"Container", {"manifest": self.manifest, "container_no": self.container_no}, pluck="name"
+			)
+		)
 
 	def on_cancel(self):
 		self.update_container_has_order(value=0)
