@@ -5,51 +5,40 @@ from frappe.utils import getdate
 TRACKING_URL = "https://tanesw.tra.go.tz/api/cgm/api/v1/cgme/trkng"
 REQUEST_TIMEOUT = 15
 
+# tracking event raised when the Discharge Result Report of a container is approved
+DISCHARGE_APPROVAL_CODE = "B21"
+
 
 def get_discharge_date(container_no, m_bl_no):
 	"""Actual discharge date of a container, taken from the TANeSW cargo tracking API"""
 
-	# a container number is reused across voyages, the B/L is what pins down the shipment
-	if not m_bl_no:
+	if not container_no or not m_bl_no:
 		return None
+
+	for record in get_container_records(container_no, m_bl_no):
+		for event in record.get("cntrPrcssLst") or []:
+			if event.get("cagTrkngPrcssCd") == DISCHARGE_APPROVAL_CODE and event.get("prcssDt"):
+				return getdate(event.get("prcssDt"))
+
+	return None
+
+
+def get_container_records(container_no, m_bl_no):
+	"""Container records of a B/L, each one carrying the tracking events of that container"""
 
 	cargo = call_tracking_api("srch", {"srchBlNo": m_bl_no})
 	if not cargo:
-		return None
+		return []
 
-	cargo_rows = get_rows(cargo.get("trkngDtl"))
-
-	discharge_date = find_container_date(cargo_rows, container_no)
-	if discharge_date:
-		return discharge_date
-
-	for crn in {row.get("crn") for row in cargo_rows if row.get("crn") and not row.get("blCntrLst")}:
+	records = []
+	for crn in {row.get("crn") for row in get_rows(cargo.get("trkngDtl")) if row.get("crn")}:
 		detail = call_tracking_api("cntr-dtl", {"srchCrn": crn, "srchCntrNo": container_no})
 
-		discharge_date = find_container_date(get_rows((detail or {}).get("trkngCntrDtl")), container_no)
-		if discharge_date:
-			return discharge_date
+		records += [
+			row for row in get_rows((detail or {}).get("trkngCntrDtl")) if row.get("cntrNo") == container_no
+		]
 
-	# transit cargo is tracked at B/L level only, it lists no containers to match against
-	for row in cargo_rows:
-		if not row.get("blCntrLst") and row.get("actlArvlDt"):
-			return getdate(row.get("actlArvlDt"))
-
-	return None
-
-
-def find_container_date(rows, container_no):
-	"""Discharge date of the container, taken from the row itself or from its B/L container list"""
-
-	if not container_no:
-		return None
-
-	for row in rows:
-		for container in row.get("blCntrLst") or [row]:
-			if container.get("cntrNo") == container_no and container.get("actlArvlDt"):
-				return getdate(container.get("actlArvlDt"))
-
-	return None
+	return records
 
 
 def call_tracking_api(path, params):
