@@ -1,18 +1,21 @@
 {
  "actions": [],
- "creation": "2026-07-31 00:00:00.000000",
+ "creation": "2026-07-31 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "item_code",
   "item_name",
+  "currency",
   "column_break_8jrbe",
   "actual_price",
   "discount_amount",
   "amount_after_discount",
   "references_section",
-  "so_detail"
+  "container_no",
+  "column_break_refs",
+  "container_id"
  ],
  "fields": [
   {
@@ -59,26 +62,47 @@
    "read_only": 1
   },
   {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
    "fieldname": "references_section",
    "fieldtype": "Section Break",
    "label": "References"
   },
   {
-   "fieldname": "so_detail",
+   "fieldname": "container_no",
    "fieldtype": "Data",
-   "label": "Sales Order Item",
+   "in_list_view": 1,
+   "label": "Container No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_refs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "container_id",
+   "fieldtype": "Data",
+   "label": "Container ID",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-31 00:00:00.000000",
+ "modified": "2026-08-14 23:33:03.432620",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Waiver Request Item",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }
