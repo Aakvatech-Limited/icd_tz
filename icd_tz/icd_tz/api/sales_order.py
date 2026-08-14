@@ -1,6 +1,7 @@
 from time import sleep
 
 import frappe
+from frappe import _
 from frappe.utils import nowdate
 
 from icd_tz.icd_tz.api.utils import validate_qty_storage_item
@@ -14,7 +15,9 @@ def before_save(doc, method):
 def before_submit(doc, method):
 	if doc.waiver_status == "Pending":
 		frappe.throw(
-			"This Sales Order has a pending Waiver Request. Please wait for it to be Approved or Rejected before submitting."
+			_(
+				"This Sales Order has a pending Waiver Request. Please wait for it to be Approved or Rejected before submitting."
+			)
 		)
 
 
@@ -33,7 +36,7 @@ def unlink_sales_order(doc):
 
 
 @frappe.whitelist()
-def update_items_on_sales_order(doc_name):
+def update_items_on_sales_order(doc_name: str):
 	doc = frappe.get_doc("Sales Order", doc_name)
 
 	items = []
@@ -88,7 +91,12 @@ def update_items_on_sales_order(doc_name):
 
 
 @frappe.whitelist()
-def make_sales_order(doc_type=None, doc_name=None, m_bl_no=None, h_bl_no=None):
+def make_sales_order(
+	doc_type: str | None = None,
+	doc_name: str | None = None,
+	m_bl_no: str | None = None,
+	h_bl_no: str | None = None,
+):
 	items = []
 	company = None
 	consignee = None
@@ -181,7 +189,7 @@ def make_sales_order(doc_type=None, doc_name=None, m_bl_no=None, h_bl_no=None):
 
 def get_storage_services(m_bl_no=None, h_bl_no=None):
 	if not m_bl_no and not h_bl_no:
-		frappe.throw("Please enter either M BL No or H BL No")
+		frappe.throw(_("Please enter either M BL No or H BL No"))
 		return
 
 	services = []
@@ -342,7 +350,7 @@ def get_gatepass_cancellation_service(container_doc, settings_doc):
 		return {}
 
 	if not settings_doc.gatepass_cancellation_item:
-		frappe.throw("Gatepass Cancellation Item is not set in ICD TZ Settings, Please set it to continue")
+		frappe.throw(_("Gatepass Cancellation Item is not set in ICD TZ Settings, Please set it to continue"))
 
 	return {
 		"item_code": settings_doc.gatepass_cancellation_item,
@@ -466,7 +474,7 @@ def get_items(doc):
 
 
 @frappe.whitelist()
-def create_sales_order(data):
+def create_sales_order(data: str | dict):
 	data = frappe.parse_json(data)
 
 	return make_sales_order(m_bl_no=data.get("m_bl_no"), h_bl_no=data.get("h_bl_no"))
