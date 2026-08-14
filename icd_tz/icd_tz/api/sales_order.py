@@ -4,6 +4,7 @@ import frappe
 from frappe.utils import nowdate
 
 from icd_tz.icd_tz.api.utils import validate_qty_storage_item
+from icd_tz.icd_tz.doctype.waiver_request.waiver_request import apply_approved_waiver
 
 
 def before_save(doc, method):
@@ -77,6 +78,9 @@ def update_items_on_sales_order(doc_name):
 	doc.items = []
 	for item in items:
 		doc.append("items", item)
+
+	doc.set_missing_values()
+	apply_approved_waiver(doc)
 
 	doc.save(ignore_permissions=True)
 	doc.reload()
