@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, get_fullname, get_url_to_form, nowdate, nowtime
 
@@ -56,7 +57,9 @@ class WaiverRequest(Document):
 
 	def before_submit(self):
 		if not self.decision:
-			frappe.throw("Please set a Decision (Approved or Rejected) before submitting this Waiver Request")
+			frappe.throw(
+				_("Please set a Decision (Approved or Rejected) before submitting this Waiver Request")
+			)
 
 		if self.decision == "Approved":
 			self.validate_approval()
@@ -65,10 +68,12 @@ class WaiverRequest(Document):
 
 	def validate_approval(self):
 		if not self.additional_discount_percentage and not self.discount_amount:
-			frappe.throw("Please set a Discount (%) or Discount Amount before approving this Waiver Request")
+			frappe.throw(
+				_("Please set a Discount (%) or Discount Amount before approving this Waiver Request")
+			)
 
 		if self.apply_discount_on == "Single Item" and not self.items:
-			frappe.throw("Please add at least one Item before approving this Waiver Request")
+			frappe.throw(_("Please add at least one Item before approving this Waiver Request"))
 
 	def on_submit(self):
 		if self.decision == "Approved":
@@ -186,26 +191,26 @@ def get_waiver_item(item):
 
 
 @frappe.whitelist()
-def get_items(sales_order):
+def get_items(sales_order: str):
 	sales_order_doc = frappe.get_cached_doc("Sales Order", sales_order)
 	return [get_waiver_item(item) for item in sales_order_doc.items]
 
 
 @frappe.whitelist()
-def get_item_details(sales_order, item_code):
+def get_item_details(sales_order: str, item_code: str):
 	sales_order_doc = frappe.get_cached_doc("Sales Order", sales_order)
 	return [get_waiver_item(item) for item in sales_order_doc.items if item.item_code == item_code]
 
 
 @frappe.whitelist()
 def create_waiver_request(
-	sales_order,
-	apply_discount_on,
-	discount_criteria,
-	waiver_reason,
-	additional_discount_percentage=0,
-	discount_amount=0,
-	items=None,
+	sales_order: str,
+	apply_discount_on: str,
+	discount_criteria: str,
+	waiver_reason: str,
+	additional_discount_percentage: float = 0,
+	discount_amount: float = 0,
+	items: str | list | None = None,
 ):
 	waiver_request = frappe.new_doc("Waiver Request")
 	waiver_request.sales_order = sales_order
