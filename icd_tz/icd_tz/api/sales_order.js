@@ -172,7 +172,7 @@ var get_waiver_row_discount = (dialog, actual_price) => {
     }
 
     if (dialog.get_value("discount_criteria") == "Waiver Based on Actual Amount") {
-        return dialog.get_value("discount_amount") || 0;
+        return Math.min(dialog.get_value("discount_amount") || 0, actual_price);
     }
 
     return 0;
@@ -182,14 +182,16 @@ var render_waiver_items = (frm, dialog, wrapper) => {
     let html = `<table class="table table-hover" style="width:100%;">
         <colgroup>
             <col width="5%">
-            <col width="40%">
+            <col width="30%">
+            <col width="15%">
+            <col width="16%">
+            <col width="16%">
             <col width="18%">
-            <col width="18%">
-            <col width="19%">
         </colgroup>
         <tr>
             <th><input type="checkbox" id="waiver-select-all" /></th>
             <th style="background-color: #D3D3D3;">Item</th>
+            <th style="background-color: #D3D3D3;">Container No</th>
             <th style="background-color: #D3D3D3;">Amount</th>
             <th style="background-color: #D3D3D3;">Discount</th>
             <th style="background-color: #D3D3D3;">Amount After Discount</th>
@@ -203,14 +205,16 @@ var render_waiver_items = (frm, dialog, wrapper) => {
                 data-item_code="${row.item_code}"
                 data-item_name="${row.item_name}"
                 data-actual_price="${row.amount}"
-                data-so_detail="${row.name}"
+                data-container_no="${row.container_no || ""}"
+                data-container_id="${row.container_id || ""}"
                 data-discount_amount="${discount_amount}"
                 data-amount_after_discount="${amount_after_discount}">
             <td><input type="checkbox" class="waiver-item-check"/></td>
             <td>${row.item_code}</td>
-            <td>${format_currency(row.amount)}</td>
-            <td>${format_currency(discount_amount)}</td>
-            <td>${format_currency(amount_after_discount)}</td>
+            <td>${row.container_no || ""}</td>
+            <td>${format_currency(row.amount, frm.doc.currency)}</td>
+            <td>${format_currency(discount_amount, frm.doc.currency)}</td>
+            <td>${format_currency(amount_after_discount, frm.doc.currency)}</td>
         </tr>`;
     });
     html += `</table>`;
@@ -229,7 +233,8 @@ var get_checked_waiver_items = (wrapper) => {
             item_code: $row.data("item_code"),
             item_name: $row.data("item_name"),
             actual_price: $row.data("actual_price"),
-            so_detail: $row.data("so_detail"),
+            container_no: $row.data("container_no"),
+            container_id: $row.data("container_id"),
             discount_amount: $row.data("discount_amount"),
             amount_after_discount: $row.data("amount_after_discount")
         });

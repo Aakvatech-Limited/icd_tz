@@ -6,15 +6,8 @@ from frappe.model.document import Document
 
 
 class ClearingandForwardingCompany(Document):
-	def after_insert(self):
-		return
-		self.create_customer()
-
 	def create_customer(self):
-		"""
-		Create a customer from the Clearing and Forwarding Company for billing purposes
-		"""
-
+		"""Create a customer from this company for billing. Not called on insert by design."""
 		customer = frappe.get_doc(
 			{
 				"doctype": "Customer",

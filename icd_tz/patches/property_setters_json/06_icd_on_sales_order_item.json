@@ -4,62 +4,62 @@
     "field_name": "item_code",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "qty",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "rate",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "discount_percentage",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "discount_amount",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "distributed_discount_amount",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "price_list_rate",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "margin_type",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   },
   {
     "doc_type": "Sales Order Item",
     "field_name": "margin_rate_or_amount",
     "property": "read_only_depends_on",
     "property_type": "Code",
-    "value": "eval:parent.m_bl_no"
+    "value": "eval:parent && parent.m_bl_no"
   }
 ]

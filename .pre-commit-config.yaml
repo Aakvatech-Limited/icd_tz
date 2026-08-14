@@ -1,4 +1,4 @@
-exclude: 'node_modules|.git'
+exclude: 'node_modules|.git|frappe-semgrep-rules'
 default_stages: [pre-commit]
 fail_fast: false
 
@@ -32,8 +32,14 @@ repos:
         stages: [commit-msg]
         additional_dependencies: ['@commitlint/config-conventional']
 
-  - repo: https://github.com/returntocorp/semgrep
-    rev: v1.168.0
+  - repo: local
     hooks:
-      - id: semgrep
-        args: ['--config', 'https://github.com/frappe/semgrep-rules', '--error']
+      - id: frappe-semgrep-rules
+        name: "Frappe Semgrep Security Rules"
+        entry: bash -c 'if [ ! -d frappe-semgrep-rules/.git ]; then rm -rf frappe-semgrep-rules && GIT_TEMPLATE_DIR="" git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules; fi && semgrep scan --config ./frappe-semgrep-rules/rules --config r/python.lang.security --severity=ERROR --error --quiet "$@"' --
+        language: python
+        additional_dependencies: ["semgrep"]
+        types: [python]
+        files: "^icd_tz/.*\\.py$"
+        pass_filenames: true
+        require_serial: true

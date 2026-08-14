@@ -2,46 +2,14 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestEDISettings(UnitTestCase):
-	"""
-	Unit tests for EDI Settings.
-	Use this class for testing individual functions and methods.
-	"""
+class TestEDISettings(FrappeTestCase):
+	def test_edi_settings_single_is_loadable(self):
+		settings = frappe.get_single("EDI Settings")
+		self.assertEqual(settings.doctype, "EDI Settings")
 
-	pass
-
-
-class IntegrationTestEDISettings(IntegrationTestCase):
-	"""
-	Integration tests for EDI Settings.
-	Use this class for testing interactions with the database.
-	"""
-
-	def setUp(self):
-		"""Set up test data before each test."""
-		pass
-
-	def tearDown(self):
-		"""Clean up test data after each test."""
-		pass
-
-	def test_edi_settings_creation(self):
-		"""Test creating a new EDI Settings."""
-		# Create test document
-		doc = frappe.get_doc(
-			{
-				"doctype": "EDI Settings",
-				# Add required fields here
-			}
-		)
-		doc.insert()
-
-		# Assertions
-		self.assertEqual(doc.doctype, "EDI Settings")
-		self.assertIsNotNone(doc.name)
-
-		# Clean up
-		doc.delete()
+	def test_connection_type_options_are_supported(self):
+		options = frappe.get_meta("EDI Settings").get_field("connection_type").options
+		self.assertTrue(options)

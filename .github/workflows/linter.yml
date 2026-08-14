@@ -27,7 +27,10 @@ jobs:
           cache: pip
       - name: Install pre-commit
         run: pip install pre-commit
+      # Semgrep is skipped here and run as a repo scan in the next steps
       - name: Run pre-commit on changed files
+        env:
+          SKIP: frappe-semgrep-rules
         run: |
           pre-commit run \
             --show-diff-on-failure \

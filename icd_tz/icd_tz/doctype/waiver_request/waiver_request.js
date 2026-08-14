@@ -99,7 +99,9 @@ var set_row_amounts = (frm, row, item) => {
   row.item_code = item.item_code;
   row.item_name = item.item_name;
   row.actual_price = item.actual_price;
-  row.so_detail = item.so_detail;
+  row.container_no = item.container_no;
+  row.container_id = item.container_id;
+  row.currency = frm.doc.currency;
   row.discount_amount = discount_amount;
   row.amount_after_discount = item.actual_price - discount_amount;
 };
@@ -110,7 +112,7 @@ var get_row_discount_amount = (frm, actual_price) => {
   }
 
   if (frm.doc.discount_criteria == "Waiver Based on Actual Amount") {
-    return frm.doc.discount_amount || 0;
+    return Math.min(frm.doc.discount_amount || 0, actual_price);
   }
 
   return 0;
