@@ -2,5 +2,5 @@
 // For license information, please see license.txt
 
 frappe.query_reports["Container Status Flow"] = {
-	filters: [],
+  filters: [],
 };
