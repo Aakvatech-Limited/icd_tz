@@ -1,5 +1,6 @@
-exclude: 'node_modules|.git|frappe-semgrep-rules'
+exclude: "^(node_modules/|frappe-semgrep-rules/|[.]vscode/|.*/node_modules/)"
 default_stages: [pre-commit]
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
 fail_fast: false
 
 repos:
@@ -7,30 +8,64 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
+        exclude: '\.(json|txt|csv|md|svg)$'
       - id: end-of-file-fixer
-        exclude: ".*json$|.*csv"
+        exclude: '\.(json|csv|svg)$'
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
       - id: check-toml
       - id: check-yaml
+      - id: debug-statements
+      - id: no-commit-to-branch
+        args:
+          - --branch
+          - main
+          - --branch
+          - master
+          - --branch
+          - production
+          - --branch
+          - version-14
+          - --branch
+          - version-15
+          - --branch
+          - version-16
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.1
+    rev: v0.13.2
     hooks:
       - id: ruff
-        name: "ruff lint"
+        name: "Run ruff import sorter"
+        args: ["--select=I", "--fix"]
+        files: '^icd_tz/.*\.py$'
+      - id: ruff
+        name: "Run ruff linter"
         args: ["--fix"]
+        files: '^icd_tz/.*\.py$'
       - id: ruff-format
-        name: "ruff format"
+        name: "Run ruff formatter"
+        files: '^icd_tz/.*\.py$'
 
-  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.16.0
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.7.1
     hooks:
-      - id: commitlint
-        stages: [commit-msg]
-        additional_dependencies: ['@commitlint/config-conventional']
+      - id: prettier
+        name: "Run prettier on frontend sources"
+        types_or: [javascript, vue, css, scss]
+        files: '^(icd_tz|frontend)/.*\.(js|vue|css|scss)$'
+        exclude: |
+          (?x)^(
+              .*/public/dist/.*|
+              .*/public/frontend/.*|
+              .*/public/node_modules/.*|
+              .*\.bundle\.js|
+              .*\.min\.js|
+              frontend/dist/.*|
+              cypress/.*|
+              .*node_modules.*|
+              .*boilerplate.*
+          )$
 
   - repo: local
     hooks:
@@ -40,6 +75,27 @@ repos:
         language: python
         additional_dependencies: ["semgrep"]
         types: [python]
-        files: "^icd_tz/.*\\.py$"
+        files: '^icd_tz/.*\.py$'
         pass_filenames: true
         require_serial: true
+
+      - id: full-repository-check
+        name: "Full repository check before push"
+        entry: bash -c 'if command -v pre-commit >/dev/null 2>&1; then exec pre-commit run --all-files --hook-stage pre-commit --show-diff-on-failure --color=always; else exec python3 -m pre_commit run --all-files --hook-stage pre-commit --show-diff-on-failure --color=always; fi'
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.22.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ["@commitlint/config-conventional"]
+
+ci:
+  autoupdate_schedule: weekly
+  skip: [frappe-semgrep-rules, full-repository-check]
+  submodules: false

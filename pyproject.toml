@@ -11,6 +11,11 @@ dependencies = [
     "paramiko>=3.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+]
+
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
@@ -29,6 +34,7 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "UP", "B", "RUF"]
 ignore = [
+    "E402",
     "B017",
     "B018",
     "B023",
