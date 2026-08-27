@@ -35,8 +35,8 @@ doctype_js = {
 }
 
 doctype_list_js = {
-	"Custom Field": "icd_tz/patches/custom_field.js",
-	"Property Setter": "icd_tz/patches/property_setter.js",
+	"Custom Field": "patches/custom_field.js",
+	"Property Setter": "patches/property_setter.js",
 	"Sales Order": "icd_tz/api/sales_order_list.js",
 }
 
