@@ -68,7 +68,7 @@ class GatePass(Document):
 	def on_update_after_submit(self):
 		self.validate_pending_payments()
 
-		if self.workflow_state == "Gate Out Confirmed":
+		if self.get("workflow_state") == "Gate Out Confirmed":
 			self.set_gate_out_date()
 			self.update_container_status("Delivered")
 
@@ -306,7 +306,7 @@ class GatePass(Document):
 		if not self.container_id:
 			return
 
-		container_doc = frappe.get_cached_doc("Container", self.container_id)
+		container_doc = frappe.get_doc("Container", self.container_id)
 		container_doc.status = status
 		container_doc.save(ignore_permissions=True)
 		container_doc.reload()
@@ -386,18 +386,21 @@ def auto_expire_gate_passes():
 	"""Auto-expire and cancel Gate Passes that have exceeded their expiry time"""
 
 	current_datetime = now_datetime()
+	has_workflow_state = frappe.get_meta("Gate Pass").has_field("workflow_state")
+
+	filters = [
+		["docstatus", "=", 1],
+		["expiry_date", "not in", ["", None]],
+		["expiry_date", "<=", current_datetime],
+	]
+	fields = ["name", "container_no", "expiry_date"]
+
+	if has_workflow_state:
+		filters.append(["workflow_state", "!=", ["Gate Out Confirmed"]])
+		fields.append("workflow_state")
 
 	# Find submitted gate passes that have expired and are not confirmed
-	expired_gate_passes = frappe.get_all(
-		"Gate Pass",
-		filters=[
-			["docstatus", "=", 1],
-			["workflow_state", "!=", ["Gate Out Confirmed"]],
-			["expiry_date", "not in", ["", None]],
-			["expiry_date", "<=", current_datetime],
-		],
-		fields=["name", "container_no", "expiry_date", "workflow_state"],
-	)
+	expired_gate_passes = frappe.get_all("Gate Pass", filters=filters, fields=fields)
 
 	for gp in expired_gate_passes:
 		if not gp.expiry_date:
@@ -405,9 +408,10 @@ def auto_expire_gate_passes():
 
 		try:
 			doc = frappe.get_doc("Gate Pass", gp.name)
+			doc.flags.ignore_links = True
 
 			# Cancel the document
-			if hasattr(doc, "workflow_state"):
+			if has_workflow_state:
 				apply_workflow(doc, "Cancel")
 			else:
 				doc.cancel()
