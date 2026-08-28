@@ -396,7 +396,7 @@ def auto_expire_gate_passes():
 	fields = ["name", "container_no", "expiry_date"]
 
 	if has_workflow_state:
-		filters.append(["workflow_state", "!=", ["Gate Out Confirmed"]])
+		filters.append(["workflow_state", "!=", "Gate Out Confirmed"])
 		fields.append("workflow_state")
 
 	# Find submitted gate passes that have expired and are not confirmed
