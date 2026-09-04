@@ -110,6 +110,9 @@ class ContainerInspection(Document):
 		if self.new_container_location:
 			container_doc.current_location = self.new_container_location
 
+		if self.c_and_f_company and not container_doc.c_and_f_company:
+			container_doc.c_and_f_company = self.c_and_f_company
+
 		for row in self.services:
 			if row.status_changed_to and row.status_changed_to != container_doc.freight_indicator:
 				container_doc.freight_indicator = row.status_changed_to
