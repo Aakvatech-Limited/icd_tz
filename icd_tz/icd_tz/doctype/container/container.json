@@ -79,6 +79,7 @@
   "column_break_uxlo",
   "container_reception",
   "company",
+  "c_and_f_company",
   "tab_break_edoll",
   "total_days",
   "column_break_dlhui",
@@ -315,6 +316,13 @@
    "options": "Company",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "c_and_f_company",
+   "fieldtype": "Link",
+   "label": "Clearing and Forwarding Company",
+   "options": "Clearing and Forwarding Company",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_gwgiu",
