@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-03 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "destination",
+  "charge",
+  "from",
+  "to"
+ ],
+ "fields": [
+  {
+   "description": "Loaded from the destinations defined in ICD TZ Settings",
+   "fieldname": "destination",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Place of Destination",
+   "reqd": 1
+  },
+  {
+   "fieldname": "charge",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Charge",
+   "options": "Free\nSingle\nDouble",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "From",
+   "mandatory_depends_on": "eval: doc.destination"
+  },
+  {
+   "fieldname": "to",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "To",
+   "mandatory_depends_on": "eval: doc.destination"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-03 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "Storage Contract Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
