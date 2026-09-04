@@ -1,12 +1,47 @@
 [
   {
     "dt": "Contract",
+    "fieldname": "is_rate_based",
+    "fieldtype": "Check",
+    "label": "Rate Based",
+    "insert_after": "party_type",
+    "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company'",
+    "description": "Bill services using the item prices of the contract price list"
+  },
+  {
+    "dt": "Contract",
     "fieldname": "price_list",
     "fieldtype": "Link",
     "options": "Price List",
     "label": "Price List",
-    "insert_after": "party_type",
+    "insert_after": "is_rate_based",
+    "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company' && doc.is_rate_based",
+    "mandatory_depends_on": "eval:doc.party_type=='Clearing and Forwarding Company' && doc.is_rate_based"
+  },
+  {
+    "dt": "Contract",
+    "fieldname": "is_storage_days_based",
+    "fieldtype": "Check",
+    "label": "Storage Days Based",
+    "insert_after": "price_list",
     "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company'",
-    "mandatory_depends_on": "eval:doc.party_type=='Clearing and Forwarding Company'"
+    "description": "Bill storage using the free, single and double days of the contract"
+  },
+  {
+    "dt": "Contract",
+    "fieldname": "storage_days_section",
+    "fieldtype": "Section Break",
+    "label": "Storage Days",
+    "insert_after": "party_full_name",
+    "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company' && doc.is_storage_days_based"
+  },
+  {
+    "dt": "Contract",
+    "fieldname": "storage_days",
+    "fieldtype": "Table",
+    "options": "Storage Contract Detail",
+    "label": "Storage Days",
+    "insert_after": "storage_days_section",
+    "mandatory_depends_on": "eval:doc.party_type=='Clearing and Forwarding Company' && doc.is_storage_days_based"
   }
 ]
