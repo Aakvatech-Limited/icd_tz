@@ -11,3 +11,4 @@ icd_tz.patches.backfill_container_gate_out_date
 icd_tz.patches.create_manifest_accounting_dimension
 icd_tz.patches.backfill_waiver_item_containers
 icd_tz.patches.fix_child_table_depends_on
+icd_tz.patches.tick_rate_based_on_priced_contracts

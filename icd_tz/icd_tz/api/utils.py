@@ -63,6 +63,24 @@ def validate_cf_agent(doc):
 			)
 
 
+def set_container_cf_company(doc):
+	"""Stamp the C&F company on the container once, the first document that carries it wins
+
+	Container storage days are resolved from the C&F company contract, and the container
+	itself has no other source for it.
+	"""
+
+	if not doc.get("container_id") or not doc.get("c_and_f_company"):
+		return
+
+	if frappe.db.get_value("Container", doc.container_id, "c_and_f_company"):
+		return
+
+	frappe.db.set_value(
+		"Container", doc.container_id, "c_and_f_company", doc.c_and_f_company, update_modified=False
+	)
+
+
 def validate_draft_doc(doctype, docname):
 	"""
 	Validate linking of draft documents

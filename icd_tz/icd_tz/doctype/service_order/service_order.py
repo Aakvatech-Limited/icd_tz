@@ -4,9 +4,9 @@
 import frappe
 from frappe.model.document import Document
 
-from icd_tz.icd_tz.api.sales_order import get_container_days_to_be_billed
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
+	set_container_cf_company,
 	validate_cf_agent,
 	validate_delivered_container,
 	validate_draft_doc,
@@ -35,6 +35,7 @@ class ServiceOrder(Document):
 
 	def on_submit(self):
 		self.create_getpass()
+		set_container_cf_company(self)
 
 	def before_cancel(self):
 		validate_delivered_container(self.container_id, self.container_no, action="cancelled")

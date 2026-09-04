@@ -145,7 +145,9 @@ doc_events = {
 		"on_trash": "icd_tz.icd_tz.api.sales_order.on_trash",
 	},
 	"Contract": {
+		"before_validate": "icd_tz.icd_tz.api.contract.before_validate",
 		"validate": "icd_tz.icd_tz.api.contract.validate",
+		"before_submit": "icd_tz.icd_tz.api.contract.before_submit",
 	},
 }
 

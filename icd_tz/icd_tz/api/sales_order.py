@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import nowdate
 
+from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
 from icd_tz.icd_tz.api.utils import validate_qty_storage_item
 from icd_tz.icd_tz.doctype.waiver_request.waiver_request import apply_approved_waiver
 
@@ -104,8 +105,6 @@ def make_sales_order(
 	order_m_bl_no = m_bl_no if m_bl_no else None
 	order_h_bl_no = h_bl_no if h_bl_no else None
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-
 	items += get_storage_services(m_bl_no, h_bl_no)
 
 	service_order_items, service_docs = get_service_order_items(
@@ -140,22 +139,7 @@ def make_sales_order(
 		if not consignee and m_bl_no:
 			consignee = frappe.get_cached_value("Container", {"m_bl_no": m_bl_no}, "consignee")
 
-	selling_price_list = settings_doc.get("default_price_list")
-
-	if c_and_f_company:
-		active_contract = frappe.db.get_value(
-			"Contract",
-			{
-				"party_type": "Clearing and Forwarding Company",
-				"party_name": c_and_f_company,
-				"start_date": ("<=", nowdate()),
-				"end_date": (">=", nowdate()),
-				"docstatus": 1,
-			},
-			"price_list",
-		)
-		if active_contract:
-			selling_price_list = active_contract
+	selling_price_list = get_selling_price_list(c_and_f_company)
 
 	sales_order = frappe.get_doc(
 		{
@@ -218,7 +202,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 		if container.days_to_be_billed == 0:
 			continue
 
-		single_days, double_days = get_container_days_to_be_billed(container_doc, settings_doc)
+		single_days, double_days = get_container_days_to_be_billed(container_doc)
 
 		if container_doc.has_single_charge == 1:
 			single_storage_item = None
@@ -361,21 +345,15 @@ def get_gatepass_cancellation_service(container_doc, settings_doc):
 	}
 
 
-def get_container_days_to_be_billed(container_doc, settings_doc):
+def get_container_days_to_be_billed(container_doc):
 	single_days = []
 	double_days = []
-	no_of_single_days = 0
-	no_of_double_days = 0
 	single_charge_count = 0
 	double_charge_count = 0
 
-	for d in settings_doc.storage_days:
-		if d.destination == container_doc.place_of_destination:
-			if d.charge == "Single":
-				no_of_single_days = d.get("to") - d.get("from") + 1
-
-			elif d.charge == "Double":
-				no_of_double_days = d.get("to") - d.get("from") + 1
+	day_counts = get_storage_day_counts(container_doc)
+	no_of_single_days = day_counts["Single"]
+	no_of_double_days = day_counts["Double"]
 
 	for row in container_doc.container_dates:
 		if (
@@ -390,7 +368,7 @@ def get_container_days_to_be_billed(container_doc, settings_doc):
 			row.is_billable == 1
 			and container_doc.has_double_charge == 1
 			and single_charge_count >= no_of_single_days
-			and double_charge_count <= no_of_double_days
+			and double_charge_count < no_of_double_days
 		):
 			double_days.append(row)
 			double_charge_count += 1

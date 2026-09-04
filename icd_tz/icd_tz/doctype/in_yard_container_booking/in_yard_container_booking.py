@@ -7,6 +7,7 @@ from frappe.utils import get_url_to_form, now_datetime, nowdate
 
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
+	set_container_cf_company,
 	validate_delivered_container,
 )
 
@@ -60,6 +61,7 @@ class InYardContainerBooking(Document):
 
 	def on_submit(self):
 		frappe.db.set_value("Container", self.container_id, {"booking_date": nowdate()})
+		set_container_cf_company(self)
 
 
 def validate_cf_agent(c_and_f_company, clearing_agent):

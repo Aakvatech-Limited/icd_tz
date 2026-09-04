@@ -7,6 +7,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
+from icd_tz.icd_tz.api.contract import get_storage_day_counts
 from icd_tz.icd_tz.api.utils import validate_delivered_container
 
 
@@ -285,21 +286,9 @@ class Container(Document):
 			)
 
 	def update_billed_days(self):
-		setting_doc = frappe.get_doc("ICD TZ Settings")
-
-		no_of_free_days = 0
-		no_of_single_days = 0
-		no_of_double_days = 0
-		for d in setting_doc.storage_days:
-			if d.destination == self.place_of_destination:
-				if d.charge == "Free":
-					no_of_free_days = d.get("to") - d.get("from") + 1
-
-				elif d.charge == "Single":
-					no_of_single_days = d.get("to") - d.get("from") + 1
-
-				elif d.charge == "Double":
-					no_of_double_days = d.get("to") - d.get("from") + 1  # noqa: F841
+		day_counts = get_storage_day_counts(self)
+		no_of_free_days = day_counts["Free"]
+		no_of_single_days = day_counts["Single"]
 
 		free_count = 0
 		charge_count = 0
@@ -308,8 +297,14 @@ class Container(Document):
 				row.is_free = 1
 				row.is_billable = 0
 				free_count += 1
+				continue
 
-			elif row.is_billable == 1 and row.is_free == 0:
+			if row.is_free == 1 and not row.sales_invoice:
+				# the free window shrank, this day falls outside it and is chargeable again
+				row.is_free = 0
+				row.is_billable = 1
+
+			if row.is_billable == 1 and row.is_free == 0:
 				charge_count += 1
 
 		if charge_count == 0:
