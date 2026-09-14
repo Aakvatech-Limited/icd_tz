@@ -13,3 +13,4 @@ icd_tz.patches.backfill_waiver_item_containers
 icd_tz.patches.fix_child_table_depends_on
 icd_tz.patches.tick_rate_based_on_priced_contracts
 icd_tz.patches.migrate_edi_settings_to_edi_partner
+icd_tz.patches.fix_icd_workspace_edi_link
