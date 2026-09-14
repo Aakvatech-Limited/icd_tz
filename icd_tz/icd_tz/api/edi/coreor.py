@@ -134,7 +134,7 @@ class COREORGenerator:
 	def _get_receiver_id(self):
 		"""Release orders are addressed to this ICD, so the facility code identifies the recipient"""
 
-		return frappe.db.get_single_value("ICD TZ Settings", "icd_facility_code") or "TZDARDSEL"
+		return frappe.db.get_single_value("ICD TZ Settings", "default_sender_id") or "TZDARDSEL"
 
 	def _add_segment(self, segment):
 		"""Add a segment to the message"""
