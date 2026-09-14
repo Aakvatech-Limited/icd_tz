@@ -36,7 +36,6 @@ class TestCODECO(FrappeTestCase):
 	def setUp(self):
 		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
 		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
-		frappe.db.set_single_value("ICD TZ Settings", "icd_facility_code", "TZDARDSEL")
 		frappe.db.set_single_value("ICD TZ Settings", "default_sender_id", "TZDARDSEL")
 		self.partner = make_partner()
 
