@@ -101,6 +101,19 @@ class TestCODECO(FrappeTestCase):
 	def test_activity_location_is_this_icd(self):
 		self.assertIn("LOC+165+TZDAR:139:6+TZDARDSEL:TER:ZZZ'", self.lines())
 
+	def test_the_gate_location_carries_the_code_this_line_knows_us_by(self):
+		# our own code means nothing to a line that addresses us by another one
+		self.partner.db_set("sender_id", "TZDAR51")
+		lines = self.lines()
+
+		self.assertTrue(lines[0].startswith("UNB+UNOA:2+TZDAR51+CMA+"))
+		self.assertIn("LOC+165+TZDAR:139:6+TZDAR51:TER:ZZZ'", lines)
+
+	def test_the_gate_location_falls_back_to_our_own_code(self):
+		self.assertFalse(self.partner.sender_id)
+
+		self.assertIn("LOC+165+TZDAR:139:6+TZDARDSEL:TER:ZZZ'", self.lines())
+
 	def test_gross_weight_is_reported(self):
 		self.assertIn("MEA+AAE+G+KGM:25129'", self.lines())
 
