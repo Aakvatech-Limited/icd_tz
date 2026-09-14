@@ -156,7 +156,7 @@ class CODECOGenerator:
 			"LOC",
 			"165",
 			[un_locode, "139", "6"],
-			[text(self.settings.icd_facility_code, 25), "TER", "ZZZ"],
+			[text(self.settings.default_sender_id, 25), "TER", "ZZZ"],
 		)
 
 	def get_mea_segment(self) -> str | None:
