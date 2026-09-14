@@ -28,8 +28,7 @@
   "enable_edi",
   "default_sender_id",
   "column_break_edi",
-  "icd_un_locode",
-  "icd_facility_code"
+  "icd_un_locode"
  ],
  "fields": [
   {
@@ -148,10 +147,10 @@
   },
   {
    "depends_on": "eval:doc.enable_edi==1",
-   "description": "Our identifier, used when a shipping line has not assigned us its own",
+   "description": "Our own code, e.g. TZDARDSEL. Sent as the interchange sender when a shipping line has not assigned us its own, and as the facility in the gate location.",
    "fieldname": "default_sender_id",
    "fieldtype": "Data",
-   "label": "Default Sender ID"
+   "label": "ICD Sender ID"
   },
   {
    "fieldname": "column_break_edi",
@@ -163,13 +162,6 @@
    "fieldname": "icd_un_locode",
    "fieldtype": "Data",
    "label": "ICD UN/LOCODE"
-  },
-  {
-   "depends_on": "eval:doc.enable_edi==1",
-   "description": "Terminal or facility code of this ICD, e.g. TZDARDSEL",
-   "fieldname": "icd_facility_code",
-   "fieldtype": "Data",
-   "label": "ICD Facility Code"
   }
  ],
  "index_web_pages_for_search": 1,
