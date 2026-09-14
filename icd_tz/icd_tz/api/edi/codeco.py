@@ -146,7 +146,12 @@ class CODECOGenerator:
 		return segment("DTM", ["7", moment, "203"])
 
 	def get_loc_segment(self) -> str | None:
-		"""Where the gate movement happened, which is this ICD and not the seaport"""
+		"""Where the gate movement happened, which is this ICD and not the seaport.
+
+		The facility carries the same code as the interchange sender, so the
+		shipping line reads a depot code it issued itself. Our own code means
+		nothing to a line that addresses us by another one.
+		"""
 
 		un_locode = text(self.settings.icd_un_locode, 25)
 		if not un_locode:
@@ -156,7 +161,7 @@ class CODECOGenerator:
 			"LOC",
 			"165",
 			[un_locode, "139", "6"],
-			[text(self.settings.default_sender_id, 25), "TER", "ZZZ"],
+			[text(self.partner.sender, 25), "TER", "ZZZ"],
 		)
 
 	def get_mea_segment(self) -> str | None:
