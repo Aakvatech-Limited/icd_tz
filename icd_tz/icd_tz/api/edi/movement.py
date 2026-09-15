@@ -60,8 +60,11 @@ def from_container_reception(reception) -> ContainerMovement | None:
 		weight_unit=reception.weight_unit,
 		seal_no=reception.seal_no_1,
 		# posting_date is when the box crossed the gate. received_date is derived from the
-		# storage threshold and falls back to the discharge date at the seaport, a different event.
-		event_datetime=get_event_datetime(reception.posting_date, reception.icd_time_in),
+		# storage threshold and falls back to the seaport discharge date, so it stands in only
+		# when a reception carries no posting date at all, which older records do not.
+		event_datetime=get_event_datetime(
+			reception.posting_date or reception.received_date, reception.icd_time_in
+		),
 		transporter=reception.transporter,
 		truck=reception.truck,
 		voyage_no=reception.voyage_no or voyage.get("voyage_no"),
