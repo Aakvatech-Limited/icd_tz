@@ -1,68 +1,78 @@
 // Copyright (c) 2024, elius mgani and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('Manifest', {
-	refresh: (frm) => {
-		frm.trigger("create_movement_order");
-		frm.trigger("icd_render_manifest_dashboard");
-	},
-	onload: (frm) => {
-		if (!frm.doc.company) {
-			frm.set_value("company", frappe.defaults.get_user_default("Company"));
-		}
-		frm.trigger("create_movement_order");
-		frm.trigger("icd_render_manifest_dashboard");
-	},
-	manifest: (frm) => {
-		if (frm.doc.manifest) {
-			frappe.call({
-				method: "extract_data_from_manifest_file",
-				doc: frm.doc,
-				args: {
-				},
-				freeze: true,
-				freeze_message: __("Extracting data from manifest file..."),
-				callback: (r) => {
-					if (r.message) {
-						frm.refresh();
-					}
-				}
-			});
-		}
-	},
-	create_movement_order: (frm) => {
-		if (frm.doc.docstatus == 1) {
-			frm.add_custom_button(__('Create Movement Order'), () => {
-				frappe.new_doc('Container Movement Order', {
-					"manifest": frm.doc.name,
-					"vessel_name": frm.doc.voyage,
-					"received_date": frm.doc.arrival_date,
-					"voyage_no": frm.doc.voyage_no,
-					"company": frm.doc.company,
-				}, doc => { });
-			}).addClass('btn-primary');
-		}
-	},
-	icd_render_manifest_dashboard: (frm) => {
-		if (!frm.doc.name || frm.doc.containers.length == 0 || frm.doc.docstatus != 1) return;
+frappe.ui.form.on("Manifest", {
+  refresh: (frm) => {
+    frm.trigger("create_movement_order");
+    frm.trigger("icd_render_manifest_dashboard");
+  },
+  onload: (frm) => {
+    if (!frm.doc.company) {
+      frm.set_value("company", frappe.defaults.get_user_default("Company"));
+    }
+    frm.trigger("create_movement_order");
+    frm.trigger("icd_render_manifest_dashboard");
+  },
+  manifest: (frm) => {
+    if (frm.doc.manifest) {
+      frappe.call({
+        method: "extract_data_from_manifest_file",
+        doc: frm.doc,
+        args: {},
+        freeze: true,
+        freeze_message: __("Extracting data from manifest file..."),
+        callback: (r) => {
+          if (r.message) {
+            frm.refresh();
+          }
+        },
+      });
+    }
+  },
+  create_movement_order: (frm) => {
+    if (frm.doc.docstatus == 1) {
+      frm
+        .add_custom_button(__("Create Movement Order"), () => {
+          frappe.new_doc(
+            "Container Movement Order",
+            {
+              manifest: frm.doc.name,
+              vessel_name: frm.doc.voyage,
+              received_date: frm.doc.arrival_date,
+              voyage_no: frm.doc.voyage_no,
+              company: frm.doc.company,
+            },
+            (doc) => {}
+          );
+        })
+        .addClass("btn-primary");
+    }
+  },
+  icd_render_manifest_dashboard: (frm) => {
+    if (
+      !frm.doc.name ||
+      frm.doc.containers.length == 0 ||
+      frm.doc.docstatus != 1
+    )
+      return;
 
-		frappe.call({
-			method: "get_dashboard_data",
-			doc: frm.doc,
-			callback: function (r) {
-				if (r.message) {
-					const data = r.message;
+    frappe.call({
+      method: "get_dashboard_data",
+      doc: frm.doc,
+      callback: function (r) {
+        if (r.message) {
+          const data = r.message;
 
-					const total = data.total_containers;
-					const received = data.received_containers;
-					const pending = data.pending_containers;
+          const total = data.total_containers;
+          const received = data.received_containers;
+          const pending = data.pending_containers;
 
-					const pct_received = total > 0 ? (received / total) * 100 : 0;
-					const pct_pending = total > 0 ? (pending / total) * 100 : 0;
+          const pct_received = total > 0 ? (received / total) * 100 : 0;
+          const pct_pending = total > 0 ? (pending / total) * 100 : 0;
 
-					let bar_segments = "";
-					if (pct_received > 0) {
-						bar_segments += `
+          let bar_segments = "";
+          if (pct_received > 0) {
+            bar_segments += `
 						<div style="
 							width: ${pct_received}%;
 							background: #2ecc71; /* Green */
@@ -70,9 +80,9 @@ frappe.ui.form.on('Manifest', {
 							transition: width 0.3s ease;
 						" title="Received: ${received} of ${total} (${pct_received.toFixed(0)}%)"></div>
 					`;
-					}
-					if (pct_pending > 0) {
-						bar_segments += `
+          }
+          if (pct_pending > 0) {
+            bar_segments += `
 						<div style="
 							width: ${pct_pending}%;
 							background: #f39c12; /* Orange */
@@ -80,9 +90,9 @@ frappe.ui.form.on('Manifest', {
 							transition: width 0.3s ease;
 						" title="Pending: ${pending} of ${total} (${pct_pending.toFixed(0)}%)"></div>
 					`;
-					}
+          }
 
-					const kpi_cards = `
+          const kpi_cards = `
 					<div style="flex: 1; min-width: 90px; padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border-left: 3px solid #3498db; text-align: center;">
 						<div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #3498db; margin-bottom: 4px;">Total Units</div>
 						<div style="font-size: 20px; font-weight: 700; color: var(--text-color);">${data.total_containers}</div>
@@ -113,7 +123,7 @@ frappe.ui.form.on('Manifest', {
 					</div>
 				`;
 
-					const html = `
+          const html = `
 					<div class="icd-manifest-dashboard" style="margin-bottom: 16px;">
 						<div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 10px;">
 							Container Reception Progress
@@ -131,80 +141,84 @@ frappe.ui.form.on('Manifest', {
 					</div>
 				`;
 
-					let target = frm.layout.wrapper.find(".form-tabs-list");
-					if (target.length === 0) {
-						target = frm.layout.wrapper.find(".form-section").first();
-					}
+          let target = frm.layout.wrapper.find(".form-tabs-list");
+          if (target.length === 0) {
+            target = frm.layout.wrapper.find(".form-section").first();
+          }
 
-					frm.layout.wrapper.find(".icd-manifest-dashboard").remove();
-					target.before(html);
-				}
-			}
-		});
-	}
+          frm.layout.wrapper.find(".icd-manifest-dashboard").remove();
+          target.before(html);
+        }
+      },
+    });
+  },
 });
 
 frappe.ui.form.on("Master BL", {
-    update_values: (frm, cdt, cdn) => {
-        show_master_bl_dialog(frm, locals[cdt][cdn]);
-    }
+  update_values: (frm, cdt, cdn) => {
+    show_master_bl_dialog(frm, locals[cdt][cdn]);
+  },
 });
 
 var show_master_bl_dialog = (frm, row) => {
-    let d = new frappe.ui.Dialog({
-        title: __("Update Values: {0}", [row.m_bl_no]),
-        fields: [
-            // {
-            //     fieldname: "row_id",
-            //     fieldtype: "Data",
-            //     default: row.name,
-            //     hidden: 1
-            // },
-            {
-                label: __("Cargo Classification"),
-                fieldname: "cargo_classification",
-                fieldtype: "Select",
-                options: ["", "TR", "IM"],
-                default: row.cargo_classification,
-                reqd: 1
-            },
-            {
-                fieldname: "cb_country",
-                fieldtype: "Column Break"
-            },
-            {
-                label: __("Place of Destination"),
-                fieldname: "place_of_destination",
-                fieldtype: "Data",
-                default: row.place_of_destination,
-                reqd: 1
-            }
-        ],
-        size: "small",
-        primary_action_label: __("Update"),
-        primary_action(values) {
-            frappe.call({
-                method: "icd_tz.icd_tz.doctype.manifest.manifest.update_master_bl_values",
-                args: {
-                    row_id: row.name,
-                    cargo_classification: values.cargo_classification,
-                    place_of_destination: values.place_of_destination
-                },
-                freeze: true,
-                freeze_message: __('<i class="fa fa-spinner fa-spin fa-4x"></i>'),
-                callback: (r) => {
-                    if (r.message) {
-                        d.hide();
-                        frappe.show_alert({
-                            message: __("Master BL: {0} updated successfully", [r.message]),
-                            indicator: "green"
-                        }, 7);
-                        frm.reload_doc();
-                    }
-                }
-            });
-        }
-    });
+  let d = new frappe.ui.Dialog({
+    title: __("Update Values: {0}", [row.m_bl_no]),
+    fields: [
+      // {
+      //     fieldname: "row_id",
+      //     fieldtype: "Data",
+      //     default: row.name,
+      //     hidden: 1
+      // },
+      {
+        label: __("Cargo Classification"),
+        fieldname: "cargo_classification",
+        fieldtype: "Select",
+        options: ["", "TR", "IM"],
+        default: row.cargo_classification,
+        reqd: 1,
+      },
+      {
+        fieldname: "cb_country",
+        fieldtype: "Column Break",
+      },
+      {
+        label: __("Place of Destination"),
+        fieldname: "place_of_destination",
+        fieldtype: "Data",
+        default: row.place_of_destination,
+        reqd: 1,
+      },
+    ],
+    size: "small",
+    primary_action_label: __("Update"),
+    primary_action(values) {
+      frappe.call({
+        method:
+          "icd_tz.icd_tz.doctype.manifest.manifest.update_master_bl_values",
+        args: {
+          row_id: row.name,
+          cargo_classification: values.cargo_classification,
+          place_of_destination: values.place_of_destination,
+        },
+        freeze: true,
+        freeze_message: __('<i class="fa fa-spinner fa-spin fa-4x"></i>'),
+        callback: (r) => {
+          if (r.message) {
+            d.hide();
+            frappe.show_alert(
+              {
+                message: __("Master BL: {0} updated successfully", [r.message]),
+                indicator: "green",
+              },
+              7
+            );
+            frm.reload_doc();
+          }
+        },
+      });
+    },
+  });
 
-    d.show();
-}
+  d.show();
+};
