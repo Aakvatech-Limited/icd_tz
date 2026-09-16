@@ -10,17 +10,18 @@
   "icd_code",
   "default_price_list",
   "column_break_8yjq8",
-  "enable_signature_validation",
   "gate_pass_expiry_hours",
   "received_date_threshold_hours",
   "corridor_sec",
   "countries",
   "column_break_ixzw",
   "gatepass_cancellation_item",
+  "services_tab",
   "service_pricing_criteria_section",
   "service_types",
   "lcl_service_pricing_criteria_section",
   "loose_types",
+  "storages_tab",
   "no_of_days_for_container_storage_charges_section",
   "storage_days",
   "example",
@@ -67,12 +68,6 @@
   {
    "fieldname": "column_break_8yjq8",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_signature_validation",
-   "fieldtype": "Check",
-   "label": "Enable Signature Validation"
   },
   {
    "fieldname": "corridor_sec",
@@ -162,12 +157,22 @@
    "fieldname": "icd_un_locode",
    "fieldtype": "Data",
    "label": "ICD UN/LOCODE"
+  },
+  {
+   "fieldname": "services_tab",
+   "fieldtype": "Tab Break",
+   "label": "Services"
+  },
+  {
+   "fieldname": "storages_tab",
+   "fieldtype": "Tab Break",
+   "label": "Storages"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-01 14:22:39.921653",
+ "modified": "2026-09-16 12:48:22.121001",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Settings",
