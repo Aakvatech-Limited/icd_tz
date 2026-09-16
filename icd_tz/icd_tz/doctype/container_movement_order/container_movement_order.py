@@ -32,7 +32,6 @@ class ContainerMovementOrder(Document):
 			self.validate_duplicate_cmo_per_container_number()
 
 	def before_submit(self):
-		self.validate_signature()
 		self.validate_ship_dc_date()
 
 		self.status = "Pending"
@@ -107,12 +106,6 @@ class ContainerMovementOrder(Document):
 				"has_order",
 				value,
 			)
-
-	def validate_signature(self):
-		settings_doc = frappe.get_doc("ICD TZ Settings")
-		if settings_doc.enable_signature_validation == 1:
-			if not self.driver_signature or not self.gate_no_signature:
-				frappe.throw("Please ensure all signatures are provided before submitting this document.")
 
 	def update_container_count(self):
 		"""Update the container count based on the manifest and m_bl_no"""
