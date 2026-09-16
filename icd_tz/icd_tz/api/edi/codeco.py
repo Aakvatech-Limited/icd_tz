@@ -226,6 +226,13 @@ def attach(document, movement):
 			f"cannot be built for shipping line <b>{partner.name}</b>. Please set the size first."
 		)
 
+	# the carriers make the event date mandatory, so a message without one must not go out
+	if not movement.event_datetime:
+		frappe.throw(
+			f"Container <b>{movement.container_no}</b> has no gate date, so its CODECO message "
+			f"cannot be built for shipping line <b>{partner.name}</b>. Please set the date first."
+		)
+
 	if partner.is_smtp:
 		document.receiver_email = partner.receiver_email
 		document.receiver_cc_email = partner.receiver_cc_email
