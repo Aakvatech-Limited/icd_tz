@@ -1,0 +1,245 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-18 09:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "container_no",
+  "manifest",
+  "column_break_ibctr",
+  "posting_date",
+  "company",
+  "cargo_section",
+  "m_bl_no",
+  "master_bl",
+  "consignee",
+  "column_break_cgctr",
+  "type_of_container",
+  "size",
+  "freight_indicator",
+  "measures_section",
+  "no_of_packages",
+  "package_unit",
+  "column_break_msctr",
+  "weight",
+  "weight_unit",
+  "vessel_section",
+  "vessel_name",
+  "voyage_no",
+  "column_break_vsctr",
+  "arrival_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Container No",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "manifest",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Manifest",
+   "options": "Manifest",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_ibctr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo_section",
+   "fieldtype": "Section Break",
+   "label": "Cargo"
+  },
+  {
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "M BL No",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "master_bl",
+   "fieldtype": "Link",
+   "label": "ICD Master BL",
+   "options": "ICD Master BL",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "consignee",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Consignee",
+   "options": "Consignee",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_cgctr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type_of_container",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Type of Container",
+   "read_only": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freight_indicator",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Freight Indicator",
+   "read_only": 1
+  },
+  {
+   "fieldname": "measures_section",
+   "fieldtype": "Section Break",
+   "label": "Packages and Weight"
+  },
+  {
+   "fieldname": "no_of_packages",
+   "fieldtype": "Data",
+   "label": "No of Packages",
+   "read_only": 1
+  },
+  {
+   "fieldname": "package_unit",
+   "fieldtype": "Small Text",
+   "label": "Package Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_msctr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Data",
+   "label": "Weight",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weight_unit",
+   "fieldtype": "Data",
+   "label": "Weight Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vessel_section",
+   "fieldtype": "Section Break",
+   "label": "Vessel"
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Vessel Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "voyage_no",
+   "fieldtype": "Data",
+   "label": "Voyage No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vsctr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "label": "Arrival Date",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-18 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "ICD Container",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "manifest, m_bl_no, consignee",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "container_no",
+ "track_changes": 1
+}

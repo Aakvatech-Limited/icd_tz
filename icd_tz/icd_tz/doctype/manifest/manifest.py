@@ -9,6 +9,13 @@ from frappe.model.document import Document
 from frappe.utils import escape_html
 from openpyxl import load_workbook
 
+from icd_tz.icd_tz.api.accounting_dimensions import (
+	create_dimension_records,
+	get_existing_consignees,
+	revoke_dimension_records,
+	validate_manifest_not_in_accounts,
+)
+
 
 def get_sheet(workbook, seq_no):
 	suffix = f"({seq_no})"
@@ -42,6 +49,14 @@ class Manifest(Document):
 
 	def on_submit(self):
 		self.create_consignees()
+		create_dimension_records(self)
+
+	def before_cancel(self):
+		validate_manifest_not_in_accounts(self.name)
+
+	def on_cancel(self):
+		revoke_dimension_records(self.name)
+		self.revoke_consignees()
 
 	def on_trash(self):
 		if self.manifest:
@@ -285,8 +300,20 @@ class Manifest(Document):
 			house_bl.oil_type = row[37]
 
 	def create_consignees(self):
-		def create_consignee(row):
-			consignee = frappe.get_doc(
+		"""Create the consignees this manifest names, resolving the existing ones in one query
+
+		Kept on Document.insert rather than a bulk write: Consignee is named after
+		consignee_name and other apps hook its creation.
+		"""
+
+		rows = self.get_consignee_rows()
+		existing = get_existing_consignees({row.consignee_name for row in rows})
+
+		for row in rows:
+			if row.consignee_name in existing:
+				continue
+
+			frappe.get_doc(
 				{
 					"doctype": "Consignee",
 					"consignee_name": row.consignee_name,
@@ -294,22 +321,53 @@ class Manifest(Document):
 					"consignee_tin": row.consignee_tin,
 					"consignee_address": row.consignee_address,
 				}
+			).insert(ignore_permissions=True)
+			existing.add(row.consignee_name)
+
+	def revoke_consignees(self):
+		"""Drop the consignees this manifest created, keeping every one it did not
+
+		create_consignees skips names that already existed, so deleting every name on the
+		manifest would destroy consignee master data this manifest never owned. A name
+		another manifest also carries, or one already mapped to a Customer, is left alone.
+		"""
+
+		kept = []
+		for name in sorted({row.consignee_name for row in self.get_consignee_rows()}):
+			if self.is_consignee_shared(name):
+				kept.append(name)
+				continue
+
+			try:
+				frappe.delete_doc("Consignee", name, ignore_permissions=True, ignore_missing=True)
+			except frappe.LinkExistsError:
+				kept.append(name)
+
+		if kept:
+			frappe.msgprint(
+				f"Consignee: <b>{', '.join(kept)}</b> is still used by other records and was kept.",
+				indicator="orange",
 			)
-			consignee.insert(ignore_permissions=True)
 
-		for row in self.master_bl:
-			if not row.consignee_name:
-				continue
+	def is_consignee_shared(self, consignee_name: str) -> bool:
+		"""True when the consignee is mapped to a Customer or named by another manifest"""
 
-			if not frappe.db.exists("Consignee", row.consignee_name):
-				create_consignee(row)
+		if frappe.db.get_value("Consignee", consignee_name, "customer"):
+			return True
 
-		for row in self.house_bl:
-			if not row.consignee_name:
-				continue
+		for table in ("Master BL", "House BL"):
+			if frappe.db.exists(
+				table,
+				{"consignee_name": consignee_name, "parenttype": "Manifest", "parent": ("!=", self.name)},
+			):
+				return True
 
-			if not frappe.db.exists("Consignee", row.consignee_name):
-				create_consignee(row)
+		return False
+
+	def get_consignee_rows(self) -> list:
+		"""Manifest rows that name a consignee, from both bill of lading tables"""
+
+		return [row for row in self.master_bl + self.house_bl if row.consignee_name]
 
 	@frappe.whitelist()
 	def get_dashboard_data(self):

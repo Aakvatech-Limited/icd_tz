@@ -1,0 +1,213 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-18 09:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "m_bl_no",
+  "manifest",
+  "column_break_ibmbl",
+  "posting_date",
+  "company",
+  "cargo_section",
+  "consignee",
+  "cargo_classification",
+  "number_of_containers",
+  "column_break_cgmbl",
+  "place_of_destination",
+  "place_of_delivery",
+  "port_of_loading",
+  "cargo_description",
+  "vessel_section",
+  "vessel_name",
+  "voyage_no",
+  "column_break_vsmbl",
+  "shipping_agent_code",
+  "shipping_agent_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "M BL No",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "manifest",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Manifest",
+   "options": "Manifest",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_ibmbl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo_section",
+   "fieldtype": "Section Break",
+   "label": "Cargo"
+  },
+  {
+   "fieldname": "consignee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Consignee",
+   "options": "Consignee",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cargo_classification",
+   "fieldtype": "Data",
+   "label": "Cargo Classification",
+   "read_only": 1
+  },
+  {
+   "fieldname": "number_of_containers",
+   "fieldtype": "Int",
+   "label": "Number of Containers",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cgmbl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "place_of_destination",
+   "fieldtype": "Data",
+   "label": "Place of Destination",
+   "read_only": 1
+  },
+  {
+   "fieldname": "place_of_delivery",
+   "fieldtype": "Data",
+   "label": "Place of Delivery",
+   "read_only": 1
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Data",
+   "label": "Port of Loading",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo_description",
+   "fieldtype": "Small Text",
+   "label": "Cargo Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vessel_section",
+   "fieldtype": "Section Break",
+   "label": "Vessel and Shipping Line"
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Vessel Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "voyage_no",
+   "fieldtype": "Data",
+   "label": "Voyage No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vsmbl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shipping_agent_code",
+   "fieldtype": "Data",
+   "label": "Shipping Agent Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipping_agent_name",
+   "fieldtype": "Data",
+   "label": "Shipping Agent Name",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-18 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "ICD Master BL",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "manifest, consignee, vessel_name",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "m_bl_no",
+ "track_changes": 1
+}
