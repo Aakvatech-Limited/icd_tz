@@ -64,11 +64,19 @@ class TestCODECO(FrappeTestCase):
 
 	# --- message body -----------------------------------------------------
 
-	def test_bgm_carries_the_document_number_not_the_recipient(self):
-		self.assertIn("BGM+34+CR-2026-00001+9'", self.lines())
+	def test_bgm_carries_the_numeric_interchange_reference(self):
+		# The numeric reference is the interchange reference, taken from UNB
+		lines = self.lines()
+		reference = lines[0].split("+")[-1].rstrip("'")
+
+		self.assertIn(f"BGM+34+{reference}+9'", lines)
+		self.assertTrue(reference.isdigit(), reference)
 
 	def test_gate_out_uses_its_own_message_code(self):
-		self.assertIn("BGM+36+CR-2026-00001+9'", self.lines(is_gate_in=False))
+		lines = self.lines(is_gate_in=False)
+		reference = lines[0].split("+")[-1].rstrip("'")
+
+		self.assertIn(f"BGM+36+{reference}+9'", lines)
 
 	def test_main_carriage_carries_voyage_carrier_call_sign_and_vessel(self):
 		self.assertIn("TDT+20+0403+1++CMA:172+++9V2131:103::KOTA NABIL'", self.lines())
