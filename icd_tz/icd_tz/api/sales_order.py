@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import nowdate
 
+from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
 from icd_tz.icd_tz.api.utils import validate_qty_storage_item
 from icd_tz.icd_tz.doctype.waiver_request.waiver_request import apply_approved_waiver
@@ -171,6 +172,20 @@ def make_sales_order(
 	return sales_order.name
 
 
+def get_container_refs(source, container_id: str) -> dict:
+	"""Container identity and accounting dimensions carried by every charge row
+
+	Resolve once per container, the dimension lookup is two queries.
+	"""
+
+	return {
+		"container_no": source.container_no,
+		"container_id": container_id,
+		"manifest": source.manifest,
+		**get_container_dimensions(source),
+	}
+
+
 def get_storage_services(m_bl_no=None, h_bl_no=None):
 	if not m_bl_no and not h_bl_no:
 		frappe.throw(_("Please enter either M BL No or H BL No"))
@@ -194,8 +209,9 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 
 	for container in containers:
 		container_doc = frappe.get_doc("Container", container.name)
+		container_refs = get_container_refs(container_doc, container_doc.name)
 
-		cancellation_service = get_gatepass_cancellation_service(container_doc, settings_doc)
+		cancellation_service = get_gatepass_cancellation_service(container_doc, settings_doc, container_refs)
 		if cancellation_service:
 			services.append(cancellation_service)
 
@@ -237,10 +253,8 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 					"qty": len(single_days) * container_doc.gross_volume
 					if container_doc.freight_indicator == "LCL"
 					else len(single_days),
-					"container_no": container_doc.container_no,
-					"container_id": container_doc.name,
-					"manifest": container_doc.manifest,
 					"container_child_refs": ",".join(single_days),
+					**container_refs,
 				}
 
 				services.append(new_row)
@@ -279,10 +293,8 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 					"qty": len(double_days) * container_doc.gross_volume
 					if container_doc.freight_indicator == "LCL"
 					else len(double_days),
-					"container_no": container_doc.container_no,
-					"container_id": container_doc.name,
-					"manifest": container_doc.manifest,
 					"container_child_refs": ",".join(double_days),
+					**container_refs,
 				}
 
 				services.append(new_row)
@@ -318,16 +330,14 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 				{
 					"item_code": removal_item,
 					"qty": container_doc.gross_volume if container_doc.freight_indicator == "LCL" else 1,
-					"container_no": container_doc.container_no,
-					"container_id": container_doc.name,
-					"manifest": container_doc.manifest,
+					**container_refs,
 				}
 			)
 
 	return services
 
 
-def get_gatepass_cancellation_service(container_doc, settings_doc):
+def get_gatepass_cancellation_service(container_doc, settings_doc, container_refs: dict):
 	"""Charge row for a container whose Gate Pass was cancelled and is not yet invoiced"""
 
 	if container_doc.has_cancellation_charge != 1 or container_doc.g_sales_invoice:
@@ -339,9 +349,7 @@ def get_gatepass_cancellation_service(container_doc, settings_doc):
 	return {
 		"item_code": settings_doc.gatepass_cancellation_item,
 		"qty": 1,
-		"container_no": container_doc.container_no,
-		"container_id": container_doc.name,
-		"manifest": container_doc.manifest,
+		**container_refs,
 	}
 
 
@@ -437,14 +445,14 @@ def get_service_orders(m_bl_no=None, h_bl_no=None):
 
 
 def get_items(doc):
+	container_refs = get_container_refs(doc, doc.container_id)
+
 	items = []
 	for item in doc.get("services"):
 		row_item = {
 			"item_code": item.get("service"),
 			"qty": item.get("qty"),
-			"container_no": doc.container_no,
-			"container_id": doc.container_id,
-			"manifest": doc.manifest,
+			**container_refs,
 		}
 		items.append(row_item)
 
