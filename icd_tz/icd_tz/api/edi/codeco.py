@@ -59,7 +59,9 @@ class CODECOGenerator:
 
 		segments = [
 			segment("UNH", self.reference, ["CODECO", "D", "95B", "UN", "ITG14"]),
-			segment("BGM", self.message_code, text(self.movement.document, 35), message_function),
+			# Carriers expect a numeric document reference, so reuse the interchange
+			# reference, which already ties the message to UNH, UNT and UNZ.
+			segment("BGM", self.message_code, self.reference, message_function),
 			self.get_tdt_main_carriage(),
 			segment("NAD", "CF", text(self.partner.shipping_line_code, 35)),
 			self.get_eqd_segment(),
