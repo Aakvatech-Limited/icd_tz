@@ -1,8 +1,9 @@
 """CODECO D95B container gate-in / gate-out report.
 
 One message reports one container crossing the ICD gate. The envelope and the
-delivery channel come from the EDI Partner of the container shipping line; the
-message body is the same for every line.
+delivery channel come from the EDI Partner of the container shipping line, and
+so does the body: each partner renders its own template, which starts life as
+the one shipped with the app.
 """
 
 import frappe
@@ -10,8 +11,10 @@ from frappe.model.naming import getseries
 from frappe.utils import now_datetime
 
 from icd_tz.icd_tz.api.edi.movement import from_container_reception, from_gate_pass
-from icd_tz.icd_tz.api.edi.syntax import edifact_datetime, segment, text, whole_number
+from icd_tz.icd_tz.api.edi.syntax import edifact_datetime, segment, split_segments, text, whole_number
 from icd_tz.icd_tz.doctype.edi_partner.edi_partner import get_partner
+
+EDI_TYPE = "CODECO"
 
 MESSAGE_CODES = {"gate_in": "34", "gate_out": "36"}
 MESSAGE_FUNCTIONS = {"cancellation": "1", "replace": "5", "original": "9"}
@@ -49,39 +52,71 @@ class CODECOGenerator:
 		return f"{now_datetime().strftime('%y%m%d%H%M%S')}{getseries(SERIES_KEY, 2)[-2:]}"
 
 	def generate(self, message_function: str = "original") -> str:
-		body = self.get_body_segments(MESSAGE_FUNCTIONS.get(message_function, "9"))
+		body = split_segments(self.render(MESSAGE_FUNCTIONS.get(message_function, "9")))
 		body.append(segment("UNT", str(len(body) + 1), self.reference))
 
 		return "\n".join([self.get_unb_segment(), *body, self.get_unz_segment()])
 
-	def get_body_segments(self, message_function: str) -> list[str]:
-		"""Every segment from UNH up to CNT, in the order the guides define"""
+	def render(self, message_function: str) -> str:
+		"""The message body, UNH through CNT, as this partner spells it.
 
-		segments = [
-			segment("UNH", self.reference, ["CODECO", "D", "95B", "UN", "ITG14"]),
-			# Carriers expect a numeric document reference, so reuse the interchange
-			# reference, which already ties the message to UNH, UNT and UNZ.
-			segment("BGM", self.message_code, self.reference, message_function),
-			self.get_tdt_main_carriage(),
-			segment("NAD", "CF", text(self.partner.shipping_line_code, 35)),
-			self.get_eqd_segment(),
-		]
+		The template is author-supplied, so it is validated on save against the
+		names below and nothing else: `frappe`, `doc` and every other global the
+		sandbox injects are refused there. Jinja runs sandboxed on top of that.
+		"""
 
-		segments += [
-			candidate
-			for candidate in (
-				self.get_rff_segment(),
-				self.get_dtm_segment(),
-				self.get_loc_segment(),
-				self.get_mea_segment(),
-				self.get_sel_segment(),
-				self.get_tdt_inland_carriage(),
-			)
-			if candidate
-		]
-		segments.append(segment("CNT", ["16", "1"]))
+		template = self.partner.get_template(EDI_TYPE)
 
-		return segments
+		# nosemgrep: frappe-semgrep-rules.rules.security.frappe-ssti
+		return frappe.render_template(template, self.get_context(message_function))
+
+	def get_context(self, message_function: str) -> dict:
+		"""Every value a template may name, already uppercased, cut to length and escaped.
+
+		A template never sees a document, so a service character in a vessel or
+		haulier name cannot be read as structure however the template spells it.
+		A value carries the tightest length of the segments that may use it, so
+		no template can overflow an element by moving a value into another one.
+		"""
+
+		movement = self.movement
+		transporter = movement.transporter or ""
+
+		return {
+			"reference": self.reference,
+			"message_code": self.message_code,
+			"message_function": message_function,
+			"sender": text(self.partner.sender, 25),
+			"shipping_line_code": text(self.partner.shipping_line_code, 17),
+			"icd_un_locode": text(self.settings.icd_un_locode, 25),
+			"container_no": text(movement.container_no, 17),
+			"size": text(movement.iso_size_type, 10),
+			"equipment_status": self.equipment_status,
+			"full_empty_indicator": EMPTY_INDICATOR if movement.is_empty else FULL_INDICATOR,
+			# flags, not data: a template asks with them and gets "1" or nothing
+			"is_empty": "1" if movement.is_empty else "",
+			"is_gate_in": "1" if movement.is_gate_in else "",
+			"m_bl_no": text(movement.m_bl_no, 20),
+			"event_datetime": edifact_datetime(movement.event_datetime, "203"),
+			"weight": whole_number(movement.weight) if movement.has_weight_in_kilograms else "",
+			"seal_no": text(movement.seal_no, 18),
+			"transporter": text(transporter, 35),
+			# sliced before it is escaped, so a released character is never cut in half
+			"transporter_code": text(transporter[:2], 17),
+			"truck": text(movement.truck, 9),
+			"voyage_no": text(movement.voyage_no, 17),
+			"vessel_name": text(movement.vessel_name, 35),
+			"call_sign": text(movement.call_sign, 9),
+		}
+
+	@property
+	def equipment_status(self) -> str:
+		"""An empty box leaving the yard is going back to the line, so it is an export"""
+
+		if not self.movement.is_gate_in and self.movement.is_empty:
+			return EQUIPMENT_STATUS_EXPORT
+
+		return EQUIPMENT_STATUS_IMPORT
 
 	def get_unb_segment(self) -> str:
 		prepared = now_datetime()
@@ -97,102 +132,6 @@ class CODECOGenerator:
 
 	def get_unz_segment(self) -> str:
 		return segment("UNZ", "1", self.reference)
-
-	def get_tdt_main_carriage(self) -> str:
-		"""Ocean leg. The carrier matches the gate event to this vessel and voyage.
-
-		The code list owner is left out on purpose: the shipping line code comes
-		from TANeSW, not from BIC or any other list the guides name.
-		"""
-
-		return segment(
-			"TDT",
-			"20",
-			text(self.movement.voyage_no, 17),
-			"1",
-			"",
-			[text(self.partner.shipping_line_code, 17), "172"],
-			"",
-			"",
-			[text(self.movement.call_sign, 9), "103", "", text(self.movement.vessel_name, 35)],
-		)
-
-	def get_eqd_segment(self) -> str:
-		status = EQUIPMENT_STATUS_IMPORT
-		if not self.movement.is_gate_in and self.movement.is_empty:
-			status = EQUIPMENT_STATUS_EXPORT
-
-		return segment(
-			"EQD",
-			"CN",
-			text(self.movement.container_no, 17),
-			[text(self.movement.iso_size_type, 10), "102", "5"],
-			"",
-			status,
-			EMPTY_INDICATOR if self.movement.is_empty else FULL_INDICATOR,
-		)
-
-	def get_rff_segment(self) -> str | None:
-		"""Bill of lading. BM is the qualifier for a B/L, BN is for a booking."""
-
-		if not self.movement.m_bl_no:
-			return None
-
-		return segment("RFF", ["BM", text(self.movement.m_bl_no, 20)])
-
-	def get_dtm_segment(self) -> str | None:
-		moment = edifact_datetime(self.movement.event_datetime, "203")
-		if not moment:
-			return None
-
-		return segment("DTM", ["7", moment, "203"])
-
-	def get_loc_segment(self) -> str | None:
-		"""Where the gate movement happened, which is this ICD and not the seaport.
-
-		The facility carries the same code as the interchange sender, so the
-		shipping line reads a depot code it issued itself. Our own code means
-		nothing to a line that addresses us by another one.
-		"""
-
-		un_locode = text(self.settings.icd_un_locode, 25)
-		if not un_locode:
-			return None
-
-		return segment(
-			"LOC",
-			"165",
-			[un_locode, "139", "6"],
-			[text(self.partner.sender, 25), "TER", "ZZZ"],
-		)
-
-	def get_mea_segment(self) -> str | None:
-		if not self.movement.has_weight_in_kilograms:
-			return None
-
-		return segment("MEA", "AAE", "G", ["KGM", whole_number(self.movement.weight)])
-
-	def get_sel_segment(self) -> str | None:
-		seal_no = text(self.movement.seal_no, 18)
-		if not seal_no:
-			return None
-
-		return segment("SEL", seal_no, "CA")
-
-	def get_tdt_inland_carriage(self) -> str | None:
-		"""Road leg, the truck that brought the box in or took it away"""
-
-		transporter = self.movement.transporter or ""
-		truck = text(self.movement.truck, 9)
-		if not transporter and not truck:
-			return None
-
-		# slice before escaping, so a released character is never cut in half or released twice
-		haulier_code = text(transporter[:2], 17)
-
-		return segment(
-			"TDT", "1", "", "3", "", [haulier_code, "172", "", text(transporter, 35)], "", "", truck
-		)
 
 
 def attach_gate_in(reception):

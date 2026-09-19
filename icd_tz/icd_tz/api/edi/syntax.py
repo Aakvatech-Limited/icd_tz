@@ -88,3 +88,59 @@ def whole_number(value) -> str:
 		return ""
 
 	return str(round(float(value)))
+
+
+def split_segments(rendered: str) -> list[str]:
+	"""The segments of a rendered message, each normalised and terminated.
+
+	A template is free to lay its segments out over as many lines as it likes,
+	and to leave elements empty where it has no value. What comes back is one
+	segment per entry, which is what the interchange has to carry.
+	"""
+
+	candidates = (join_lines(part) for part in split_on(rendered, SEGMENT_TERMINATOR))
+
+	return [normalise_segment(candidate) for candidate in candidates if candidate]
+
+
+def join_lines(candidate: str) -> str:
+	"""One segment on one line, however many lines the template spread it over.
+
+	A line break is not transmittable, and the indentation that follows it is
+	not data, so both are taken out rather than carried into the interchange.
+	"""
+
+	return "".join(line.strip() for line in candidate.splitlines())
+
+
+def normalise_segment(segment_text: str) -> str:
+	"""One segment with its empty trailing components and elements dropped.
+
+	EDIFACT omits what it has nothing to say about, so a template can spell a
+	segment out in full and let the empty tail fall away.
+	"""
+
+	tag, *elements = split_on(segment_text, ELEMENT_SEPARATOR)
+
+	return segment(tag, *(split_on(element, COMPONENT_SEPARATOR) for element in elements))
+
+
+def split_on(value: str, separator: str) -> list[str]:
+	"""Split on a separator, ignoring the ones a release character protects"""
+
+	parts = [""]
+	released = False
+
+	for character in value:
+		if released:
+			parts[-1] += character
+			released = False
+		elif character == RELEASE_CHARACTER:
+			parts[-1] += character
+			released = True
+		elif character == separator:
+			parts.append("")
+		else:
+			parts[-1] += character
+
+	return parts

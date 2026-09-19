@@ -8,6 +8,12 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from icd_tz.icd_tz.api.edi.templates import (
+	SEEDED_EDI_TYPE,
+	get_default_template,
+	validate_template,
+)
+
 CONNECT_TIMEOUT = 30
 
 
@@ -26,6 +32,8 @@ class EDIPartner(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from icd_tz.icd_tz.doctype.edi_partner_template.edi_partner_template import EDIPartnerTemplate
+
 		authentication_key: DF.Password | None
 		authentication_method: DF.Literal["Password", "Key"]
 		connection_type: DF.Literal["", "SFTP", "SMTP"]
@@ -40,6 +48,7 @@ class EDIPartner(Document):
 		shipping_line_code: DF.Data
 		shipping_line_name: DF.Data | None
 		source_ip: DF.Data | None
+		templates: DF.Table[EDIPartnerTemplate]
 		url: DF.Data | None
 		user: DF.Data | None
 	# end: auto-generated types
@@ -48,8 +57,39 @@ class EDIPartner(Document):
 		# the record is named by the code, so it has to be normalised before the name is set
 		self.normalise_code()
 
+	def before_insert(self):
+		# a new partner starts from the shipped template, one it brought is left alone
+		if not self.get_template_row(SEEDED_EDI_TYPE):
+			self.append(
+				"templates",
+				{"edi_type": SEEDED_EDI_TYPE, "template": get_default_template(SEEDED_EDI_TYPE)},
+			)
+
 	def validate(self):
 		self.normalise_code()
+		self.validate_templates()
+
+	def validate_templates(self):
+		seen = set()
+
+		for row in self.templates:
+			if row.edi_type in seen:
+				frappe.throw(_("Row #{0}: there is already a {1} template").format(row.idx, row.edi_type))
+			seen.add(row.edi_type)
+
+			validate_template(row.edi_type, row.template)
+
+	def get_template_row(self, edi_type: str):
+		rows = self.get("templates", {"edi_type": edi_type}, limit=1)
+
+		return rows[0] if rows else None
+
+	def get_template(self, edi_type: str) -> str:
+		"""This partner's template, falling back to the shipped one for a partner that has none"""
+
+		row = self.get_template_row(edi_type)
+
+		return row.template if row and row.template else get_default_template(edi_type)
 
 	def normalise_code(self):
 		self.shipping_line_code = (self.shipping_line_code or "").strip().upper()

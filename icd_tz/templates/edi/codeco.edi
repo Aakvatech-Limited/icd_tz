@@ -1,0 +1,31 @@
+{#-
+  CODECO D95B gate-in / gate-out body, UNH through CNT.
+
+  UNB, UNT and UNZ are added around this body, so do not write them here.
+  Name values on their own, as {{ container_no }}, never as {{ doc.container_no }}.
+  Empty elements and components at the tail of a segment are dropped for you.
+-#}
+UNH+{{ reference }}+CODECO:D:95B:UN:ITG14'
+BGM+{{ message_code }}+{{ reference }}+{{ message_function }}'
+TDT+20+{{ voyage_no }}+1++{{ shipping_line_code }}:172+++{{ call_sign }}:103::{{ vessel_name }}'
+NAD+CF+{{ shipping_line_code }}'
+EQD+CN+{{ container_no }}+{{ size }}:102:5++{{ equipment_status }}+{{ full_empty_indicator }}'
+{% if m_bl_no -%}
+RFF+BM:{{ m_bl_no }}'
+{% endif -%}
+{% if event_datetime -%}
+DTM+7:{{ event_datetime }}:203'
+{% endif -%}
+{% if icd_un_locode -%}
+LOC+165+{{ icd_un_locode }}:139:6+{{ sender }}:TER:ZZZ'
+{% endif -%}
+{% if weight -%}
+MEA+AAE+G+KGM:{{ weight }}'
+{% endif -%}
+{% if seal_no -%}
+SEL+{{ seal_no }}+CA'
+{% endif -%}
+{% if transporter or truck -%}
+TDT+1++3++{{ transporter_code }}:172::{{ transporter }}+++{{ truck }}'
+{% endif -%}
+CNT+16:1'

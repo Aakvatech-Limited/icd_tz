@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:shipping_line_code",
- "creation": "2026-09-14 09:00:00.000000",
+ "creation": "2026-09-14 09:00:00",
  "description": "EDI connection and identity of one shipping line, matched on the TANeSW shipping agent code",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -33,7 +33,10 @@
   "smtp_section",
   "receiver_email",
   "column_break_smtp",
-  "receiver_cc_email"
+  "receiver_cc_email",
+  "edi_template_tab",
+  "templates_section",
+  "templates"
  ],
  "fields": [
   {
@@ -199,12 +202,29 @@
    "fieldtype": "Data",
    "label": "Receiver CC Email",
    "options": "Email"
+  },
+  {
+   "fieldname": "templates_section",
+   "fieldtype": "Section Break",
+   "label": "Message Templates"
+  },
+  {
+   "description": "The body of each message this partner is sent. A CODECO template is added when the partner is created; open a row to change it.",
+   "fieldname": "templates",
+   "fieldtype": "Table",
+   "label": "Templates",
+   "options": "EDI Partner Template"
+  },
+  {
+   "fieldname": "edi_template_tab",
+   "fieldtype": "Tab Break",
+   "label": "EDI Template"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-14 09:00:00.000000",
+ "modified": "2026-09-19 14:46:42.077302",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Partner",
