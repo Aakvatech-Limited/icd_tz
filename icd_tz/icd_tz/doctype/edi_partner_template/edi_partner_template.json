@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 09:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "edi_type",
+  "column_break_actions",
+  "reset_template",
+  "template_section",
+  "template",
+  "help_section",
+  "template_help"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "edi_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "EDI Type",
+   "options": "CODECO\nCOREOR\nCOARRI\nCOPARN\nCOPRAR",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_actions",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reset_template",
+   "fieldtype": "Button",
+   "label": "Reset To Default"
+  },
+  {
+   "fieldname": "template_section",
+   "fieldtype": "Section Break",
+   "label": "Template"
+  },
+  {
+   "fieldname": "template",
+   "fieldtype": "Code",
+   "label": "Template",
+   "options": "Jinja",
+   "reqd": 1
+  },
+  {
+   "fieldname": "help_section",
+   "fieldtype": "Section Break",
+   "label": "How To Write This Template"
+  },
+  {
+   "fieldname": "template_help",
+   "fieldtype": "HTML",
+   "label": "Template Help",
+   "options": "<div class=\"text-muted\" style=\"font-size: var(--text-sm); line-height: 1.7;\">\n<p><b>What this template is</b></p>\n<ul>\n<li>It is the <b>body</b> of the message, from <code>UNH</code> to <code>CNT</code>.</li>\n<li>Do <b>not</b> write <code>UNB</code>, <code>UNT</code> or <code>UNZ</code>. The envelope is added for you.</li>\n<li>One segment per line, each ending in an apostrophe.</li>\n</ul>\n<p><b>How to write a value</b></p>\n<ul>\n<li>Write <code>{{ container_no }}</code> on its own.</li>\n<li><b>Do not write something like this </b><code>{{ doc.container_no }}</code>, <code>{{ frappe.… }}</code> or any other object.</li>\n<li>Only the values listed below exist. Any other name stops the save.</li>\n</ul>\n<p><b>What must stay</b></p>\n<ul>\n<li>The segments <code>UNH</code>, <code>BGM</code>, <code>NAD</code>, <code>EQD</code> and <code>CNT</code>.</li>\n<li>The values <code>{{ reference }}</code> and <code>{{ container_no }}</code>.</li>\n<li>Everything else may be added, moved or removed to match what this partner accepts.</li>\n</ul>\n<p><b>What is done for you</b></p>\n<ul>\n<li>Values are uppercased, cut to their maximum length and escaped, so a <code>+</code> or an apostrophe in a name cannot break a segment.</li>\n<li>Empty elements and components at the end of a segment are dropped.</li>\n<li>Leave a segment out when it has nothing to report, with <code>{% if seal_no %}…{% endif %}</code>.</li>\n</ul>\n<p><b>Reset To Default</b></p>\n<ul>\n<li>It replaces this template with the one shipped with the app.</li>\n<li>Your changes are lost, so copy them first if you want to keep them.</li>\n</ul>\n<p><b>Values you can use</b></p>\n<ul>\n<li><code>{{ reference }}</code> &mdash; The interchange reference, 14 digits. It ties UNH, BGM, UNT and UNZ together.</li>\n<li><code>{{ message_code }}</code> &mdash; What the movement is: <b>34</b> gate in, <b>36</b> gate out.</li>\n<li><code>{{ message_function }}</code> &mdash; Why this message is being sent: <b>9</b> original, <b>5</b> replaces an earlier message, <b>1</b> cancels one. It is <b>9</b> unless a correction is being sent.</li>\n<li><code>{{ sender }}</code> &mdash; Our code as this partner knows us. The Sender ID on this record, or the ICD Sender ID.</li>\n<li><code>{{ shipping_line_code }}</code> &mdash; This partner's TANeSW shipping agent code.</li>\n<li><code>{{ icd_un_locode }}</code> &mdash; The UN/LOCODE of this ICD.</li>\n<li><code>{{ container_no }}</code> &mdash; The container number.</li>\n<li><code>{{ size }}</code> &mdash; The ISO size type, such as 45G1.</li>\n<li><code>{{ equipment_status }}</code> &mdash; <b>3</b> import, <b>2</b> export.</li>\n<li><code>{{ full_empty_indicator }}</code> &mdash; <b>5</b> full, <b>4</b> empty.</li>\n<li><code>{{ is_empty }}</code> &mdash; Ask with it in a condition: <code>{% if is_empty %}</code>. It prints <b>1</b> when the box holds no cargo, nothing when it does not.</li>\n<li><code>{{ is_gate_in }}</code> &mdash; Ask with it in a condition. It prints <b>1</b> on the way in, nothing on the way out.</li>\n<li><code>{{ m_bl_no }}</code> &mdash; The master bill of lading number. Empty when there is none.</li>\n<li><code>{{ event_datetime }}</code> &mdash; When the box crossed the gate, as CCYYMMDDHHMM.</li>\n<li><code>{{ weight }}</code> &mdash; The gross weight in whole kilograms. Empty when it was not recorded in kilograms.</li>\n<li><code>{{ seal_no }}</code> &mdash; The first seal number. Empty when the box has no seal.</li>\n<li><code>{{ transporter }}</code> &mdash; The haulier name.</li>\n<li><code>{{ transporter_code }}</code> &mdash; The first two letters of the haulier name, for the code part of the inland TDT.</li>\n<li><code>{{ truck }}</code> &mdash; The truck registration.</li>\n<li><code>{{ voyage_no }}</code> &mdash; The voyage number.</li>\n<li><code>{{ vessel_name }}</code> &mdash; The vessel name.</li>\n<li><code>{{ call_sign }}</code> &mdash; The vessel call sign.</li>\n</ul>\n</div>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-19 15:04:48.391312",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "EDI Partner Template",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
