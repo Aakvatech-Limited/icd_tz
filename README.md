@@ -229,6 +229,8 @@ The Manifest DocType includes workbook extraction logic. A migration plan should
 
 Yes. The app generates CODECO D95B gate-in / gate-out messages, one per shipping line, addressed by the TANeSW shipping agent code held on an EDI Partner record, and can test an SFTP / SSH connection.
 
+Each EDI Partner carries its own message templates. A new partner starts with the CODECO template shipped with the app, which the partner can then be changed to match the format that shipping line accepts, without affecting any other partner. The template is written in Jinja and names values on their own, as `{{ container_no }}`. The interchange envelope, the segment counts and the character escaping stay with the app, and the mandatory segments are checked when the partner is saved.
+
 ### What should we prepare before implementation?
 
 Prepare ERPNext, ICD billing policies, master data, service items, price lists, storage rules, gate pass policies, EDI partner details, and real test scenarios.
@@ -244,7 +246,7 @@ Prepare ERPNext, ICD billing policies, master data, service items, price lists, 
 - ERPNext Sales Order and Sales Invoice integration with container references.
 - Gate Pass validation for pending storage, reception, booking, inspection, removal, and levy charges.
 - CODECO and COREOR EDI message generation.
-- EDI Partner records, one per shipping line, each with its shipping line code, sender ID, connection type, SFTP / SSH connection test, directory, email recipients, and enable flag.
+- EDI Partner records, one per shipping line, each with its shipping line code, sender ID, connection type, SFTP / SSH connection test, directory, email recipients, enable flag, and its own message templates.
 - ICD workspace, dashboard cards, number cards, dashboard charts, and script reports.
 - Install and migration hooks for custom fields, property setters, item groups, services, container states, and ICD settings defaults.
 
@@ -566,6 +568,8 @@ Use this only after a backup and business approval.
 | `icd_tz/icd_tz/api/sales_order.py` | Creates and updates Sales Orders based on storage and service logic |
 | `icd_tz/icd_tz/api/sales_invoice.py` | Updates ICD references when Sales Invoices are submitted |
 | `icd_tz/icd_tz/api/edi/codeco.py` | Builds and attaches CODECO D95B gate-in / gate-out messages |
+| `icd_tz/icd_tz/api/edi/templates.py` | The per-partner message templates and the rules they must keep to |
+| `icd_tz/templates/edi/codeco.edi` | The CODECO template shipped with the app, which every partner starts from |
 | `icd_tz/icd_tz/api/edi/movement.py` | Reads one gate movement from a Container Reception or a Gate Pass |
 | `icd_tz/icd_tz/api/edi/syntax.py` | UN/EDIFACT level A character handling and segment assembly |
 | `icd_tz/icd_tz/api/edi/coreor.py` | Generates COREOR D00B release orders (unused, pending the inbound parser) |
