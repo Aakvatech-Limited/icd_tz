@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "expense_type",
+  "expense_item",
+  "column_break_expcr",
+  "size",
+  "cargo_type",
+  "destination",
+  "port"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "expense_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Expense Type",
+   "options": "\nShore\nLevy\nStorage-Single\nStorage-Double\nRemoval",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "expense_item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Expense Item",
+   "options": "Item",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_expcr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "description": "Leave blank to match any size",
+   "fieldname": "size",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Size",
+   "options": "\n20ft\n40ft",
+   "search_index": 1
+  },
+  {
+   "columns": 1,
+   "description": "Leave blank to match any cargo type",
+   "fieldname": "cargo_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cargo Type",
+   "options": "\nLocal\nTransit",
+   "search_index": 1
+  },
+  {
+   "columns": 2,
+   "description": "Leave blank to match any destination",
+   "fieldname": "destination",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Destination",
+   "search_index": 1
+  },
+  {
+   "columns": 2,
+   "description": "Leave blank to match any port",
+   "fieldname": "port",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Port",
+   "options": "\nTEAGTL\nDP WORLD",
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "ICD TZ Expense Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
