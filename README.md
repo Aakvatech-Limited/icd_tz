@@ -244,6 +244,7 @@ Prepare ERPNext, ICD billing policies, master data, service items, price lists, 
 - In-yard booking, container inspection, verification movement, and loose cargo tracking.
 - Service Order generation for reception, booking, inspection, storage, removal, corridor levy, and related ICD services.
 - ERPNext Sales Order and Sales Invoice integration with container references.
+- Port expense tracking: a Port Expenses page that prices every configured terminal charge for a manifest from a buying price list, then creates a draft Purchase Order carrying one line per container.
 - Gate Pass validation for pending storage, reception, booking, inspection, removal, and levy charges.
 - CODECO and COREOR EDI message generation.
 - EDI Partner records, one per shipping line, each with its shipping line code, sender ID, connection type, SFTP / SSH connection test, directory, email recipients, enable flag, and its own message templates.
@@ -297,6 +298,7 @@ After installation, configure these areas before production use:
 | Configuration area | What to set |
 |---|---|
 | ICD TZ Settings | Default price list, storage day rules, service pricing criteria, LCL criteria, corridor levy countries, signature validation, gate pass expiry hours |
+| ICD TZ Settings, Expenses tab | Default buying price list, port expense pricing criteria (charge to item, by size, cargo type, destination and port), and the port storage day bands |
 | EDI Partner | Shipping line code and name, sender ID, enable EDI, connection type, URL, port, source IP, IP behind DNS, authentication method, password or key, directory, receiver email and CC |
 | Item Prices | Prices for the ICD service items created by patches |
 | Master data | Consignees, C&F companies, clearing agents, transporters, vehicles, drivers, security officers, locations, document types |
@@ -320,6 +322,63 @@ Use the ICD workspace to access operational areas:
 | Condition and Location | Container State, Container Location |
 | Item and Prices | Item, Item Price |
 | Settings | ICD TZ Settings, EDI Partner, Document Type |
+| Port expenses | Manifest, ICD Container, Purchase Order, Purchase Invoice |
+
+## Port Expenses
+
+Charges paid to the terminal (TEAGTL or DP World) land before a container reaches the ICD, so they are
+tracked against `ICD Container`, the accounting dimension record created when a Manifest is submitted.
+
+### The flow
+
+1. Configure the Expenses tab of ICD TZ Settings: the buying price list, one criteria row per
+   charge, and the port storage day bands. A blank criteria field matches any value, and the most
+   specific matching row wins. The price list has no default, so the view refuses to price until one
+   is chosen deliberately.
+2. A background job fills `ship_dc_date` from the TANeSW tracking API, grouped by bill of
+   lading so the bill search is issued once per bill rather than once per container. The cargo
+   reference number is cached on the bill, so later runs skip the search entirely.
+3. A second job appends one storage day row per calendar day at the port, from the discharge date
+   until the container is received at the ICD. A day row with no Purchase Order is an unbilled day.
+4. Open the page from the button on a submitted Manifest, or from the Purchase Order list view. Every
+   configured charge appears, including the ones no container matches, so an empty charge is visible
+   rather than missing.
+5. Pick a buying price list and a supplier, then create the order. Every row that can be ordered
+   is included; a row with no container or no rate cannot be, and says which.
+
+Every row reads quantity times containers times rate. A storage charge whose containers spent
+different numbers of days at the port splits into one row per day count, so no row shows a figure
+the amount beside it does not follow from.
+
+### What the order carries
+
+One `Purchase Order Item` per container, each stamped with `container_no`, `icd_container`,
+`icd_master_bl` and `manifest`, so cost is attributed per container in the ledger. A storage line also
+carries the day rows it bills in `container_child_refs`.
+
+On submit the covered containers get their booked flag and the order stamp, and the billed day rows
+get the order stamp. On cancel both are released, so a cancelled order does not freeze its containers
+out of the next run. A draft order covering the same manifest, bill or container blocks a second one.
+
+### Entry points
+
+| Where | What it does |
+|---|---|
+| Manifest form | `Create Port Expense Order` button, shown once the manifest is submitted |
+| Purchase Order list | `Create Port Expense Order` inner button, which asks for the manifest first |
+| `/port-expenses` | The page itself, built with frappe-ui from `frontend/` |
+
+### Building the front end
+
+The page is a Vue single page app under `frontend/`. The built assets are committed, so a site that
+installs the app does not need a Node toolchain. After changing anything under `frontend/src`:
+
+```bash
+cd frontend && yarn install && yarn build
+```
+
+The build writes `icd_tz/public/frontend/` and regenerates `icd_tz/www/port_expenses.html`.
+
 
 ## Modules and DocTypes
 
