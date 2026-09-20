@@ -2,6 +2,19 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Manifest", {
+  create_port_expense_order: (frm) => {
+    if (frm.is_dirty()) {
+      frappe.msgprint({
+        title: __("Unsaved Changes"),
+        indicator: "red",
+        message: __("Please save the Manifest before opening Port Expenses"),
+      });
+      return;
+    }
+
+    icd_tz.open_port_expenses(frm.doc.name);
+  },
+
   refresh: (frm) => {
     frm.trigger("create_movement_order");
     frm.trigger("icd_render_manifest_dashboard");
