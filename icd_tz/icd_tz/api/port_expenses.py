@@ -1,0 +1,419 @@
+import re
+
+import frappe
+from frappe import _
+from frappe.query_builder.functions import Count
+from frappe.utils import date_diff, flt, getdate, nowdate
+
+ONE_OFF_EXPENSE_TYPES = {
+	"Shore": "is_shore_booked",
+	"Levy": "is_levy_booked",
+	"Removal": "is_removal_booked",
+}
+STORAGE_EXPENSE_TYPES = {"Storage-Single": "Single", "Storage-Double": "Double"}
+# the contract against the ICD TZ Expense Detail select options, asserted by a test
+EXPENSE_TYPES = (*ONE_OFF_EXPENSE_TYPES, *STORAGE_EXPENSE_TYPES)
+
+CRITERIA_FIELDS = ("size", "cargo_type", "destination", "port")
+CARGO_TYPES = {"IM": "Local", "TR": "Transit"}
+SIZE_BUCKETS = {"2": "20ft", "4": "40ft"}
+
+
+def get_size_bucket(size: str | None) -> str | None:
+	"""Pricing size of a container, taken from the leading digit of its ISO size"""
+
+	digits = re.sub(r"\D", "", size or "")
+
+	return SIZE_BUCKETS.get(digits[:1]) if digits else None
+
+
+def get_cargo_type(cargo_classification: str | None) -> str | None:
+	"""Local or Transit, from the bill of lading cargo classification"""
+
+	return CARGO_TYPES.get((cargo_classification or "").strip().upper())
+
+
+def get_container_key(container, master_bl: dict, port: str | None) -> dict:
+	"""Criteria values a container is matched on"""
+
+	return {
+		"size": get_size_bucket(container.get("size")),
+		"cargo_type": get_cargo_type(master_bl.get("cargo_classification")),
+		"destination": master_bl.get("place_of_destination"),
+		"port": port,
+	}
+
+
+def is_criteria_match(row, key: dict) -> bool:
+	"""A blank criteria field matches any value"""
+
+	return all(not row.get(field) or row.get(field) == key.get(field) for field in CRITERIA_FIELDS)
+
+
+def get_criteria_score(row) -> int:
+	"""How specific a criteria row is, so the narrowest match can win"""
+
+	return sum(1 for field in CRITERIA_FIELDS if row.get(field))
+
+
+def get_matching_criteria(criteria_rows, key: dict) -> dict:
+	"""The winning criteria row per expense type, the most specific match"""
+
+	winners = {}
+	for row in criteria_rows:
+		if not is_criteria_match(row, key):
+			continue
+
+		current = winners.get(row.expense_type)
+		if not current or get_criteria_score(row) > get_criteria_score(current):
+			winners[row.expense_type] = row
+
+	return winners
+
+
+def get_port_storage_bands(settings_doc) -> dict:
+	"""Port storage day bands, as {charge: {"from": int, "to": int}}"""
+
+	return {
+		row.charge: {"from": row.get("from"), "to": row.get("to")} for row in settings_doc.port_storage_days
+	}
+
+
+def get_charge_of_day(day, start_date, bands: dict) -> str | None:
+	"""Band a single day of the stay falls in, counting the discharge day as day one"""
+
+	day_number = date_diff(day, start_date) + 1
+	for charge, band in bands.items():
+		if band["from"] <= day_number <= band["to"]:
+			return charge
+
+	return None
+
+
+def get_manifest_header(manifest: str) -> dict:
+	"""Manifest a port expense run is for
+
+	Its dimension records only exist once it is submitted, so an earlier run
+	would silently price nothing.
+	"""
+
+	header = frappe.db.get_value(
+		"Manifest", manifest, ["name", "port", "company", "vessel_name", "docstatus"], as_dict=True
+	)
+	if not header:
+		frappe.throw(_("Manifest {0} not found").format(frappe.bold(manifest)))
+
+	if header.docstatus != 1:
+		frappe.throw(
+			_("Manifest {0} is not submitted, so it has no containers to expense").format(
+				frappe.bold(manifest)
+			)
+		)
+
+	return header
+
+
+def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool = False) -> list:
+	"""Every configured expense of a manifest, including the ones no container matches"""
+
+	header = get_manifest_header(manifest)
+	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+
+	# a row naming another port must never show, a blank port matches any
+	criteria_rows = [row for row in settings_doc.expense_types if not row.port or row.port == header.port]
+	if not criteria_rows:
+		frappe.throw(
+			_("No Port Expense Pricing Criteria is set in ICD TZ Settings, Please set it to continue"),
+			title=_("Port Expenses Not Configured"),
+		)
+
+	master_bls = get_manifest_master_bls(manifest)
+	unbilled_days = get_unbilled_storage_days(manifest, with_day_rows)
+
+	# seeded before any container is read, so a charge no container matches still shows
+	buckets = {row.name: get_expense_bucket(row) for row in criteria_rows}
+
+	for container in get_manifest_containers(manifest):
+		key = get_container_key(container, master_bls.get(container.master_bl) or {}, header.port)
+
+		for expense_type, criteria_row in get_matching_criteria(criteria_rows, key).items():
+			add_container_to_bucket(buckets[criteria_row.name], container, expense_type, unbilled_days)
+
+	return price_expense_rows(list(buckets.values()), buying_price_list)
+
+
+def get_expense_bucket(criteria_row) -> dict:
+	return {
+		"criteria_row": criteria_row.name,
+		"expense_type": criteria_row.expense_type,
+		"item_code": criteria_row.expense_item,
+		"size": criteria_row.size,
+		"cargo_type": criteria_row.cargo_type,
+		"destination": criteria_row.destination,
+		"port": criteria_row.port,
+		"containers": [],
+	}
+
+
+def add_container_to_bucket(bucket: dict, container, expense_type: str, unbilled_days: dict):
+	"""A container contributes one unit to a one off charge, or its unbilled days to storage"""
+
+	day_rows = []
+
+	if expense_type in ONE_OFF_EXPENSE_TYPES:
+		if container.get(ONE_OFF_EXPENSE_TYPES[expense_type]):
+			return
+
+		quantity = 1
+
+	else:
+		if not container.ship_dc_date:
+			return
+
+		# a day count for the view, the day row names when an order is being built
+		unbilled = unbilled_days.get((container.name, STORAGE_EXPENSE_TYPES[expense_type]), 0)
+		day_rows = unbilled if isinstance(unbilled, list) else []
+		quantity = len(unbilled) if isinstance(unbilled, list) else unbilled
+		if not quantity:
+			return
+
+	bucket["containers"].append(
+		{
+			"icd_container": container.name,
+			"container_no": container.container_no,
+			"icd_master_bl": container.master_bl,
+			"qty": quantity,
+			"day_rows": day_rows,
+		}
+	)
+
+
+def price_expense_rows(rows: list, buying_price_list: str) -> list:
+	"""Attach the price list rate and the resulting amount to every row"""
+
+	rates = get_buying_rates({row["item_code"] for row in rows}, buying_price_list)
+
+	for row in rows:
+		row["container_count"] = len(row["containers"])
+		row["qty"] = sum(container["qty"] for container in row["containers"])
+		row["rate"] = rates.get(row["item_code"], 0)
+		row["amount"] = flt(row["qty"]) * flt(row["rate"])
+
+	rows.sort(key=lambda row: (row["expense_type"], row["size"] or "", row["cargo_type"] or ""))
+
+	return rows
+
+
+def get_manifest_containers(manifest: str) -> list:
+	return frappe.get_all(
+		"ICD Container",
+		filters={"manifest": manifest},
+		fields=[
+			"name",
+			"container_no",
+			"size",
+			"master_bl",
+			"ship_dc_date",
+			*ONE_OFF_EXPENSE_TYPES.values(),
+		],
+		order_by="container_no asc",
+	)
+
+
+def get_manifest_master_bls(manifest: str) -> dict:
+	rows = frappe.get_all(
+		"ICD Master BL",
+		filters={"manifest": manifest},
+		fields=["name", "cargo_classification", "place_of_destination"],
+	)
+
+	return {row.name: row for row in rows}
+
+
+def get_unbilled_storage_days(manifest: str, with_day_rows: bool = False) -> dict:
+	"""Storage days not yet on a purchase order, keyed by container and charge
+
+	The view only needs how many, which is a count of a few hundred rows instead
+	of one row per container day. The names are read only when an order is built,
+	because that is the one place they are written to the order line.
+	"""
+
+	storage_date = frappe.qb.DocType("ICD Container Storage Date")
+	icd_container = frappe.qb.DocType("ICD Container")
+
+	query = (
+		frappe.qb.from_(storage_date)
+		.inner_join(icd_container)
+		.on(storage_date.parent == icd_container.name)
+		.where(
+			(icd_container.manifest == manifest)
+			& (storage_date.charge.notnull())
+			& (storage_date.charge != "")
+			& ((storage_date.purchase_order.isnull()) | (storage_date.purchase_order == ""))
+		)
+	)
+
+	if not with_day_rows:
+		counted = query.select(storage_date.parent, storage_date.charge, Count("*").as_("days")).groupby(
+			storage_date.parent, storage_date.charge
+		)
+
+		return {(row.parent, row.charge): row.days for row in counted.run(as_dict=True)}
+
+	rows = query.select(storage_date.name, storage_date.parent, storage_date.charge).orderby(
+		storage_date.date
+	)
+
+	unbilled = {}
+	for row in rows.run(as_dict=True):
+		unbilled.setdefault((row.parent, row.charge), []).append(row.name)
+
+	return unbilled
+
+
+def get_buying_rates(item_codes: set, price_list: str) -> dict:
+	"""Current buying rate of each item, the newest price that is valid today winning"""
+
+	if not item_codes or not price_list:
+		return {}
+
+	prices = frappe.get_all(
+		"Item Price",
+		filters={"price_list": price_list, "item_code": ("in", list(item_codes)), "buying": 1},
+		fields=["item_code", "price_list_rate", "valid_from", "valid_upto"],
+		order_by="valid_from asc",
+	)
+
+	return {price.item_code: flt(price.price_list_rate) for price in prices if is_price_current(price)}
+
+
+def is_price_current(price) -> bool:
+	today = getdate(nowdate())
+
+	if price.valid_from and getdate(price.valid_from) > today:
+		return False
+
+	return not (price.valid_upto and getdate(price.valid_upto) < today)
+
+
+def get_default_buying_price_list() -> str:
+	"""The configured buying price list, which has no safe default to fall back on"""
+
+	price_list = frappe.get_cached_value("ICD TZ Settings", "ICD TZ Settings", "default_buying_price_list")
+	if not price_list:
+		frappe.throw(
+			_("Default Buying Price List is not set on the Expenses tab of ICD TZ Settings"),
+			title=_("Port Expenses Not Configured"),
+		)
+
+	return price_list
+
+
+@frappe.whitelist()
+def get_expense_view(manifest: str, buying_price_list: str | None = None) -> dict:
+	"""Everything the port expense page shows for one manifest"""
+
+	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
+
+	header = get_manifest_header(manifest)
+	price_list = buying_price_list or get_default_buying_price_list()
+	rows = get_expense_rows(manifest, price_list)
+
+	return {
+		"manifest": manifest,
+		"port": header.port,
+		"vessel_name": header.vessel_name,
+		"buying_price_list": price_list,
+		"currency": frappe.get_cached_value("Price List", price_list, "currency") if price_list else None,
+		"summary": get_expense_summary(manifest, rows),
+		"rows": get_display_rows(rows),
+	}
+
+
+def get_display_rows(rows: list) -> list:
+	"""One row per distinct per container quantity, so every row multiplies out
+
+	A storage charge covers containers that spent different numbers of days at
+	the port. Shown as one row it cannot read quantity x containers x rate, so
+	each quantity gets its own row. The container lists are left out and fetched
+	per row, a large manifest would otherwise ship thousands of names.
+	"""
+
+	display_rows = []
+	for row in rows:
+		base = {key: value for key, value in row.items() if key != "containers"}
+
+		if not row["containers"]:
+			display_rows.append({**base, "row_key": row["criteria_row"], "display_qty": 0})
+			continue
+
+		for quantity, containers in sorted(get_containers_by_quantity(row).items()):
+			billed = quantity * len(containers)
+			display_rows.append(
+				{
+					**base,
+					"row_key": f"{row['criteria_row']}:{quantity}",
+					"display_qty": quantity,
+					"container_count": len(containers),
+					"qty": billed,
+					"amount": flt(billed) * flt(row["rate"]),
+				}
+			)
+
+	return display_rows
+
+
+def get_containers_by_quantity(row: dict) -> dict:
+	grouped = {}
+	for container in row["containers"]:
+		grouped.setdefault(container["qty"], []).append(container)
+
+	return grouped
+
+
+@frappe.whitelist()
+def get_expense_row_containers(
+	manifest: str,
+	criteria_row: str,
+	display_qty: float | None = None,
+	buying_price_list: str | None = None,
+) -> list:
+	"""Containers behind one displayed row, for the drill down
+
+	A criteria row is shown as several rows when its containers spent different
+	numbers of days at the port, so the quantity narrows the list to the ones
+	that row actually covers.
+	"""
+
+	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
+
+	price_list = buying_price_list or get_default_buying_price_list()
+	# every criteria row has to be matched before the winner of this one is known,
+	# so the whole manifest is aggregated and the asked for bucket picked out
+	for row in get_expense_rows(manifest, price_list):
+		if row["criteria_row"] != criteria_row:
+			continue
+
+		return [
+			{"container_no": container["container_no"], "qty": container["qty"]}
+			for container in row["containers"]
+			if display_qty is None or container["qty"] == flt(display_qty)
+		]
+
+	return []
+
+
+def get_expense_summary(manifest: str, rows: list) -> dict:
+	billable = {container["icd_container"] for row in rows for container in row["containers"] if row["qty"]}
+
+	return {
+		"total_containers": frappe.db.count("ICD Container", {"manifest": manifest}),
+		"billable_containers": len(billable),
+		# read from the stamp, a container with no matching criteria is not a booked one
+		"booked_containers": frappe.db.count(
+			"ICD Container", {"manifest": manifest, "purchase_order": ("is", "set")}
+		),
+		"missing_discharge_date": frappe.db.count(
+			"ICD Container", {"manifest": manifest, "ship_dc_date": ("is", "not set")}
+		),
+	}
