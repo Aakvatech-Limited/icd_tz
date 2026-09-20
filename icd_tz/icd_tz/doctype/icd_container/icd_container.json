@@ -1,7 +1,6 @@
 {
  "actions": [],
- "allow_rename": 0,
- "creation": "2026-09-18 09:00:00.000000",
+ "creation": "2026-09-18 09:00:00",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -30,7 +29,20 @@
   "vessel_name",
   "voyage_no",
   "column_break_vsctr",
-  "arrival_date"
+  "arrival_date",
+  "port_expense_section",
+  "ship_dc_date",
+  "crn",
+  "column_break_pxctr",
+  "purchase_order",
+  "purchase_invoice",
+  "booked_charges_section",
+  "is_shore_booked",
+  "is_levy_booked",
+  "column_break_bkctr",
+  "is_removal_booked",
+  "storage_dates_section",
+  "storage_dates"
  ],
  "fields": [
   {
@@ -190,12 +202,95 @@
    "fieldtype": "Date",
    "label": "Arrival Date",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "port_expense_section",
+   "fieldtype": "Section Break",
+   "label": "Port Expenses"
+  },
+  {
+   "description": "Actual discharge date from TANeSW, filled by a background job",
+   "fieldname": "ship_dc_date",
+   "fieldtype": "Date",
+   "label": "Ship D/C Date",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CRN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pxctr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Data",
+   "label": "Purchase Order",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Data",
+   "label": "Purchase Invoice",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "booked_charges_section",
+   "fieldtype": "Section Break",
+   "label": "Booked Charges"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_shore_booked",
+   "fieldtype": "Check",
+   "label": "Shore Booked",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_levy_booked",
+   "fieldtype": "Check",
+   "label": "Levy Booked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bkctr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_removal_booked",
+   "fieldtype": "Check",
+   "label": "Removal Booked",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "storage_dates_section",
+   "fieldtype": "Section Break",
+   "label": "Port Storage Days"
+  },
+  {
+   "description": "One row per day at the port. A row with no Purchase Order is an unbilled day.",
+   "fieldname": "storage_dates",
+   "fieldtype": "Table",
+   "label": "Storage Dates",
+   "options": "ICD Container Storage Date",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-18 09:00:00.000000",
+ "modified": "2026-09-21 00:46:37.880963",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
@@ -236,6 +331,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "manifest, m_bl_no, consignee",
  "sort_field": "creation",
  "sort_order": "DESC",

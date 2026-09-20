@@ -17,3 +17,4 @@ icd_tz.patches.fix_icd_workspace_edi_link
 icd_tz.patches.create_icd_accounting_dimensions
 icd_tz.patches.group_icd_accounting_dimensions
 icd_tz.patches.create_port_expense_defaults
+icd_tz.patches.backfill_icd_container_discharge_date
