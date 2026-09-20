@@ -6,3 +6,4 @@ tags
 node_modules
 __pycache__
 frappe-semgrep-rules/
+frontend/node_modules

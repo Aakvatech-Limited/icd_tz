@@ -1,4 +1,4 @@
-exclude: "^(node_modules/|frappe-semgrep-rules/|[.]vscode/|.*/node_modules/)"
+exclude: "^(node_modules/|frappe-semgrep-rules/|[.]vscode/|.*/node_modules/|icd_tz/public/frontend/)"
 default_stages: [pre-commit]
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
 fail_fast: false
