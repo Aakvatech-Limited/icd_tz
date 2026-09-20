@@ -149,6 +149,14 @@ doc_events = {
 		"validate": "icd_tz.icd_tz.api.contract.validate",
 		"before_submit": "icd_tz.icd_tz.api.contract.before_submit",
 	},
+	"Purchase Order": {
+		"on_submit": "icd_tz.icd_tz.api.purchase_order.on_submit",
+		"on_cancel": "icd_tz.icd_tz.api.purchase_order.on_cancel",
+	},
+	"Purchase Invoice": {
+		"on_submit": "icd_tz.icd_tz.api.purchase_invoice.on_submit",
+		"on_cancel": "icd_tz.icd_tz.api.purchase_invoice.on_cancel",
+	},
 }
 
 # Scheduled Tasks
