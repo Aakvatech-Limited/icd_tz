@@ -25,6 +25,22 @@ frappe.ui.form.on("ICD TZ Settings", {
       };
     });
 
+    frm.set_query("expense_item", "expense_types", () => {
+      return {
+        filters: {
+          item_group: "ICD Services",
+        },
+      };
+    });
+
+    frm.set_query("default_buying_price_list", () => {
+      return {
+        filters: {
+          buying: 1,
+        },
+      };
+    });
+
     frm.set_query("gatepass_cancellation_item", () => {
       return {
         filters: {

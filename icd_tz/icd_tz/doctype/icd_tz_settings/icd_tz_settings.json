@@ -25,6 +25,14 @@
   "no_of_days_for_container_storage_charges_section",
   "storage_days",
   "example",
+  "expenses_tab",
+  "expense_defaults_section",
+  "default_buying_price_list",
+  "expense_pricing_criteria_section",
+  "expense_types",
+  "port_storage_section",
+  "port_storage_days",
+  "port_storage_example",
   "edi_tab",
   "enable_edi",
   "default_sender_id",
@@ -167,12 +175,57 @@
    "fieldname": "storages_tab",
    "fieldtype": "Tab Break",
    "label": "Storages"
+  },
+  {
+   "fieldname": "expenses_tab",
+   "fieldtype": "Tab Break",
+   "label": "Expenses"
+  },
+  {
+   "fieldname": "expense_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Defaults"
+  },
+  {
+   "description": "Price list the port expense view pulls rates from. It can be changed in the view.",
+   "fieldname": "default_buying_price_list",
+   "fieldtype": "Link",
+   "label": "Default Buying Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "expense_pricing_criteria_section",
+   "fieldtype": "Section Break",
+   "label": "Port Expense Pricing Criteria"
+  },
+  {
+   "description": "Leave a criteria field blank to match any value. The most specific matching row wins.",
+   "fieldname": "expense_types",
+   "fieldtype": "Table",
+   "label": "Criteria",
+   "options": "ICD TZ Expense Detail"
+  },
+  {
+   "fieldname": "port_storage_section",
+   "fieldtype": "Section Break",
+   "label": "Port Storage Day Bands"
+  },
+  {
+   "fieldname": "port_storage_days",
+   "fieldtype": "Table",
+   "label": "Storage Days",
+   "options": "ICD TZ Port Storage Detail"
+  },
+  {
+   "fieldname": "port_storage_example",
+   "fieldtype": "HTML",
+   "options": "<h2>Example</h2>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\">\n    <th>Charge</th>\n    <th>From</th>\n    <th>To</th>\n  </tr>\n  <tr>\n    <td>Single</td>\n    <td>1</td>\n    <td>7</td>\n  </tr>\n  <tr>\n    <td>Double</td>\n    <td>8</td>\n    <td>9999999</td>\n  </tr>\n</tbody></table>\n"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-16 12:48:22.121001",
+ "modified": "2026-09-20 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Settings",
