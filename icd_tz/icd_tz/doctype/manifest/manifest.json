@@ -21,6 +21,7 @@
   "column_break_nshg",
   "arrival_date",
   "port",
+  "create_port_expense_order",
   "section_break_w7oqg",
   "amended_from",
   "column_break_qoth5",
@@ -198,12 +199,18 @@
    "fieldtype": "Table",
    "label": "House BL",
    "options": "House BL"
+  },
+  {
+   "depends_on": "eval:doc.docstatus==1",
+   "fieldname": "create_port_expense_order",
+   "fieldtype": "Button",
+   "label": "Create Port Expense Order"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-03-10 15:40:51.462538",
+ "modified": "2026-09-20 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Manifest",
