@@ -10,7 +10,7 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/icd_tz/css/icd_tz.css"
-# app_include_js = "/assets/icd_tz/js/icd_tz.js"
+app_include_js = "/assets/icd_tz/js/port_expenses.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/icd_tz/css/icd_tz.css"
@@ -37,6 +37,7 @@ doctype_js = {
 doctype_list_js = {
 	"Custom Field": "patches/custom_field.js",
 	"Property Setter": "patches/property_setter.js",
+	"Purchase Order": "icd_tz/api/purchase_order_list.js",
 	"Sales Order": "icd_tz/api/sales_order_list.js",
 }
 
@@ -158,6 +159,11 @@ doc_events = {
 		"on_cancel": "icd_tz.icd_tz.api.purchase_invoice.on_cancel",
 	},
 }
+
+website_route_rules = [
+	{"from_route": "/port-expenses", "to_route": "port_expenses"},
+	{"from_route": "/port-expenses/<path:app_path>", "to_route": "port_expenses"},
+]
 
 # Scheduled Tasks
 # ---------------
