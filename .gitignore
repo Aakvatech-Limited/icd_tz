@@ -7,3 +7,6 @@ node_modules
 __pycache__
 frappe-semgrep-rules/
 frontend/node_modules
+
+# bench installs the app with pip, so a uv lockfile here would only go stale
+uv.lock
