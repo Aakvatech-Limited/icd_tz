@@ -186,7 +186,14 @@ scheduler_events = {
 		"0 */2 * * *": [
 			"icd_tz.icd_tz.doctype.container.container.daily_update_date_container_stay",
 			"icd_tz.icd_tz.doctype.consignee.consignee.create_customer",
-		]
+		],
+		# offset off the hour, so the port expense jobs never collide with the two hourly one
+		"20 */6 * * *": [
+			"icd_tz.icd_tz.doctype.icd_container.icd_container.update_ship_dc_dates",
+		],
+		"40 1 * * *": [
+			"icd_tz.icd_tz.doctype.icd_container.icd_container.update_port_storage_days",
+		],
 	},
 }
 
