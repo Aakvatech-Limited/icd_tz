@@ -1,0 +1,51 @@
+[
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "schedule_date",
+    "property": "in_list_view",
+    "property_type": "Check",
+    "value": "0"
+  },
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "uom",
+    "property": "in_list_view",
+    "property_type": "Check",
+    "value": "0"
+  },
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "warehouse",
+    "property": "in_list_view",
+    "property_type": "Check",
+    "value": "0"
+  },
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "item_code",
+    "property": "columns",
+    "property_type": "Int",
+    "value": "3"
+  },
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "qty",
+    "property": "columns",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "rate",
+    "property": "columns",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "Purchase Order Item",
+    "field_name": "amount",
+    "property": "columns",
+    "property_type": "Int",
+    "value": "2"
+  }
+]
