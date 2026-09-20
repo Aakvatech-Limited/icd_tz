@@ -9,36 +9,47 @@ REQUEST_TIMEOUT = 15
 DISCHARGE_APPROVAL_CODE = "B21"
 
 
-def get_discharge_date(container_no, m_bl_no):
-	"""Actual discharge date of a container, taken from the TANeSW cargo tracking API"""
+def get_discharge_date(container_no, m_bl_no, crns=None):
+	"""Actual discharge date of a container, taken from the TANeSW cargo tracking API
 
-	if not container_no or not m_bl_no:
+	A container number is reused across shipments, so the bill of lading is what
+	says which one is meant. Passing the cargo reference numbers of that bill
+	skips the search call that resolves them.
+	"""
+
+	if not container_no or not (m_bl_no or crns):
 		return None
 
-	for record in get_container_records(container_no, m_bl_no):
-		for event in record.get("cntrPrcssLst") or []:
-			if event.get("cagTrkngPrcssCd") == DISCHARGE_APPROVAL_CODE and event.get("prcssDt"):
-				return getdate(event.get("prcssDt"))
+	for crn in crns or get_bill_crns(m_bl_no):
+		detail = call_tracking_api("cntr-dtl", {"srchCrn": crn, "srchCntrNo": container_no})
+
+		for record in get_rows((detail or {}).get("trkngCntrDtl")):
+			if record.get("cntrNo") != container_no:
+				continue
+
+			discharge_date = get_discharge_event_date(record)
+			if discharge_date:
+				return discharge_date
 
 	return None
 
 
-def get_container_records(container_no, m_bl_no):
-	"""Container records of a B/L, each one carrying the tracking events of that container"""
+def get_bill_crns(m_bl_no) -> list:
+	"""Cargo reference numbers of a bill, resolved by the one search call"""
 
 	cargo = call_tracking_api("srch", {"srchBlNo": m_bl_no})
-	if not cargo:
-		return []
 
-	records = []
-	for crn in {row.get("crn") for row in get_rows(cargo.get("trkngDtl")) if row.get("crn")}:
-		detail = call_tracking_api("cntr-dtl", {"srchCrn": crn, "srchCntrNo": container_no})
+	return sorted({row.get("crn") for row in get_rows((cargo or {}).get("trkngDtl")) if row.get("crn")})
 
-		records += [
-			row for row in get_rows((detail or {}).get("trkngCntrDtl")) if row.get("cntrNo") == container_no
-		]
 
-	return records
+def get_discharge_event_date(record):
+	"""Date the Discharge Result Report of a container was approved, if it was"""
+
+	for event in record.get("cntrPrcssLst") or []:
+		if event.get("cagTrkngPrcssCd") == DISCHARGE_APPROVAL_CODE and event.get("prcssDt"):
+			return getdate(event.get("prcssDt"))
+
+	return None
 
 
 def call_tracking_api(path, params):
