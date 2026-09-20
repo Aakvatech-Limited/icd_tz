@@ -26,7 +26,8 @@
   "voyage_no",
   "column_break_vsmbl",
   "shipping_agent_code",
-  "shipping_agent_name"
+  "shipping_agent_name",
+  "crn"
  ],
  "fields": [
   {
@@ -158,12 +159,20 @@
    "fieldtype": "Data",
    "label": "Shipping Agent Name",
    "read_only": 1
+  },
+  {
+   "description": "TANeSW cargo reference number, cached so the bill lookup is issued once",
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CRN",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-18 09:00:00.000000",
+ "modified": "2026-09-20 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Master BL",
