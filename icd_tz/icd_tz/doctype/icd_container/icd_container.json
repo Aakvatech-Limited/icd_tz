@@ -7,31 +7,34 @@
  "engine": "InnoDB",
  "field_order": [
   "container_no",
-  "manifest",
+  "m_bl_no",
   "column_break_ibctr",
+  "status",
+  "manifest",
+  "column_break_qbqm",
   "posting_date",
   "company",
   "cargo_section",
-  "m_bl_no",
   "master_bl",
   "consignee",
+  "package_unit",
   "column_break_cgctr",
   "type_of_container",
   "size",
   "freight_indicator",
-  "measures_section",
-  "no_of_packages",
-  "package_unit",
-  "column_break_msctr",
+  "column_break_wudn",
   "weight",
   "weight_unit",
+  "no_of_packages",
   "vessel_section",
   "vessel_name",
+  "column_break_aiwp",
   "voyage_no",
   "column_break_vsctr",
   "arrival_date",
   "port_expense_section",
   "ship_dc_date",
+  "received_date",
   "crn",
   "column_break_pxctr",
   "purchase_order",
@@ -143,11 +146,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "measures_section",
-   "fieldtype": "Section Break",
-   "label": "Packages and Weight"
-  },
-  {
    "fieldname": "no_of_packages",
    "fieldtype": "Data",
    "label": "No of Packages",
@@ -158,10 +156,6 @@
    "fieldtype": "Small Text",
    "label": "Package Unit",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_msctr",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "weight",
@@ -285,12 +279,44 @@
    "label": "Storage Dates",
    "options": "ICD Container Storage Date",
    "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nReceived",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval:doc.status=='Received'",
+   "description": "Date the container was taken in at the ICD",
+   "fieldname": "received_date",
+   "fieldtype": "Date",
+   "label": "Received Date",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_qbqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wudn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_aiwp",
+   "fieldtype": "Column Break"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-21 00:46:37.880963",
+ "modified": "2026-09-22 16:30:13.675549",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
