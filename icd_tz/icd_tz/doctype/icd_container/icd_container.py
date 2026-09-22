@@ -10,7 +10,11 @@ from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import build_dimension_name
-from icd_tz.icd_tz.api.port_expenses import get_charge_of_day, get_port_storage_bands
+from icd_tz.icd_tz.api.port_expenses import (
+	get_charge_of_day,
+	get_port_storage_bands,
+	is_band_configured,
+)
 from icd_tz.icd_tz.api.purchase_order import set_rows
 from icd_tz.icd_tz.api.tanesw import get_bill_crns, get_discharge_date
 
@@ -155,9 +159,17 @@ def update_port_storage_days(manifest=None):
 		return
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	bands = get_port_storage_bands(settings_doc)
+	if not bands or not all(is_band_configured(row) for row in settings_doc.port_storage_days):
+		# counting against a half configured band set would leave the uncovered days
+		# out, and the page refuses to price in the same state
+		frappe.logger("icd_tz").warning(
+			"Port storage days: the day ranges are not set on the Expenses tab of ICD TZ Settings"
+		)
+		return
+
 	manifests = {container.manifest for container in containers}
 	receipt_dates = get_icd_receipt_dates(manifests)
-	bands = get_port_storage_bands(settings_doc)
 
 	for batch in create_batch(containers, BATCH_SIZE):
 		for container in batch:
@@ -240,11 +252,13 @@ def append_storage_days(container_id: str, bands: dict, start_date, end_date):
 	last_day = getdate(end_date)
 	added = 0
 	while day <= last_day:
-		if day not in counted:
-			container_doc.append(
-				"storage_dates",
-				{"date": day, "charge": get_charge_of_day(day, start_date, bands)},
-			)
+		charge = get_charge_of_day(day, start_date, bands)
+
+		# a row is never revisited, so writing a day no band covers would make it
+		# unbillable for ever; leaving it out lets a later run add it once the
+		# bands reach that far
+		if day not in counted and charge:
+			container_doc.append("storage_dates", {"date": day, "charge": charge})
 			added += 1
 
 		day = add_days(day, 1)

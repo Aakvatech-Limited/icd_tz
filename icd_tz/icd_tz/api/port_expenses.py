@@ -14,6 +14,10 @@ STORAGE_EXPENSE_TYPES = {"Storage-Single": "Single", "Storage-Double": "Double"}
 # the contract against the ICD TZ Expense Detail select options, asserted by a test
 EXPENSE_TYPES = (*ONE_OFF_EXPENSE_TYPES, *STORAGE_EXPENSE_TYPES)
 
+# the terminal grants free days, which are recorded on the container so the stay is
+# auditable but are never billed, so they carry no expense type
+FREE_CHARGE = "Free"
+
 CRITERIA_FIELDS = ("size", "cargo_type", "destination", "port")
 CARGO_TYPES = {"IM": "Local", "TR": "Transit"}
 SIZE_BUCKETS = {"2": "20ft", "4": "40ft"}
@@ -74,9 +78,18 @@ def get_matching_criteria(criteria_rows, key: dict) -> dict:
 def get_port_storage_bands(settings_doc) -> dict:
 	"""Port storage day bands, as {charge: {"from": int, "to": int}}"""
 
+	# a seeded row carries only the charge until the day range is confirmed
 	return {
-		row.charge: {"from": row.get("from"), "to": row.get("to")} for row in settings_doc.port_storage_days
+		row.charge: {"from": row.get("from"), "to": row.get("to")}
+		for row in settings_doc.port_storage_days
+		if is_band_configured(row)
 	}
+
+
+def is_band_configured(row) -> bool:
+	"""Whether a storage band has had its day range confirmed"""
+
+	return bool(row.get("from") and row.get("to"))
 
 
 def get_charge_of_day(day, start_date, bands: dict) -> str | None:
@@ -127,6 +140,8 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 			title=_("Port Expenses Not Configured"),
 		)
 
+	validate_storage_bands_configured(settings_doc, criteria_rows)
+
 	master_bls = get_manifest_master_bls(manifest)
 	unbilled_days = get_unbilled_storage_days(manifest, with_day_rows)
 
@@ -140,6 +155,32 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 			add_container_to_bucket(buckets[criteria_row.name], container, expense_type, unbilled_days)
 
 	return price_expense_rows(list(buckets.values()), buying_price_list)
+
+
+def validate_storage_bands_configured(settings_doc, criteria_rows: list):
+	"""A storage charge cannot be priced until its day ranges are confirmed
+
+	Without them every day is recorded with no charge, which reads as nothing to
+	bill rather than as nothing configured, so say so before anything is priced.
+	"""
+
+	if not any(row.expense_type in STORAGE_EXPENSE_TYPES for row in criteria_rows):
+		return
+
+	if not settings_doc.port_storage_days:
+		frappe.throw(
+			_("No Port Storage Day band is set on the Expenses tab of ICD TZ Settings"),
+			title=_("Port Storage Days Not Set"),
+		)
+
+	unset = [row.charge for row in settings_doc.port_storage_days if not is_band_configured(row)]
+	if unset:
+		frappe.throw(
+			_("Set the From and To days for {0} on the Expenses tab of ICD TZ Settings").format(
+				frappe.bold(", ".join(unset))
+			),
+			title=_("Port Storage Days Not Set"),
+		)
 
 
 def get_expense_bucket(criteria_row) -> dict:
@@ -231,7 +272,7 @@ def get_manifest_master_bls(manifest: str) -> dict:
 
 
 def get_unbilled_storage_days(manifest: str, with_day_rows: bool = False) -> dict:
-	"""Storage days not yet on a purchase order, keyed by container and charge
+	"""Chargeable storage days not yet on a purchase order, keyed by container and charge
 
 	The view only needs how many, which is a count of a few hundred rows instead
 	of one row per container day. The names are read only when an order is built,
@@ -249,6 +290,9 @@ def get_unbilled_storage_days(manifest: str, with_day_rows: bool = False) -> dic
 			(icd_container.manifest == manifest)
 			& (storage_date.charge.notnull())
 			& (storage_date.charge != "")
+			# a free day is never ordered, said here rather than left to the fact
+			# that no expense type happens to map to it
+			& (storage_date.charge != FREE_CHARGE)
 			& ((storage_date.purchase_order.isnull()) | (storage_date.purchase_order == ""))
 		)
 	)

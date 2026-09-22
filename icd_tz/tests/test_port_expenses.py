@@ -28,7 +28,7 @@ M_BL_NO = "MAEU777000111"
 BOX_20 = "MSKU2000001"
 BOX_40 = "MSKU4000002"
 PRICE_LIST = "_Test ICD Buying Price List"
-BANDS = (("Single", 1, 7), ("Double", 8, 999999))
+BANDS = (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 999999))
 
 ITEMS = {
 	"Shore": "_Test ICD Shore Expense",
@@ -126,19 +126,53 @@ class TestPortExpenses(FrappeTestCase):
 
 		rows = get_expense_rows(self.manifest.name, PRICE_LIST)
 
+		# 5 free, then single from day 6: a ten day stay bills 5 single days and no double
+		self.assertEqual(get_row(rows, "Storage-Single")["qty"], 5)
+		self.assertEqual(get_row(rows, "Storage-Double")["qty"], 0)
+
+	def test_a_long_stay_reaches_the_double_band(self):
+		"""A fifteen day stay crosses all three bands"""
+
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -14))
+		update_port_storage_days(self.manifest.name)
+
+		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
+		charges = [row.charge for row in container.storage_dates]
+		self.assertEqual((charges.count("Free"), charges.count("Single"), charges.count("Double")), (5, 7, 3))
+
+		rows = get_expense_rows(self.manifest.name, PRICE_LIST)
 		self.assertEqual(get_row(rows, "Storage-Single")["qty"], 7)
 		self.assertEqual(get_row(rows, "Storage-Double")["qty"], 3)
+
+	def test_a_day_no_band_covers_is_not_recorded(self):
+		"""A row is never revisited, so an unbanded day must not be written at all"""
+
+		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc.port_storage_days = []
+		for charge, from_day, to_day in (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 20)):
+			settings_doc.append("port_storage_days", {"charge": charge, "from": from_day, "to": to_day})
+		settings_doc.flags.ignore_mandatory = True
+		settings_doc.save()
+		frappe.clear_cache(doctype="ICD TZ Settings")
+
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -29))
+		update_port_storage_days(self.manifest.name)
+
+		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
+		self.assertEqual(len(container.storage_dates), 20)
+		self.assertTrue(all(row.charge for row in container.storage_dates))
 
 	def test_a_storage_charge_splits_into_one_row_per_day_count(self):
 		"""Every displayed row has to read quantity x containers x rate"""
 
-		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -3))
-		set_discharge_date(self.manifest.name, BOX_40, add_days(nowdate(), -5))
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -8))
+		set_discharge_date(self.manifest.name, BOX_40, add_days(nowdate(), -10))
 		update_port_storage_days(self.manifest.name)
 
 		view = get_expense_view(self.manifest.name, PRICE_LIST)
 		single = [row for row in view["rows"] if row["expense_type"] == "Storage-Single"]
 
+		# nine and eleven day stays, each less its five free days
 		self.assertEqual(sorted(row["display_qty"] for row in single), [4, 6])
 		for row in single:
 			self.assertEqual(row["container_count"], 1)
@@ -148,8 +182,8 @@ class TestPortExpenses(FrappeTestCase):
 			self.assertEqual(row["display_qty"] * row["container_count"], row["qty"])
 
 	def test_a_split_row_drills_down_to_its_own_day_count_only(self):
-		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -3))
-		set_discharge_date(self.manifest.name, BOX_40, add_days(nowdate(), -5))
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -8))
+		set_discharge_date(self.manifest.name, BOX_40, add_days(nowdate(), -10))
 		update_port_storage_days(self.manifest.name)
 
 		view = get_expense_view(self.manifest.name, PRICE_LIST)
@@ -355,8 +389,8 @@ class TestPortExpenses(FrappeTestCase):
 		stamped = [row for row in container.storage_dates if row.purchase_order == name]
 		unbilled = [row for row in container.storage_dates if not row.purchase_order]
 
-		self.assertEqual(len(stamped), 7)
-		self.assertEqual(len(unbilled), 3)
+		self.assertEqual(len(stamped), 5)
+		self.assertEqual(len(unbilled), 5)
 		self.assertTrue(all(row.charge == "Single" for row in stamped))
 
 	def test_an_order_for_an_already_booked_charge_cannot_be_submitted(self):
@@ -410,7 +444,7 @@ class TestPortExpenses(FrappeTestCase):
 
 		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
 		invoiced = [row for row in container.storage_dates if row.purchase_invoice == invoice.name]
-		self.assertEqual(len(invoiced), 7)
+		self.assertEqual(len(invoiced), 5)
 
 		invoice.reload()
 		invoice.cancel()
@@ -490,6 +524,56 @@ class TestPortExpenses(FrappeTestCase):
 
 		self.assertRaises(frappe.ValidationError, append_storage_days, container, {}, None, nowdate())
 
+	def test_the_page_refuses_to_open_until_the_day_ranges_are_set(self):
+		"""A seeded band carries only the charge, and storage cannot be priced from that"""
+
+		settings_doc = frappe.get_doc("ICD TZ Settings")
+		for row in settings_doc.port_storage_days:
+			row.update({"from": 0, "to": 0})
+		settings_doc.flags.ignore_mandatory = True
+		settings_doc.flags.ignore_validate = True
+		settings_doc.save()
+		frappe.clear_cache(doctype="ICD TZ Settings")
+
+		self.assertRaises(frappe.ValidationError, get_expense_view, self.manifest.name, PRICE_LIST)
+
+	def test_free_days_are_counted_but_never_billed(self):
+		"""The terminal grants free days; they belong on the container, not on an order"""
+
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
+		charges = [row.charge for row in container.storage_dates]
+
+		self.assertEqual(charges.count("Free"), 5)
+		self.assertEqual(charges.count("Single"), 5)
+
+		view = get_expense_view(self.manifest.name, PRICE_LIST)
+		self.assertNotIn("Free", {row["expense_type"] for row in view["rows"]})
+		self.assertEqual(get_row(view["rows"], "Storage-Single")["qty"], 5)
+
+	def test_a_free_day_never_reaches_a_purchase_order(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		name = create_purchase_order(
+			self.manifest.name, PRICE_LIST, get_supplier(), [get_criteria_row("Storage-Single", "")]
+		)
+		order = frappe.get_doc("Purchase Order", name)
+		billed = {ref for item in order.items for ref in (item.container_child_refs or "").split(",") if ref}
+
+		free_rows = {
+			row.name
+			for row in frappe.get_doc(
+				"ICD Container", get_container(self.manifest.name, BOX_20)
+			).storage_dates
+			if row.charge == "Free"
+		}
+
+		self.assertEqual(len(free_rows), 5)
+		self.assertFalse(billed & free_rows)
+
 	def test_a_rerun_adds_no_duplicate_day(self):
 		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -3))
 		update_port_storage_days(self.manifest.name)
@@ -504,8 +588,9 @@ class TestPortExpenses(FrappeTestCase):
 		bands = get_port_storage_bands(frappe.get_cached_doc("ICD TZ Settings"))
 		start = getdate_days_ago(0)
 
-		self.assertEqual(get_charge_of_day(start, start, bands), "Single")
-		self.assertEqual(get_charge_of_day(add_days(start, 7), start, bands), "Double")
+		self.assertEqual(get_charge_of_day(start, start, bands), "Free")
+		self.assertEqual(get_charge_of_day(add_days(start, 5), start, bands), "Single")
+		self.assertEqual(get_charge_of_day(add_days(start, 12), start, bands), "Double")
 
 
 def getdate_days_ago(days):
