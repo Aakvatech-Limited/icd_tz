@@ -1,9 +1,9 @@
-import re
-
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Count
 from frappe.utils import date_diff, flt, getdate, nowdate
+
+from icd_tz.icd_tz.api.utils import get_size_bucket
 
 ONE_OFF_EXPENSE_TYPES = {
 	"Shore": "is_shore_booked",
@@ -23,15 +23,6 @@ STORAGE_CHARGE_LABEL = "Storage"
 
 CRITERIA_FIELDS = ("size", "cargo_type", "destination", "port")
 CARGO_TYPES = {"IM": "Local", "TR": "Transit"}
-SIZE_BUCKETS = {"2": "20ft", "4": "40ft"}
-
-
-def get_size_bucket(size: str | None) -> str | None:
-	"""Pricing size of a container, taken from the leading digit of its ISO size"""
-
-	digits = re.sub(r"\D", "", size or "")
-
-	return SIZE_BUCKETS.get(digits[:1]) if digits else None
 
 
 def get_cargo_type(cargo_classification: str | None) -> str | None:
