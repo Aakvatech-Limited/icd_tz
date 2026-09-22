@@ -10,6 +10,7 @@ from frappe.utils.background_jobs import enqueue
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
 from icd_tz.icd_tz.api.utils import validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
+from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
 
 cr = DocType("Container Reception")
 
@@ -59,6 +60,25 @@ class ContainerReception(Document):
 		self.create_hbl_container()
 		self.update_container_storage_days()
 		self.update_cmo_status("Received")
+		self.set_icd_container_status(RECEIVED_STATUS, self.posting_date)
+
+	def set_icd_container_status(self, status, received_date=None):
+		"""Whether the port storage job still counts this container
+
+		Received once the box is in the yard, and back to pending if the receipt
+		is cancelled, or the port would stop charging for a box still sitting in it.
+		"""
+
+		icd_container = frappe.db.get_value(
+			"ICD Container", {"manifest": self.manifest, "container_no": self.container_no}
+		)
+		if icd_container:
+			frappe.db.set_value(
+				"ICD Container",
+				icd_container,
+				{"status": status, "received_date": received_date},
+				update_modified=False,
+			)
 
 	def before_cancel(self):
 		self.validate_delivered_containers()
@@ -73,6 +93,7 @@ class ContainerReception(Document):
 
 	def on_cancel(self):
 		self.update_cmo_status()
+		self.set_icd_container_status(PENDING_STATUS)
 
 	def validate_duplicate_cr(self):
 		"""Validate that there is no duplicate Container Reception based on Container Movement Order (CMO)"""
