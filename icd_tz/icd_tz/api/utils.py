@@ -1,8 +1,104 @@
+import re
+
 import frappe
 from frappe.utils import cint, nowdate
 
 # Containers on these statuses are leaving or have left the ICD
 DELIVERED_CONTAINER_STATUSES = ["At Gate Confirmation", "Delivered"]
+
+# First character of an ISO 6346 size code is its length in feet. Letters are lengths
+# too: reading digits alone takes the height code instead, so M2G1, a 48ft box, reads
+# as 20ft.
+LENGTH_CODES = {
+	"1": 10,
+	"2": 20,
+	"3": 30,
+	"4": 40,
+	"9": 45,
+	"A": 23,
+	"B": 24,
+	"C": 24,
+	"D": 24,
+	"E": 26,
+	"F": 27,
+	"G": 41,
+	"H": 43,
+	"K": 45,
+	"L": 45,
+	"M": 48,
+	"N": 49,
+	"P": 53,
+}
+
+# An ISO 6346 size code is four characters: length, height, then a type group whose
+# first character is always a letter. That is what tells L5G1, a 45ft box, apart from
+# free text such as HC20 or FT40, where the letters are a prefix and the digits are
+# the size. Size is a free text field, so both reach here.
+ISO_SIZE_CODE = re.compile(r"^[0-9A-Z][0-9A-Z][A-Z][0-9A-Z]$")
+
+NON_DIGITS = re.compile(r"\D")
+
+# Pricing sizes in feet, largest first. A container is charged at the largest size it
+# reaches, so 30ft and 24ft are charged as 20ft and 45ft and 48ft as 40ft.
+SIZE_BUCKETS = ((40, "40ft"), (20, "20ft"))
+
+
+def get_container_length(size: str | None) -> int | None:
+	"""Length in feet of a container size, from its ISO 6346 code or from its digits"""
+
+	code = str(size or "").strip().upper()
+	if not code:
+		return None
+
+	if ISO_SIZE_CODE.match(code):
+		return LENGTH_CODES.get(code[0])
+
+	digits = NON_DIGITS.sub("", code)
+
+	return LENGTH_CODES.get(digits[:1]) if digits else None
+
+
+def get_size_bucket(size: str | None) -> str | None:
+	"""Pricing size of a container: the largest size its length reaches
+
+	A size below the smallest pricing size has no bucket, so the caller reports it
+	as missing criteria rather than charging it at a size it never reached.
+	"""
+
+	length = get_container_length(size)
+	if not length:
+		return None
+
+	for feet, bucket in SIZE_BUCKETS:
+		if length >= feet:
+			return bucket
+
+	return None
+
+
+def get_service_items(settings_doc) -> dict:
+	"""Service items in ICD TZ Settings, keyed by service type and pricing size
+
+	Built once per run: the criteria are the same for every container being charged.
+	"""
+
+	service_items = {}
+	for row in settings_doc.service_types:
+		service_items.setdefault((row.service_type, get_size_bucket(row.size)), row.service_name)
+
+	return service_items
+
+
+def get_container_service_item(service_items: dict, service_type: str, size: str | None) -> str | None:
+	"""Service item priced for a container size
+
+	A container shorter than the smallest pricing size matches nothing, and the caller
+	reports that as missing criteria rather than charging it at a size it never reached.
+	"""
+
+	size_bucket = get_size_bucket(size)
+
+	return service_items.get((service_type, size_bucket)) if size_bucket else None
 
 
 def validate_delivered_container(container_id, container_no=None, action="created"):

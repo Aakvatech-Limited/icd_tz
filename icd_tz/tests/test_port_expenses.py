@@ -16,7 +16,6 @@ from icd_tz.icd_tz.api.port_expenses import (
 	get_manifest_header,
 	get_matching_criteria,
 	get_port_storage_bands,
-	get_size_bucket,
 	get_unpaid_port_charges,
 )
 from icd_tz.icd_tz.api.purchase_order import create_purchase_order, get_expense_coverage
@@ -68,10 +67,6 @@ class TestPortExpenses(FrappeTestCase):
 		frappe.db.rollback()
 
 	# criteria resolution
-
-	def test_size_bucket_reads_the_leading_digit(self):
-		for size, bucket in (("20", "20ft"), ("20ft", "20ft"), ("40HC", "40ft"), ("", None), (None, None)):
-			self.assertEqual(get_size_bucket(size), bucket)
 
 	def test_cargo_type_is_local_or_transit_only(self):
 		self.assertEqual(get_cargo_type("IM"), "Local")

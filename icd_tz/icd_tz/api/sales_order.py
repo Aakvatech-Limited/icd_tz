@@ -6,7 +6,11 @@ from frappe.utils import nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
-from icd_tz.icd_tz.api.utils import validate_qty_storage_item
+from icd_tz.icd_tz.api.utils import (
+	get_container_service_item,
+	get_service_items,
+	validate_qty_storage_item,
+)
 from icd_tz.icd_tz.doctype.waiver_request.waiver_request import apply_approved_waiver
 
 
@@ -206,6 +210,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 		return []
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	service_items = get_service_items(settings_doc)
 
 	for container in containers:
 		container_doc = frappe.get_doc("Container", container.name)
@@ -221,31 +226,9 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 		single_days, double_days = get_container_days_to_be_billed(container_doc)
 
 		if container_doc.has_single_charge == 1:
-			single_storage_item = None
-
-			if container_doc.freight_indicator == "LCL":
-				for row in settings_doc.loose_types:
-					if row.service_type == "Storage-Single":
-						single_storage_item = row.service_name
-						break
-			else:
-				for row in settings_doc.service_types:
-					if row.service_type == "Storage-Single":
-						if "2" in str(row.size)[0] and "2" in str(container_doc.size)[0]:
-							single_storage_item = row.service_name
-							break
-
-						elif "4" in str(row.size)[0] and "4" in str(container_doc.size)[0]:
-							single_storage_item = row.service_name
-							break
-
-						else:
-							continue
-
-			if not single_storage_item:
-				frappe.throw(
-					f"Storage-Single Pricing Criteria for Size: {container_doc.size} is not set in ICD TZ Settings, Please set it to continue"
-				)
+			single_storage_item = get_charged_item(
+				container_doc, settings_doc, service_items, "Storage-Single"
+			)
 
 			if len(single_days) > 0:
 				new_row = {
@@ -260,32 +243,9 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 				services.append(new_row)
 
 		if container_doc.has_double_charge == 1:
-			double_storage_item = None
-
-			if container_doc.freight_indicator == "LCL":
-				for row in settings_doc.loose_types:
-					if row.service_type == "Storage-Double":
-						double_storage_item = row.service_name
-						break
-
-			else:
-				for row in settings_doc.service_types:
-					if row.service_type == "Storage-Double":
-						if "2" in str(row.size)[0] and "2" in str(container_doc.size)[0]:
-							double_storage_item = row.service_name
-							break
-
-						elif "4" in str(row.size)[0] and "4" in str(container_doc.size)[0]:
-							double_storage_item = row.service_name
-							break
-
-						else:
-							continue
-
-			if not double_storage_item:
-				frappe.throw(
-					f"Storage-Double Pricing Criteria for Size: {container_doc.size} is not set in ICD TZ Settings, Please set it to continue"
-				)
+			double_storage_item = get_charged_item(
+				container_doc, settings_doc, service_items, "Storage-Double"
+			)
 
 			if len(double_days) > 0:
 				new_row = {
@@ -300,31 +260,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 				services.append(new_row)
 
 		if not container_doc.r_sales_invoice and container_doc.has_removal_charges == "Yes":
-			removal_item = None
-
-			if container_doc.freight_indicator == "LCL":
-				for row in settings_doc.loose_types:
-					if row.service_type == "Removal":
-						removal_item = row.service_name
-						break
-			else:
-				for row in settings_doc.service_types:
-					if row.service_type == "Removal":
-						if "2" in str(row.size)[0] and "2" in str(container_doc.size)[0]:
-							removal_item = row.service_name
-							break
-
-						elif "4" in str(row.size)[0] and "4" in str(container_doc.size)[0]:
-							removal_item = row.service_name
-							break
-
-						else:
-							continue
-
-			if not removal_item:
-				frappe.throw(
-					f"Removal Pricing Criteria for Size: {container_doc.size} is not set in ICD TZ Settings, Please set it to continue"
-				)
+			removal_item = get_charged_item(container_doc, settings_doc, service_items, "Removal")
 
 			services.append(
 				{
@@ -335,6 +271,23 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 			)
 
 	return services
+
+
+def get_charged_item(container_doc, settings_doc, service_items: dict, service_type: str) -> str:
+	"""Item a container is charged for one service, at the loose cargo rate or by size"""
+
+	if container_doc.freight_indicator == "LCL":
+		for row in settings_doc.loose_types:
+			if row.service_type == service_type:
+				return row.service_name
+	else:
+		item_code = get_container_service_item(service_items, service_type, container_doc.size)
+		if item_code:
+			return item_code
+
+	frappe.throw(
+		f"{service_type} Pricing Criteria for Size: {container_doc.size} is not set in ICD TZ Settings, Please set it to continue"
+	)
 
 
 def get_gatepass_cancellation_service(container_doc, settings_doc, container_refs: dict):
