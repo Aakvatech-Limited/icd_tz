@@ -13,6 +13,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 	get_expense_row_containers,
 	get_expense_rows,
 	get_expense_view,
+	get_manifest_header,
 	get_matching_criteria,
 	get_port_storage_bands,
 	get_size_bucket,
@@ -319,6 +320,32 @@ class TestPortExpenses(FrappeTestCase):
 		)
 
 	# duplicate guard
+
+	def test_the_page_is_told_which_draft_orders_block_it(self):
+		"""Named as data so the page can link to them, not buried in prose"""
+
+		name = create_purchase_order(self.manifest.name, PRICE_LIST, get_supplier(), get_shore_rows())
+
+		view = get_expense_view(self.manifest.name, PRICE_LIST)
+
+		self.assertEqual(view["draft_purchase_orders"], [name])
+
+	def test_no_message_the_page_shows_carries_markup(self):
+		"""The page renders these as text, so a tag would be read literally"""
+
+		messages = []
+		for call, args in (
+			(get_manifest_header, ("NO-SUCH-MANIFEST",)),
+			(create_purchase_order, (self.manifest.name, PRICE_LIST, get_supplier(), [])),
+		):
+			try:
+				call(*args)
+			except frappe.ValidationError as error:
+				messages.append(str(error))
+
+		self.assertEqual(len(messages), 2)
+		for message in messages:
+			self.assertNotRegex(message, r"</?[a-zA-Z]+[^>]*>")
 
 	def test_a_draft_order_on_the_same_manifest_blocks_another(self):
 		create_purchase_order(self.manifest.name, PRICE_LIST, get_supplier(), [get_criteria_row("Shore", "")])

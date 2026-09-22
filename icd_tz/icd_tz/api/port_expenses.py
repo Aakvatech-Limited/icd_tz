@@ -114,14 +114,10 @@ def get_manifest_header(manifest: str) -> dict:
 		"Manifest", manifest, ["name", "port", "company", "vessel_name", "docstatus"], as_dict=True
 	)
 	if not header:
-		frappe.throw(_("Manifest {0} not found").format(frappe.bold(manifest)))
+		frappe.throw(_("Manifest {0} not found").format(manifest))
 
 	if header.docstatus != 1:
-		frappe.throw(
-			_("Manifest {0} is not submitted, so it has no containers to expense").format(
-				frappe.bold(manifest)
-			)
-		)
+		frappe.throw(_("Manifest {0} is not submitted, so it has no containers to expense").format(manifest))
 
 	return header
 
@@ -169,7 +165,7 @@ def validate_storage_bands_configured(settings_doc, criteria_rows: list):
 
 	if not settings_doc.port_storage_days:
 		frappe.throw(
-			_("No Port Storage Day band is set on the Expenses tab of ICD TZ Settings"),
+			_("No Port Storage Days are set on the Expenses tab of ICD TZ Settings"),
 			title=_("Port Storage Days Not Set"),
 		)
 
@@ -177,7 +173,7 @@ def validate_storage_bands_configured(settings_doc, criteria_rows: list):
 	if unset:
 		frappe.throw(
 			_("Set the From and To days for {0} on the Expenses tab of ICD TZ Settings").format(
-				frappe.bold(", ".join(unset))
+				", ".join(unset)
 			),
 			title=_("Port Storage Days Not Set"),
 		)
@@ -353,6 +349,36 @@ def get_default_buying_price_list() -> str:
 	return price_list
 
 
+def get_draft_expense_orders(manifest: str, rows: list) -> list:
+	"""Draft orders touching the same manifest, bill of lading or container"""
+
+	containers = [container["icd_container"] for row in rows for container in row["containers"]]
+	master_bls = [
+		container["icd_master_bl"]
+		for row in rows
+		for container in row["containers"]
+		if container["icd_master_bl"]
+	]
+
+	item = frappe.qb.DocType("Purchase Order Item")
+	order = frappe.qb.DocType("Purchase Order")
+
+	overlap = item.manifest == manifest
+	if master_bls:
+		overlap = overlap | item.icd_master_bl.isin(master_bls)
+	if containers:
+		overlap = overlap | item.icd_container.isin(containers)
+
+	return (
+		frappe.qb.from_(item)
+		.inner_join(order)
+		.on(item.parent == order.name)
+		.select(order.name)
+		.distinct()
+		.where((order.docstatus == 0) & overlap)
+	).run(pluck=True)
+
+
 @frappe.whitelist()
 def get_expense_view(manifest: str, buying_price_list: str | None = None) -> dict:
 	"""Everything the port expense page shows for one manifest"""
@@ -371,6 +397,7 @@ def get_expense_view(manifest: str, buying_price_list: str | None = None) -> dic
 		"currency": frappe.get_cached_value("Price List", price_list, "currency") if price_list else None,
 		"summary": get_expense_summary(manifest, rows),
 		"rows": get_display_rows(rows),
+		"draft_purchase_orders": get_draft_expense_orders(manifest, rows),
 	}
 
 
