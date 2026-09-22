@@ -2,7 +2,7 @@ from time import sleep
 
 import frappe
 from frappe import _
-from frappe.utils import nowdate
+from frappe.utils import cint, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
@@ -20,6 +20,8 @@ def before_save(doc, method):
 
 
 def before_submit(doc, method):
+	validate_empty_containers_are_billed_apart(doc)
+
 	if doc.waiver_status == "Pending":
 		frappe.throw(
 			_(
@@ -30,6 +32,71 @@ def before_submit(doc, method):
 
 def on_trash(doc, method):
 	unlink_sales_order(doc)
+
+
+def validate_empty_containers_are_billed_apart(doc):
+	"""An order bills either the cargo or the empty boxes, never both
+
+	One M BL can cover both, and the empty box is owed by the shipping line, so
+	letting them share an order would put that debt on the consignee invoice.
+	"""
+
+	container_ids, empty_containers = get_order_containers(doc)
+	if not empty_containers or len(empty_containers) == len(container_ids):
+		return
+
+	frappe.throw(
+		_(
+			"Empty containers must be billed on their own Sales Order, but this one also bills cargo: {0}"
+		).format(frappe.bold(", ".join(sorted({row.container_no for row in empty_containers})))),
+		title=_("Empty Containers Mixed With Cargo"),
+	)
+
+
+def get_order_containers(doc) -> tuple[set, list]:
+	"""The containers an order bills, and which of them are empty boxes"""
+
+	container_ids = {item.container_id for item in doc.items if item.get("container_id")}
+	if not container_ids:
+		return set(), []
+
+	empty_containers = frappe.get_all(
+		"Container",
+		filters={"name": ("in", list(container_ids)), "is_empty_container": 1},
+		fields=["name", "container_no"],
+	)
+
+	return container_ids, empty_containers
+
+
+def is_empty_container_order(doc) -> bool:
+	"""Whether this order bills empty containers rather than the cargo of an M BL"""
+
+	container_ids, empty_containers = get_order_containers(doc)
+
+	return bool(container_ids) and len(empty_containers) == len(container_ids)
+
+
+def replace_items(doc, items: list):
+	"""Swap an order onto a freshly priced set of charge rows"""
+
+	if not items:
+		frappe.throw(
+			_("Nothing is left to bill on this order, so its rows were not replaced"),
+			title=_("Nothing To Bill"),
+		)
+
+	doc.items = []
+	for item in items:
+		doc.append("items", item)
+
+	doc.set_missing_values()
+	apply_approved_waiver(doc)
+
+	doc.save(ignore_permissions=True)
+	doc.reload()
+
+	return True
 
 
 def unlink_sales_order(doc):
@@ -58,6 +125,9 @@ def update_items_on_sales_order(doc_name: str):
 		container_doc.reload()
 
 	sleep(10)
+
+	if is_empty_container_order(doc):
+		return replace_items(doc, get_empty_container_services(doc.m_bl_no))
 
 	items += get_storage_services(doc.m_bl_no, doc.h_bl_no)
 
@@ -145,22 +215,152 @@ def make_sales_order(
 		if not consignee and m_bl_no:
 			consignee = frappe.get_cached_value("Container", {"m_bl_no": m_bl_no}, "consignee")
 
+	sales_order = build_sales_order(
+		items,
+		customer=consignee,
+		company=company,
+		c_and_f_company=c_and_f_company,
+		consignee=consignee,
+		m_bl_no=order_m_bl_no,
+		h_bl_no=order_h_bl_no,
+	)
+
+	for doc in service_docs:
+		doc.db_set("sales_order", sales_order.name)
+
+	return sales_order.name
+
+
+@frappe.whitelist()
+def make_empty_container_sales_order(m_bl_no: str | None = None, customer: str | None = None) -> str:
+	"""Sales Order billing the shipping line for the yard dwell of its empty containers"""
+
+	frappe.has_permission("Sales Order", "create", throw=True)
+
+	if not m_bl_no:
+		frappe.throw(_("Please enter the M BL No of the empty containers"))
+
+	if not customer:
+		frappe.throw(_("Please select the Customer the empty container storage is billed to"))
+
+	items = get_empty_container_services(m_bl_no)
+	if not items:
+		frappe.throw(
+			_("No empty container storage is waiting to be billed for M BL No: {0}").format(
+				frappe.bold(m_bl_no)
+			)
+		)
+
+	validate_no_draft_empty_container_order({row["container_id"] for row in items})
+
+	sales_order = build_sales_order(
+		items,
+		customer=customer,
+		company=frappe.get_cached_value("Container", items[0]["container_id"], "company"),
+		m_bl_no=m_bl_no,
+	)
+
+	return sales_order.name
+
+
+def validate_no_draft_empty_container_order(container_ids: set):
+	"""A draft already billing these boxes must be finished or deleted first
+
+	Storage days only carry an invoice once one is submitted, so without this a second
+	run of the dialog would bill the shipping line for the same days again.
+	"""
+
+	order = frappe.qb.DocType("Sales Order")
+	item = frappe.qb.DocType("Sales Order Item")
+
+	drafts = (
+		frappe.qb.from_(item)
+		.join(order)
+		.on(item.parent == order.name)
+		.select(order.name)
+		.distinct()
+		.where((order.docstatus == 0) & (item.container_id.isin(list(container_ids))))
+	).run(pluck=True)
+
+	if not drafts:
+		return
+
+	frappe.throw(
+		_("Draft Sales Order {0} already bills these empty containers. Submit or delete it first.").format(
+			frappe.bold(", ".join(sorted(drafts)))
+		),
+		title=_("Empty Containers Already On A Draft Order"),
+	)
+
+
+def get_empty_container_services(m_bl_no: str) -> list:
+	"""Storage rows for the empty containers of an M BL
+
+	Storage only: an empty box holds no cargo, so no shore handling, corridor levy,
+	stripping, verification or removal can arise on it. The days are priced on the
+	standard container criteria by size, not on the loose cargo rates the box was
+	stripped under, because what is left in the yard is equipment.
+	"""
+
+	containers = frappe.db.get_all(
+		"Container",
+		filters={"m_bl_no": m_bl_no, "is_empty_container": 1},
+		fields=["name", "days_to_be_billed"],
+	)
+
+	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	services = []
+
+	for container in containers:
+		if container.days_to_be_billed == 0:
+			continue
+
+		container_doc = frappe.get_doc("Container", container.name)
+		container_refs = get_container_refs(container_doc, container_doc.name)
+		single_days, double_days = get_container_days_to_be_billed(container_doc)
+		key = get_service_key(
+			size=container_doc.size,
+			cargo_type=container_doc.cargo_type,
+			port=container_doc.port_of_destination,
+		)
+
+		for service_type, days in (("Storage-Single", single_days), ("Storage-Double", double_days)):
+			if not days:
+				continue
+
+			item_code = get_service_item(settings_doc, service_type, key)
+			if not item_code:
+				throw_missing_criteria(service_type, key)
+
+			services.append(
+				{
+					"item_code": item_code,
+					"qty": len(days),
+					"container_child_refs": ",".join(days),
+					**container_refs,
+				}
+			)
+
+	return services
+
+
+def build_sales_order(items: list, customer: str, company: str, c_and_f_company: str | None = None, **values):
+	"""Save a draft Sales Order for charge rows the caller has already priced"""
+
 	selling_price_list = get_selling_price_list(c_and_f_company)
 
 	sales_order = frappe.get_doc(
 		{
 			"doctype": "Sales Order",
 			"company": company,
-			"customer": consignee,
+			"customer": customer,
 			"c_and_f_company": c_and_f_company,
 			"transaction_date": nowdate(),
 			"delivery_date": nowdate(),
 			"selling_price_list": selling_price_list,
 			"currency": frappe.get_cached_value("Price List", selling_price_list, "currency"),
 			"items": items,
-			"consignee": consignee,
-			"m_bl_no": order_m_bl_no,
-			"h_bl_no": order_h_bl_no,
+			**values,
 		}
 	)
 
@@ -170,11 +370,11 @@ def make_sales_order(
 	sales_order.save(ignore_permissions=True)
 	sales_order.reload()
 
-	for doc in service_docs:
-		doc.db_set("sales_order", sales_order.name)
+	frappe.msgprint(
+		_("Sales Order {0} created successfully").format(frappe.bold(sales_order.name)), alert=True
+	)
 
-	frappe.msgprint(f"Sales Order <b>{sales_order.name}</b> created successfully", alert=True)
-	return sales_order.name
+	return sales_order
 
 
 def get_container_refs(source, container_id: str) -> dict:
@@ -205,6 +405,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 	elif m_bl_no:
 		filters["m_bl_no"] = m_bl_no
 		filters["has_hbl"] = 0
+		filters["is_empty_container"] = 0
 
 	containers = frappe.db.get_all("Container", filters=filters, fields=["name", "days_to_be_billed"])
 	if len(containers) == 0:
@@ -414,5 +615,8 @@ def get_items(doc):
 @frappe.whitelist()
 def create_sales_order(data: str | dict):
 	data = frappe.parse_json(data)
+
+	if cint(data.get("is_empty_container")):
+		return make_empty_container_sales_order(data.get("m_bl_no"), data.get("customer"))
 
 	return make_sales_order(m_bl_no=data.get("m_bl_no"), h_bl_no=data.get("h_bl_no"))
