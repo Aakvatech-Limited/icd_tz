@@ -7,6 +7,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 	ONE_OFF_EXPENSE_TYPES,
 	STORAGE_EXPENSE_TYPES,
 	get_default_buying_price_list,
+	get_draft_expense_orders,
 	get_expense_rows,
 	get_manifest_header,
 )
@@ -43,9 +44,7 @@ def create_purchase_order(
 	validate_no_draft_purchase_order(manifest, rows)
 
 	purchase_order = build_purchase_order(manifest, price_list, supplier, rows)
-	frappe.msgprint(
-		_("Purchase Order {0} created successfully").format(frappe.bold(purchase_order.name)), alert=True
-	)
+	frappe.msgprint(_("Purchase Order {0} created successfully").format(purchase_order.name), alert=True)
 
 	return purchase_order.name
 
@@ -60,14 +59,14 @@ def validate_expense_rows(rows: list):
 	if not invalid:
 		return
 
-	details = "<br>".join(
+	details = ", ".join(
 		_("{0} ({1}): rate {2}, amount {3}").format(
-			frappe.bold(row["expense_type"]), row["item_code"], row["rate"], row["amount"]
+			row["expense_type"], row["item_code"], row["rate"], row["amount"]
 		)
 		for row in invalid
 	)
 	frappe.throw(
-		_("These rows have no rate or no amount, so they cannot be ordered:<br>{0}").format(details),
+		_("These rows have no rate or no amount, so they cannot be ordered: {0}").format(details),
 		title=_("Incomplete Expense Rows"),
 	)
 
@@ -81,41 +80,11 @@ def validate_no_draft_purchase_order(manifest: str, rows: list):
 
 	frappe.throw(
 		_(
-			"Draft Purchase Order {0} already covers this manifest or some of its containers."
-			"<br>Submit or delete it before creating another."
-		).format(", ".join(frappe.bold(name) for name in drafts)),
+			"Draft Purchase Order {0} already covers this manifest or some of its containers. "
+			"Submit or delete it before creating another."
+		).format(", ".join(drafts)),
 		title=_("Duplicate Port Expense Order"),
 	)
-
-
-def get_draft_expense_orders(manifest: str, rows: list) -> list:
-	"""Draft orders touching the same manifest, bill of lading or container"""
-
-	containers = [container["icd_container"] for row in rows for container in row["containers"]]
-	master_bls = [
-		container["icd_master_bl"]
-		for row in rows
-		for container in row["containers"]
-		if container["icd_master_bl"]
-	]
-
-	item = frappe.qb.DocType("Purchase Order Item")
-	order = frappe.qb.DocType("Purchase Order")
-
-	overlap = item.manifest == manifest
-	if master_bls:
-		overlap = overlap | item.icd_master_bl.isin(master_bls)
-	if containers:
-		overlap = overlap | item.icd_container.isin(containers)
-
-	return (
-		frappe.qb.from_(item)
-		.inner_join(order)
-		.on(item.parent == order.name)
-		.select(order.name)
-		.distinct()
-		.where((order.docstatus == 0) & overlap)
-	).run(pluck=True)
 
 
 def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, rows: list):
