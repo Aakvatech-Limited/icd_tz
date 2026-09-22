@@ -160,6 +160,20 @@ def throw_missing_criteria(service_type: str, key: dict):
 	)
 
 
+def get_cargo_container_ids(m_bl_no: str) -> list:
+	"""Containers of an M BL that carry cargo
+
+	Neither a house bill record, which is billed on its own H BL, nor an empty box,
+	which is owed by the shipping line for storage and nothing else.
+	"""
+
+	return frappe.get_all(
+		"Container",
+		filters={"m_bl_no": m_bl_no, "has_hbl": 0, "is_empty_container": 0},
+		pluck="name",
+	)
+
+
 def validate_delivered_container(container_id, container_no=None, action="created"):
 	"""Block records that would change a container which has already moved out of the ICD"""
 
