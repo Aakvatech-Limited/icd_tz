@@ -76,29 +76,88 @@ def get_size_bucket(size: str | None) -> str | None:
 	return None
 
 
-def get_service_items(settings_doc) -> dict:
-	"""Service items in ICD TZ Settings, keyed by service type and pricing size
+def get_service_key(size: str | None = None, cargo_type: str | None = None, port: str | None = None) -> dict:
+	"""Criteria values a container is matched on
 
-	Built once per run: the criteria are the same for every container being charged.
+	Filling one of these in on a criteria row in ICD TZ Settings narrows that row, with
+	no code change: every service is matched on whatever its own row carries. A brand
+	new criteria column is not free, since only the caller knows where its value comes
+	from on a container.
 	"""
 
-	service_items = {}
-	for row in settings_doc.service_types:
-		service_items.setdefault((row.service_type, get_size_bucket(row.size)), row.service_name)
-
-	return service_items
+	return {"size": get_size_bucket(size), "cargo_type": cargo_type, "port": port}
 
 
-def get_container_service_item(service_items: dict, service_type: str, size: str | None) -> str | None:
-	"""Service item priced for a container size
+def is_criteria_match(row, key: dict) -> bool:
+	"""A blank criteria field matches any value"""
 
-	A container shorter than the smallest pricing size matches nothing, and the caller
-	reports that as missing criteria rather than charging it at a size it never reached.
+	return get_criteria_score(row, key) is not None
+
+
+def get_criteria_score(row, key: dict) -> int | None:
+	"""How specific a matching criteria row is, or None when it does not match
+
+	Reads each criteria field once: a blank field is a wildcard and scores nothing, a
+	filled one must equal the container value, and the count is what makes the
+	narrowest match win.
 	"""
 
-	size_bucket = get_size_bucket(size)
+	score = 0
+	for field, value in key.items():
+		criterion = row.get(field)
+		if not criterion:
+			continue
 
-	return service_items.get((service_type, size_bucket)) if size_bucket else None
+		if criterion != value:
+			return None
+
+		score += 1
+
+	return score
+
+
+def get_best_criteria(criteria_rows, key: dict):
+	"""Most specific criteria row matching this container, or None
+
+	Rows that are equally specific are settled by their order in the table, so the
+	first one configured wins.
+	"""
+
+	winner = None
+	best_score = -1
+	for row in criteria_rows:
+		score = get_criteria_score(row, key)
+		if score is not None and score > best_score:
+			winner, best_score = row, score
+
+	return winner
+
+
+def get_service_item(settings_doc, service_type: str, key: dict, is_loose_cargo: bool = False) -> str | None:
+	"""Item a service is charged on, from the criteria row that best fits the container
+
+	Loose cargo is priced on its own table, where a row carries only the criteria that
+	matter to it and the rest are left blank, so they match whatever the container is.
+	"""
+
+	criteria_rows = settings_doc.loose_types if is_loose_cargo else settings_doc.service_types
+	row = get_best_criteria((row for row in criteria_rows if row.service_type == service_type), key)
+
+	return row.service_name if row else None
+
+
+def throw_missing_criteria(service_type: str, key: dict):
+	"""Name the criteria that were looked for, so the row to add is obvious"""
+
+	criteria = ", ".join(
+		f"{field.replace('_', ' ').title()}: {value}" for field, value in key.items() if value
+	)
+
+	frappe.throw(
+		frappe._(
+			"{0} Pricing Criteria for {1} is not set in ICD TZ Settings, Please set it to continue"
+		).format(service_type, criteria or frappe._("this container"))
+	)
 
 
 def validate_delivered_container(container_id, container_no=None, action="created"):

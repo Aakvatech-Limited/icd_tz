@@ -7,6 +7,9 @@ from frappe.utils import get_url_to_form, nowdate
 
 from icd_tz.icd_tz.api.utils import (
 	get_delivered_containers,
+	get_service_item,
+	get_service_key,
+	throw_missing_criteria,
 	validate_cf_agent,
 	validate_delivered_container,
 	validate_draft_doc,
@@ -138,26 +141,19 @@ class ContainerInspection(Document):
 		if has_custom_verification_charges != "Yes":
 			return
 
-		verification_item = ""
 		settings_doc = frappe.get_cached_doc("ICD TZ Settings")
 
-		for row in settings_doc.get("service_types"):
-			if row.service_type == "Verification":
-				if "2" in str(row.size)[0] and "2" in str(self.container_size)[0]:
-					verification_item = row.service_name
-					break
-
-				elif "4" in str(row.size)[0] and "4" in str(self.container_size)[0]:
-					verification_item = row.service_name
-					break
-
-				else:
-					continue
-
+		container = frappe.get_cached_value(
+			"Container", self.container_id, ["cargo_type", "port_of_destination"], as_dict=True
+		)
+		key = get_service_key(
+			size=self.container_size,
+			cargo_type=container.cargo_type,
+			port=container.port_of_destination,
+		)
+		verification_item = get_service_item(settings_doc, "Verification", key)
 		if not verification_item:
-			frappe.throw(
-				"Verification Pricing Criteria is not set in ICD TZ Settings, Please set it to continue"
-			)
+			throw_missing_criteria("Verification", key)
 
 		service_names = [row.get("service") for row in self.get("services")]
 		if verification_item not in service_names:

@@ -3,7 +3,7 @@ from frappe import _
 from frappe.query_builder.functions import Count
 from frappe.utils import date_diff, flt, getdate, nowdate
 
-from icd_tz.icd_tz.api.utils import get_size_bucket
+from icd_tz.icd_tz.api.utils import get_best_criteria, get_size_bucket
 
 ONE_OFF_EXPENSE_TYPES = {
 	"Shore": "is_shore_booked",
@@ -42,29 +42,18 @@ def get_container_key(container, master_bl: dict, port: str | None) -> dict:
 	}
 
 
-def is_criteria_match(row, key: dict) -> bool:
-	"""A blank criteria field matches any value"""
-
-	return all(not row.get(field) or row.get(field) == key.get(field) for field in CRITERIA_FIELDS)
-
-
-def get_criteria_score(row) -> int:
-	"""How specific a criteria row is, so the narrowest match can win"""
-
-	return sum(1 for field in CRITERIA_FIELDS if row.get(field))
-
-
 def get_matching_criteria(criteria_rows, key: dict) -> dict:
 	"""The winning criteria row per expense type, the most specific match"""
 
-	winners = {}
+	rows_by_type = {}
 	for row in criteria_rows:
-		if not is_criteria_match(row, key):
-			continue
+		rows_by_type.setdefault(row.expense_type, []).append(row)
 
-		current = winners.get(row.expense_type)
-		if not current or get_criteria_score(row) > get_criteria_score(current):
-			winners[row.expense_type] = row
+	winners = {}
+	for expense_type, rows in rows_by_type.items():
+		winner = get_best_criteria(rows, key)
+		if winner:
+			winners[expense_type] = winner
 
 	return winners
 
