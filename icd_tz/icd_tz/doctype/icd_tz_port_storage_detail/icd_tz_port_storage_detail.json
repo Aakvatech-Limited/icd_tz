@@ -16,7 +16,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Charge",
-   "options": "\nSingle\nDouble",
+   "options": "\nFree\nSingle\nDouble",
    "reqd": 1
   },
   {
@@ -37,7 +37,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-20 09:00:00.000000",
+ "modified": "2026-09-22 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Port Storage Detail",
