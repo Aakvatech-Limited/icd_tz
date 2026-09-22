@@ -31,13 +31,49 @@ var show_dialog = () => {
         fieldname: "h_bl_no",
         fieldtype: "Data",
         reqd: 0,
+        depends_on: "eval:!doc.is_empty_container",
+      },
+      {
+        fieldname: "empty_sb",
+        fieldtype: "Section Break",
+      },
+      {
+        label: "Is Empty Container",
+        fieldname: "is_empty_container",
+        fieldtype: "Check",
+        default: 0,
+        description:
+          "Bill the empty containers of the M BL to the shipping line, for storage only",
+      },
+      {
+        fieldname: "customer_cb",
+        fieldtype: "Column Break",
+      },
+      {
+        label: "Customer",
+        fieldname: "customer",
+        fieldtype: "Link",
+        options: "Customer",
+        depends_on: "is_empty_container",
+        mandatory_depends_on: "is_empty_container",
       },
     ],
     size: "small",
     primary_action_label: "Create Order",
     primary_action(values) {
       if (values) {
-        if (!values.m_bl_no && !values.h_bl_no) {
+        if (values.is_empty_container && !values.m_bl_no) {
+          frappe.msgprint({
+            title: __("Validation Error"),
+            indicator: "red",
+            message: __(
+              "Please enter the <b>M BL No</b> of the empty containers to bill"
+            ),
+          });
+          return;
+        }
+
+        if (!values.is_empty_container && !values.m_bl_no && !values.h_bl_no) {
           frappe.msgprint({
             title: __("Validation Error"),
             indicator: "red",
@@ -46,7 +82,7 @@ var show_dialog = () => {
           return;
         }
 
-        if (values.m_bl_no && values.h_bl_no) {
+        if (!values.is_empty_container && values.m_bl_no && values.h_bl_no) {
           frappe.msgprint({
             title: __("Validation Error"),
             indicator: "red",
@@ -80,6 +116,12 @@ var show_dialog = () => {
       }
     },
   });
+
+  d.fields_dict.is_empty_container.df.onchange = () => {
+    if (d.get_value("is_empty_container")) {
+      d.set_value("h_bl_no", "");
+    }
+  };
 
   d.fields_dict.m_bl_no.df.onchange = () => {
     if (d.get_value("m_bl_no") && d.get_value("h_bl_no")) {
