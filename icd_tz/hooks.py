@@ -197,7 +197,7 @@ scheduler_events = {
 		"20 */6 * * *": [
 			"icd_tz.icd_tz.doctype.icd_container.icd_container.update_ship_dc_dates",
 		],
-		"40 1 * * *": [
+		"40 */4 * * *": [
 			"icd_tz.icd_tz.doctype.icd_container.icd_container.update_port_storage_days",
 		],
 	},
