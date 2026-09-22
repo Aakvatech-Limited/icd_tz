@@ -9,7 +9,6 @@ from icd_tz.icd_tz.api.port_expenses import (
 	EXPENSE_TYPES,
 	get_cargo_type,
 	get_charge_of_day,
-	get_criteria_score,
 	get_expense_row_containers,
 	get_expense_rows,
 	get_expense_view,
@@ -19,6 +18,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 	get_unpaid_port_charges,
 )
 from icd_tz.icd_tz.api.purchase_order import create_purchase_order, get_expense_coverage
+from icd_tz.icd_tz.api.utils import get_criteria_score
 from icd_tz.icd_tz.doctype.container_movement_order.container_movement_order import (
 	get_unpaid_charges_message,
 )
@@ -80,7 +80,7 @@ class TestPortExpenses(FrappeTestCase):
 		winner = get_matching_criteria(settings_doc.expense_types, key)["Shore"]
 
 		self.assertEqual(winner.size, "20ft")
-		self.assertEqual(get_criteria_score(winner), 2)
+		self.assertEqual(get_criteria_score(winner, key), 2)
 
 	def test_a_criteria_row_of_another_port_never_appears(self):
 		"""The TEAGTL Shore row must not reach a DP WORLD manifest"""
