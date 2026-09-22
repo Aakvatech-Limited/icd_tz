@@ -2,10 +2,12 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import DocType
-from frappe.utils import cint, get_url_to_form
+from frappe.utils import cint, escape_html, get_url_to_form
 
+from icd_tz.icd_tz.api.port_expenses import get_unpaid_port_charges
 from icd_tz.icd_tz.api.tanesw import get_discharge_date
 from icd_tz.icd_tz.api.utils import validate_delivered_containers
 
@@ -30,11 +32,41 @@ class ContainerMovementOrder(Document):
 		if self.container_no:
 			self.validate_container_is_in_manifest()
 			self.validate_duplicate_cmo_per_container_number()
+			self.report_unpaid_port_charges()
 
 	def before_submit(self):
 		self.validate_ship_dc_date()
+		self.validate_port_charges_are_paid()
 
 		self.status = "Pending"
+
+	def report_unpaid_port_charges(self):
+		"""Say what the terminal is still owed, while the order can still wait
+
+		Only while it is a draft: validate runs on submit as well, where the
+		refusal says the same thing and saying it twice helps nobody.
+		"""
+
+		if self.docstatus != 0:
+			return
+
+		unpaid = get_unpaid_port_charges(self.manifest, self.container_no)
+		if unpaid:
+			frappe.msgprint(
+				get_unpaid_charges_message(self.container_no, unpaid),
+				title=_("Port Charges Not Paid"),
+				indicator="orange",
+			)
+
+	def validate_port_charges_are_paid(self):
+		"""The box cannot leave the port on charges nobody has settled"""
+
+		unpaid = get_unpaid_port_charges(self.manifest, self.container_no)
+		if unpaid:
+			frappe.throw(
+				get_unpaid_charges_message(self.container_no, unpaid),
+				title=_("Port Charges Not Paid"),
+			)
 
 	def set_ship_dc_date(self):
 		"""Fetch the discharge date from TANeSW, a date already on the document is kept"""
@@ -132,6 +164,22 @@ class ContainerMovementOrder(Document):
 		frappe.throw(
 			f"Do not cancel this Movement Order: {self.name}, It is linked with Container Reception: {reception_records[0].name}"
 		)
+
+
+def get_unpaid_charges_message(container_no: str, unpaid: list) -> str:
+	"""The charges set off from the sentence so they are read at a glance"""
+
+	chips = "".join(
+		"<span style='background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;"
+		"border-radius:10px;padding:2px 10px;margin:0 6px 6px 0;display:inline-block'>"
+		f"{escape_html(charge)}</span>"
+		for charge in unpaid
+	)
+	sentence = _("Port Charges has not been paid yet for this container {0}:").format(
+		f"<b>{escape_html(container_no or '')}</b>"
+	)
+
+	return f"<div>{sentence}</div><div style='margin-top:8px'>{chips}</div>"
 
 
 @frappe.whitelist()

@@ -17,8 +17,12 @@ from icd_tz.icd_tz.api.port_expenses import (
 	get_matching_criteria,
 	get_port_storage_bands,
 	get_size_bucket,
+	get_unpaid_port_charges,
 )
 from icd_tz.icd_tz.api.purchase_order import create_purchase_order, get_expense_coverage
+from icd_tz.icd_tz.doctype.container_movement_order.container_movement_order import (
+	get_unpaid_charges_message,
+)
 from icd_tz.icd_tz.doctype.icd_container.icd_container import (
 	PENDING_STATUS,
 	RECEIVED_STATUS,
@@ -516,6 +520,97 @@ class TestPortExpenses(FrappeTestCase):
 
 		self.assertEqual(stamped, [billed.container_no])
 
+	# what the port is still owed for a container
+
+	def test_every_configured_charge_is_owed_until_it_is_booked(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		self.assertEqual(
+			get_unpaid_port_charges(self.manifest.name, BOX_20),
+			["Shore", "Levy", "Removal", "Storage"],
+		)
+
+	def test_a_booked_charge_is_no_longer_owed(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		container_id = get_container(self.manifest.name, BOX_20)
+		frappe.db.set_value(
+			"ICD Container",
+			container_id,
+			{"is_shore_booked": 1, "is_levy_booked": 1, "is_removal_booked": 1},
+		)
+
+		self.assertEqual(get_unpaid_port_charges(self.manifest.name, BOX_20), ["Storage"])
+
+		for row in frappe.get_doc("ICD Container", container_id).storage_dates:
+			if row.charge != "Free":
+				frappe.db.set_value("ICD Container Storage Date", row.name, "purchase_order", "PO-1")
+
+		self.assertEqual(get_unpaid_port_charges(self.manifest.name, BOX_20), [])
+
+	def test_free_days_alone_are_not_owed(self):
+		"""A free day carries no purchase order and never will"""
+
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -3))
+		update_port_storage_days(self.manifest.name)
+
+		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
+		self.assertTrue(all(row.charge == "Free" for row in container.storage_dates))
+		self.assertNotIn("Storage", get_unpaid_port_charges(self.manifest.name, BOX_20))
+
+	def test_a_site_not_tracking_port_expenses_owes_nothing(self):
+		"""Every flag is unticked on such a site, which must not block the yard"""
+
+		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc.expense_types = []
+		settings_doc.flags.ignore_mandatory = True
+		settings_doc.save()
+		frappe.clear_cache(doctype="ICD TZ Settings")
+
+		self.assertEqual(get_unpaid_port_charges(self.manifest.name, BOX_20), [])
+
+	def test_a_container_outside_the_manifest_owes_nothing(self):
+		self.assertEqual(get_unpaid_port_charges(self.manifest.name, "NOSUCH0000000"), [])
+
+	def test_the_message_is_not_repeated_on_submit(self):
+		"""validate runs on submit too, where the refusal already says it"""
+
+		order = make_movement_order(self.manifest.name, BOX_20)
+
+		frappe.local.message_log = []
+		order.docstatus = 1
+		order.report_unpaid_port_charges()
+
+		self.assertEqual(frappe.local.message_log, [])
+
+	def test_the_message_names_the_charges_and_escapes_them(self):
+		message = get_unpaid_charges_message(BOX_20, ["Shore", "Storage"])
+
+		self.assertIn("Port Charges has not been paid yet for this container", message)
+		self.assertIn(f"<b>{BOX_20}</b>", message)
+		self.assertIn(">Shore<", message)
+		self.assertIn(">Storage<", message)
+		self.assertIn("&lt;script&gt;", get_unpaid_charges_message("<script>", ["<script>"]))
+
+	def test_a_movement_order_is_refused_while_the_port_is_owed(self):
+		order = make_movement_order(self.manifest.name, BOX_20)
+
+		self.assertRaises(frappe.ValidationError, order.validate_port_charges_are_paid)
+
+	def test_a_movement_order_passes_once_the_port_is_paid(self):
+		frappe.db.set_value(
+			"ICD Container",
+			get_container(self.manifest.name, BOX_20),
+			{"is_shore_booked": 1, "is_levy_booked": 1, "is_removal_booked": 1},
+		)
+
+		order = make_movement_order(self.manifest.name, BOX_20)
+
+		# nothing to raise
+		self.assertIsNone(order.validate_port_charges_are_paid())
+
 	def test_a_plain_purchase_order_is_untouched_by_the_hooks(self):
 		order = frappe.new_doc("Purchase Order")
 		order.update({"supplier": get_supplier(), "company": get_company(), "schedule_date": nowdate()})
@@ -684,6 +779,23 @@ def get_row(rows, expense_type, size=None):
 			return row
 
 	frappe.throw(f"No expense row for {expense_type}")
+
+
+def make_movement_order(manifest, container_no):
+	"""Unsaved, so the guard can be exercised without the transport masters"""
+
+	order = frappe.new_doc("Container Movement Order")
+	order.update(
+		{
+			"manifest": manifest,
+			"container_no": container_no,
+			"m_bl_no": M_BL_NO,
+			"company": get_company(),
+			"ship_dc_date": add_days(nowdate(), -9),
+		}
+	)
+
+	return order
 
 
 def get_shore_rows():
