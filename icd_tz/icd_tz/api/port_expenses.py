@@ -18,6 +18,9 @@ EXPENSE_TYPES = (*ONE_OFF_EXPENSE_TYPES, *STORAGE_EXPENSE_TYPES)
 # auditable but are never billed, so they carry no expense type
 FREE_CHARGE = "Free"
 
+# the storage charges answer as one, the day rows say which band each day is
+STORAGE_CHARGE_LABEL = "Storage"
+
 CRITERIA_FIELDS = ("size", "cargo_type", "destination", "port")
 CARGO_TYPES = {"IM": "Local", "TR": "Transit"}
 SIZE_BUCKETS = {"2": "20ft", "4": "40ft"}
@@ -377,6 +380,59 @@ def get_draft_expense_orders(manifest: str, rows: list) -> list:
 		.distinct()
 		.where((order.docstatus == 0) & overlap)
 	).run(pluck=True)
+
+
+def get_unpaid_port_charges(manifest: str, container_no: str) -> list:
+	"""Port charges the terminal has not been paid for this container yet
+
+	Only the charges this ICD actually configures are reported. A site that does
+	not track port expenses has nothing to answer for, and neither does a charge
+	no criteria row asks for.
+	"""
+
+	icd_container = frappe.db.get_value(
+		"ICD Container",
+		{"manifest": manifest, "container_no": container_no},
+		["name", *ONE_OFF_EXPENSE_TYPES.values()],
+		as_dict=True,
+	)
+	if not icd_container:
+		return []
+
+	configured = {row.expense_type for row in frappe.get_cached_doc("ICD TZ Settings").expense_types}
+
+	unpaid = [
+		expense_type
+		for expense_type, booked_field in ONE_OFF_EXPENSE_TYPES.items()
+		if expense_type in configured and not icd_container.get(booked_field)
+	]
+
+	if configured & set(STORAGE_EXPENSE_TYPES) and has_unbilled_storage_days(icd_container.name):
+		unpaid.append(STORAGE_CHARGE_LABEL)
+
+	return unpaid
+
+
+def has_unbilled_storage_days(icd_container: str) -> bool:
+	"""Whether any day the terminal charges for is still not on a purchase order"""
+
+	storage_date = frappe.qb.DocType("ICD Container Storage Date")
+
+	# an unset Data column is NULL, and IN (NULL) matches nothing, so both the
+	# empty string and NULL have to be asked for explicitly
+	unbilled = (
+		frappe.qb.from_(storage_date)
+		.select(storage_date.name)
+		.where(
+			(storage_date.parent == icd_container)
+			& (storage_date.charge.notnull())
+			& (storage_date.charge.notin(["", FREE_CHARGE]))
+			& ((storage_date.purchase_order.isnull()) | (storage_date.purchase_order == ""))
+		)
+		.limit(1)
+	).run()
+
+	return bool(unbilled)
 
 
 @frappe.whitelist()
