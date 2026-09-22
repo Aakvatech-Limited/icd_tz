@@ -42,6 +42,22 @@
       />
 
       <div
+        v-if="draftOrders.length"
+        class="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        Draft Purchase Order
+        <a
+          v-for="(order, index) in draftOrders"
+          :key="order"
+          :href="`/app/purchase-order/${encodeURIComponent(order)}`"
+          class="font-semibold underline"
+          >{{ order }}<span v-if="index < draftOrders.length - 1">, </span></a
+        >
+        already covers this manifest or some of its containers. Submit or delete
+        it before creating another.
+      </div>
+
+      <div
         v-if="errorMessage"
         class="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
       >
@@ -96,8 +112,16 @@ const dischargeFetch = createDischargeFetch();
 // every billable row is ordered, so there is nothing for the user to tick
 const billableRows = computed(() => (view.data?.rows || []).filter(isBillable));
 
+// a draft order already covering this manifest would be refused, so do not offer it
+const draftOrders = computed(() => view.data?.draft_purchase_orders || []);
+
 const canCreate = computed(() =>
-  Boolean(manifest.value && supplier.value && billableRows.value.length)
+  Boolean(
+    manifest.value &&
+      supplier.value &&
+      billableRows.value.length &&
+      !draftOrders.value.length
+  )
 );
 
 onMounted(() => {
