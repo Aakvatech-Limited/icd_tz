@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, nowdate
+from frappe.utils import add_days, getdate, nowdate
 
 from icd_tz.icd_tz.api.port_expenses import (
 	EXPENSE_TYPES,
@@ -19,7 +19,10 @@ from icd_tz.icd_tz.api.port_expenses import (
 )
 from icd_tz.icd_tz.api.purchase_order import create_purchase_order, get_expense_coverage
 from icd_tz.icd_tz.doctype.icd_container.icd_container import (
+	PENDING_STATUS,
+	RECEIVED_STATUS,
 	append_storage_days,
+	get_containers_for_storage_days,
 	update_port_storage_days,
 )
 
@@ -573,6 +576,55 @@ class TestPortExpenses(FrappeTestCase):
 
 		self.assertEqual(len(free_rows), 5)
 		self.assertFalse(billed & free_rows)
+
+	def test_a_container_starts_pending_with_no_receipt_date(self):
+		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
+
+		self.assertEqual(container.status, PENDING_STATUS)
+		self.assertFalse(container.received_date)
+
+	def test_receiving_a_container_records_the_status_and_the_date(self):
+		reception = frappe.new_doc("Container Reception")
+		reception.update(
+			{
+				"manifest": self.manifest.name,
+				"container_no": BOX_20,
+				"posting_date": add_days(nowdate(), -2),
+			}
+		)
+		reception.set_icd_container_status(RECEIVED_STATUS, reception.posting_date)
+
+		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
+		self.assertEqual(container.status, RECEIVED_STATUS)
+		# the posting date, not the reception's own received_date, which falls back
+		# to the ship discharge date on a quick turnaround
+		self.assertEqual(getdate(container.received_date), getdate(add_days(nowdate(), -2)))
+
+		# cancelling the receipt puts the box back at the port
+		reception.set_icd_container_status(PENDING_STATUS)
+
+		container.reload()
+		self.assertEqual(container.status, PENDING_STATUS)
+		self.assertFalse(container.received_date)
+
+	def test_a_received_container_stops_counting_days(self):
+		"""Its stay at the port ended, so the job must leave it alone"""
+
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		container_id = get_container(self.manifest.name, BOX_20)
+		before = len(frappe.get_doc("ICD Container", container_id).storage_dates)
+		self.assertTrue(before)
+
+		frappe.db.set_value("ICD Container", container_id, "status", RECEIVED_STATUS)
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -20))
+		update_port_storage_days(self.manifest.name)
+
+		self.assertEqual(len(frappe.get_doc("ICD Container", container_id).storage_dates), before)
+		self.assertNotIn(
+			container_id, [row.name for row in get_containers_for_storage_days(self.manifest.name)]
+		)
 
 	def test_a_rerun_adds_no_duplicate_day(self):
 		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -3))

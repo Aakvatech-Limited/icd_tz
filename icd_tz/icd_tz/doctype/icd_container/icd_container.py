@@ -27,6 +27,10 @@ MAX_BILLS_PER_RUN = 40
 STORAGE_LOOKBACK_DAYS = 180
 BATCH_SIZE = 100
 
+# the container is in the yard from here, so the port stops charging for it
+RECEIVED_STATUS = "Received"
+PENDING_STATUS = "Pending"
+
 
 class ICDContainer(Document):
 	"""Accounting dimension value for one manifested unit, MSKU1234567:2026-00042"""
@@ -187,12 +191,12 @@ def get_containers_for_storage_days(manifest=None) -> list:
 	"""Containers whose stay can still grow a day row
 
 	The stay is counted from Ship D/C Date, so a container without one has no
-	day to count and is left out entirely. An unscoped run is held to the recent
-	ones as well, so a year of settled containers is not walked every night to
-	append nothing.
+	day to count, and a container received at the ICD is no longer at the port.
+	An unscoped run is held to the recent ones as well, so a year of settled
+	containers is not walked on every run to append nothing.
 	"""
 
-	filters = [["ship_dc_date", "is", "set"]]
+	filters = [["ship_dc_date", "is", "set"], ["status", "!=", RECEIVED_STATUS]]
 
 	# and then either the manifest asked for, or a window for the scheduled run
 	if manifest:
