@@ -6,7 +6,10 @@ from frappe.model.document import Document
 
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
+	get_service_item,
+	get_service_key,
 	set_container_cf_company,
+	throw_missing_criteria,
 	validate_cf_agent,
 	validate_delivered_container,
 	validate_draft_doc,
@@ -116,6 +119,29 @@ class ServiceOrder(Document):
 				f"There are <b>{len(draft_bookings)}</b> draft In Yard Container Booking(s) for Container: {self.container_no}, Please submit them to continue"
 			)
 
+	@property
+	def is_loose_cargo(self) -> bool:
+		"""Loose cargo is priced on its own table, where a container size does not apply"""
+
+		return self.container_status == "LCL"
+
+	def get_criteria_key(self, cargo_type: str | None = None) -> dict:
+		"""Criteria this container is matched on when a service is priced
+
+		The reception carries its own cargo type, which the Container overwrites from the
+		house bill, so a caller holding the reception value passes it rather than losing it.
+		"""
+
+		if not cargo_type:
+			cargo_type = frappe.get_cached_value("Container", self.container_id, "cargo_type")
+
+		return get_service_key(size=self.container_size, cargo_type=cargo_type, port=self.port)
+
+	def find_service_item(self, settings_doc, service_type: str, key: dict) -> str | None:
+		"""Item this container is charged for a service, or None when no criteria row fits"""
+
+		return get_service_item(settings_doc, service_type, key, is_loose_cargo=self.is_loose_cargo)
+
 	def get_services(self):
 		settings_doc = frappe.get_cached_doc("ICD TZ Settings")
 
@@ -147,25 +173,13 @@ class ServiceOrder(Document):
 		service_names = [row.get("service") for row in self.get("services")]
 		if reception_details.has_transport_charges == "Yes":
 			transport_item = None
-			transport_paid = True if reception_details.t_sales_invoice else False
 
-			if self.container_status == "LCL":
-				for row in settings_doc.loose_types:
-					if row.service_type == "Transport":
-						transport_paid = False
-						transport_item = row.service_name
-						break
-			elif not reception_details.t_sales_invoice and self.container_status != "LCL":
-				for row in settings_doc.service_types:
-					if row.service_type == "Transport" and row.cargo_type == reception_details.cargo_type:
-						transport_item = row.service_name
-						transport_paid = False
-						break
+			if self.is_loose_cargo or not reception_details.t_sales_invoice:
+				key = self.get_criteria_key(reception_details.cargo_type)
+				transport_item = self.find_service_item(settings_doc, "Transport", key)
 
-			if not transport_item and not transport_paid:
-				frappe.throw(
-					"Transport Pricing Criteria is not set in ICD TZ Settings, Please set it to continue"
-				)
+				if not transport_item and not reception_details.t_sales_invoice:
+					throw_missing_criteria("Transport", key)
 
 			if transport_item and transport_item not in service_names:
 				self.append(
@@ -178,38 +192,13 @@ class ServiceOrder(Document):
 
 		if reception_details.has_shore_handling_charges == "Yes":
 			shore_handling_item = None
-			shore_handling_paid = True if reception_details.s_sales_invoice else False
 
-			if self.container_status == "LCL":
-				for row in settings_doc.loose_types:
-					if row.service_type == "Shore" and row.cargo_type == reception_details.cargo_type:
-						shore_handling_paid = False
-						shore_handling_item = row.service_name
-						break
-			elif not reception_details.s_sales_invoice and self.container_status != "LCL":
-				for row in settings_doc.service_types:
-					if (
-						row.service_type == "Shore"
-						and row.cargo_type == reception_details.cargo_type
-						and row.port == self.port
-					):
-						if "2" in str(row.size)[0] and "2" in str(self.container_size)[0]:
-							shore_handling_paid = False
-							shore_handling_item = row.service_name
-							break
+			if self.is_loose_cargo or not reception_details.s_sales_invoice:
+				key = self.get_criteria_key(reception_details.cargo_type)
+				shore_handling_item = self.find_service_item(settings_doc, "Shore", key)
 
-						elif "4" in str(row.size)[0] and "4" in str(self.container_size)[0]:
-							shore_handling_paid = False
-							shore_handling_item = row.service_name
-							break
-
-						else:
-							continue
-
-			if not shore_handling_item and not shore_handling_paid:
-				frappe.throw(
-					f"Shore Handling Pricing Criteria for Size: {self.container_size}, Port: {self.port} and Cargo Type: {reception_details.cargo_type} is not set in ICD TZ Settings, Please set it to continue"
-				)
+				if not shore_handling_item and not reception_details.s_sales_invoice:
+					throw_missing_criteria("Shore Handling", key)
 
 			if shore_handling_item and shore_handling_item not in service_names:
 				self.append(
@@ -240,70 +229,19 @@ class ServiceOrder(Document):
 
 		strips = []
 		verifications = []
+		key = self.get_criteria_key()
 		for booking in booking_details:
-			stripping_paid = True if booking.s_sales_invoice else False
-			verification_paid = True if booking.cv_sales_invoice else False
-
 			if not booking.s_sales_invoice and booking.has_stripping_charges == "Yes":
-				stripping_item = None
-
-				if self.container_status == "LCL":
-					for row in settings_doc.loose_types:
-						if row.service_type == "Stripping":
-							stripping_paid = False
-							stripping_item = row.service_name
-							break
-				else:
-					for row in settings_doc.service_types:
-						if row.service_type == "Stripping":
-							if "2" in str(row.size)[0] and "2" in str(self.container_size)[0]:
-								stripping_paid = False
-								stripping_item = row.service_name
-								break
-
-							elif "4" in str(row.size)[0] and "4" in str(self.container_size)[0]:
-								stripping_paid = False
-								stripping_item = row.service_name
-								break
-
-							else:
-								continue
-
-				if not stripping_item and not stripping_paid:
-					frappe.throw(
-						f"Stripping Pricing Criteria for Size: {self.container_size} is not set in ICD TZ Settings, Please set it to continue"
-					)
+				stripping_item = self.find_service_item(settings_doc, "Stripping", key)
+				if not stripping_item:
+					throw_missing_criteria("Stripping", key)
 
 				strips.append(stripping_item)
 
 			if not booking.cv_sales_invoice and booking.has_custom_verification_charges == "Yes":
-				verification_item = None
-				if self.container_status == "LCL":
-					for row in settings_doc.loose_types:
-						if row.service_type == "Verification":
-							verification_paid = False
-							verification_item = row.service_name
-							break
-				else:
-					for row in settings_doc.service_types:
-						if row.service_type == "Verification":
-							if "2" in str(row.size)[0] and "2" in str(self.container_size)[0]:
-								verification_paid = False
-								verification_item = row.service_name
-								break
-
-							elif "4" in str(row.size)[0] and "4" in str(self.container_size)[0]:
-								verification_paid = False
-								verification_item = row.service_name
-								break
-
-							else:
-								continue
-
-				if not verification_item and not verification_paid:
-					frappe.throw(
-						f"Custom Verification Pricing criteria for Size: {self.container_size} is not set in ICD TZ Settings, Please set it to continue"
-					)
+				verification_item = self.find_service_item(settings_doc, "Verification", key)
+				if not verification_item:
+					throw_missing_criteria("Custom Verification", key)
 
 				verifications.append(verification_item)
 
@@ -340,32 +278,12 @@ class ServiceOrder(Document):
 		if container_doc.c_sales_invoice:
 			return
 
-		corridor_item = None
 		service_names = [row.get("service") for row in self.get("services")]
 
-		if self.container_status == "LCL":
-			for row in settings_doc.loose_types:
-				if row.service_type == "Levy":
-					corridor_item = row.service_name
-					break
-		else:
-			for row in settings_doc.service_types:
-				if row.service_type == "Levy":
-					if "2" in str(row.size)[0] and "2" in str(self.container_size)[0]:
-						corridor_item = row.service_name
-						break
-
-					elif "4" in str(row.size)[0] and "4" in str(self.container_size)[0]:
-						corridor_item = row.service_name
-						break
-
-					else:
-						continue
-
+		key = self.get_criteria_key(container_doc.cargo_type)
+		corridor_item = self.find_service_item(settings_doc, "Levy", key)
 		if not corridor_item:
-			frappe.throw(
-				f"Corridor Levy Pricing Criteria for Size: {self.container_size} is not set in ICD TZ Settings, Please set it to continue"
-			)
+			throw_missing_criteria("Corridor Levy", key)
 
 		if corridor_item and corridor_item not in service_names:
 			self.append(
