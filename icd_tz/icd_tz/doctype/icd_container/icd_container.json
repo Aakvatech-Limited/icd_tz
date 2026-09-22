@@ -293,7 +293,6 @@
   },
   {
    "depends_on": "eval:doc.status=='Received'",
-   "description": "Posting date of the Container Reception that took the container in",
    "fieldname": "received_date",
    "fieldtype": "Date",
    "label": "Date Received at ICD",
@@ -316,7 +315,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-22 13:00:00.000000",
+ "modified": "2026-09-22 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
