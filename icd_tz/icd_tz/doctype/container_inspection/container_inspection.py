@@ -6,6 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import get_url_to_form, nowdate
 
 from icd_tz.icd_tz.api.utils import (
+	get_cargo_container_ids,
 	get_delivered_containers,
 	get_service_item,
 	get_service_key,
@@ -172,6 +173,7 @@ def create_bulk_inspections(data):
 	if data.get("m_bl_no"):
 		filters["m_bl_no"] = data.get("m_bl_no")
 		filters["h_bl_no"] = ["is", "not set"]
+		filters["container_id"] = ["in", get_cargo_container_ids(data.get("m_bl_no"))]
 	elif data.get("h_bl_no"):
 		filters["h_bl_no"] = data.get("h_bl_no")
 
