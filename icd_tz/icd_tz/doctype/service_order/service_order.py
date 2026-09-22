@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from icd_tz.icd_tz.api.utils import (
@@ -18,6 +19,7 @@ from icd_tz.icd_tz.api.utils import (
 
 class ServiceOrder(Document):
 	def before_insert(self):
+		self.validate_not_an_empty_container()
 		validate_delivered_container(self.container_id, self.container_no)
 		self.set_missing_values()
 		self.validate_draft_references()
@@ -43,6 +45,27 @@ class ServiceOrder(Document):
 	def before_cancel(self):
 		validate_delivered_container(self.container_id, self.container_no, action="cancelled")
 		self.check_for_gate_pass()
+
+	def validate_not_an_empty_container(self):
+		"""An empty box is owed by the shipping line, for storage and nothing else
+
+		It carries no cargo, so shore handling, corridor levy, stripping, verification
+		and removal cannot arise on it. Its storage is billed straight from the Sales
+		Order dialog instead.
+		"""
+
+		if not self.container_id:
+			return
+
+		if not frappe.get_cached_value("Container", self.container_id, "is_empty_container"):
+			return
+
+		frappe.throw(
+			_("Container {0} is an empty container, create sales order for this container direct").format(
+				frappe.bold(self.container_no or self.container_id)
+			),
+			title=_("Empty Container"),
+		)
 
 	def check_for_gate_pass(self):
 		orders = frappe.db.get_all(
@@ -385,6 +408,7 @@ def create_bulk_service_orders(data):
 	if data.get("m_bl_no"):
 		filters["m_bl_no"] = data.get("m_bl_no")
 		filters["has_hbl"] = 0
+		filters["is_empty_container"] = 0
 	elif data.get("h_bl_no"):
 		filters["h_bl_no"] = data.get("h_bl_no")
 		filters["has_hbl"] = 1
