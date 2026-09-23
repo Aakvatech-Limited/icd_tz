@@ -222,8 +222,8 @@ def validate_one_bill_of_lading(row, first_m_bl_no: str | None):
 		return
 
 	frappe.throw(
-		f"Container <b>{row.container_no}</b> appears on this manifest under two bills of lading: "
-		f"<b>{first_m_bl_no}</b> and <b>{row.m_bl_no}</b>."
+		f"Container <b>{row.container_no}</b> appears on this manifest under more than one bill of "
+		f"lading, including <b>{first_m_bl_no}</b> and <b>{row.m_bl_no}</b>."
 		"<br>Correct the manifest file, its costs cannot be attributed to one bill."
 	)
 
