@@ -9,13 +9,13 @@
  "field_order": [
   "m_bl_no",
   "h_bl_no",
-  "type_of_container",
   "container_no",
+  "type_of_container",
+  "freight_indicator",
   "container_size",
   "seal_no1",
   "seal_no2",
   "seal_no3",
-  "freight_indicator",
   "no_of_packages",
   "package_unit",
   "volume",
@@ -42,6 +42,7 @@
   {
    "fieldname": "type_of_container",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Type of Container"
   },
   {
@@ -53,7 +54,6 @@
   {
    "fieldname": "container_size",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Container Size"
   },
   {
@@ -74,6 +74,7 @@
   {
    "fieldname": "freight_indicator",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Freight Indicator"
   },
   {
@@ -123,15 +124,18 @@
    "label": "Maximum Temperature"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-09-11 21:49:07.781032",
+ "modified": "2026-09-23 13:01:35.215237",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "HBL Container",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
