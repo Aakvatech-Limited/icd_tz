@@ -87,6 +87,49 @@ def validate_no_draft_purchase_order(manifest: str, rows: list):
 	)
 
 
+def get_wip_account(company: str) -> str | None:
+	"""Work in progress account port expenses of this company are booked to, or None
+
+	None means leave the expense account alone, so ERPNext keeps choosing it from the
+	item and company defaults as it always has. An account belongs to one company, and
+	the settings hold one account, so another company's expenses are left alone too
+	rather than made unsavable.
+	"""
+
+	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	if not settings_doc.enable_wip_for_expenses or not settings_doc.wip_account:
+		return None
+
+	if frappe.get_cached_value("Account", settings_doc.wip_account, "company") != company:
+		return None
+
+	return settings_doc.wip_account
+
+
+def get_required_wip_account(company: str) -> str | None:
+	"""The WIP account for a port expense order, or None while the ICD does not use one
+
+	Where the ICD is deliberately creating a port expense order, a configured account
+	that cannot serve the company is said out loud rather than passed over, which is
+	what would otherwise send the expense quietly back to the ERPNext default.
+	"""
+
+	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	if not settings_doc.enable_wip_for_expenses:
+		return None
+
+	wip_account = get_wip_account(company)
+	if not wip_account:
+		frappe.throw(
+			_("Port expenses are booked to work in progress, but {0} cannot be used for {1}").format(
+				frappe.bold(settings_doc.wip_account or _("no WIP Account")), frappe.bold(company)
+			),
+			title=_("WIP Account Not Usable"),
+		)
+
+	return wip_account
+
+
 def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, rows: list):
 	"""Draft order carrying one line per container, so cost lands on the right dimension"""
 
@@ -94,6 +137,7 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 		frappe.throw(_("Select a Supplier before creating the Purchase Order"))
 
 	header = get_manifest_header(manifest)
+	wip_account = get_required_wip_account(header.company)
 
 	purchase_order = frappe.new_doc("Purchase Order")
 	purchase_order.update(
@@ -110,7 +154,7 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 
 	for row in rows:
 		for container in row["containers"]:
-			add_container_line(purchase_order, manifest, row, container)
+			add_container_line(purchase_order, manifest, row, container, wip_account)
 
 	purchase_order.flags.ignore_permissions = True
 	purchase_order.insert()
@@ -118,12 +162,13 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 	return purchase_order
 
 
-def add_container_line(purchase_order, manifest: str, row: dict, container: dict):
+def add_container_line(purchase_order, manifest: str, row: dict, container: dict, wip_account: str | None):
 	"""One order line for one container, stamped with its accounting dimensions"""
 
 	purchase_order.append(
 		"items",
 		{
+			"expense_account": wip_account,
 			"item_code": row["item_code"],
 			"qty": container["qty"],
 			"rate": row["rate"],

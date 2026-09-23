@@ -25,6 +25,17 @@ frappe.ui.form.on("ICD TZ Settings", {
       };
     });
 
+    for (const field of ["wip_account", "cogs_account"]) {
+      frm.set_query(field, () => {
+        return {
+          filters: {
+            is_group: 0,
+            company: frappe.defaults.get_user_default("Company"),
+          },
+        };
+      });
+    }
+
     frm.set_query("expense_item", "expense_types", () => {
       return {
         filters: {
