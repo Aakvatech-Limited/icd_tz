@@ -62,6 +62,19 @@ class TestCODECO(FrappeTestCase):
 		# UNH through UNT inclusive, which is everything but UNB and UNZ
 		self.assertEqual(counted, len(lines) - 2)
 
+	def test_filename_follows_the_partner_convention(self):
+		self.partner.file_name_format = "<receiver ID>_<message type>_<control #>"
+		self.partner.file_extension = "txt"
+		generator = CODECOGenerator(ContainerMovement(**GATE_IN_DEFAULTS), self.partner)
+
+		self.assertEqual(generator.get_filename(), f"CMA_CODECO_{generator.reference}.txt")
+
+	def test_filename_can_carry_movement_values(self):
+		self.partner.file_name_format = "<container_no>_<voyage_no>_<message #>"
+		generator = CODECOGenerator(ContainerMovement(**GATE_IN_DEFAULTS), self.partner)
+
+		self.assertEqual(generator.get_filename(), f"UACU6042588_0403_{generator.reference}.edi")
+
 	# --- message body -----------------------------------------------------
 
 	def test_bgm_carries_the_numeric_interchange_reference(self):
