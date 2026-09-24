@@ -13,6 +13,13 @@ test_ignore = ["Company", "Cost Center"]
 CONTAINER_NO = "UACU6042588"
 M_BL_NO = "HLCUTYO250101920"
 
+# what Amend copies over from the cancelled document
+INHERITED_EDI_VALUES = {
+	"edi_file": "/private/files/old.edi",
+	"receiver_email": "old@example.com",
+	"receiver_cc_email": "old-cc@example.com",
+}
+
 
 class TestEDIMovement(FrappeTestCase):
 	def setUp(self):
@@ -27,6 +34,7 @@ class TestEDIMovement(FrappeTestCase):
 				"enable_edi": 1,
 				"connection_type": "SMTP",
 				"receiver_email": "edi@example.com",
+				"receiver_cc_email": "ops@example.com",
 			}
 		).insert(ignore_permissions=True)
 		self.manifest = make_manifest()
@@ -166,6 +174,55 @@ class TestEDIMovement(FrappeTestCase):
 
 		self.assertTrue(reception.edi_file)
 		self.assertEqual(reception.receiver_email, "edi@example.com")
+
+	# --- SMTP recipients --------------------------------------------------
+
+	def test_gate_in_of_an_smtp_partner_carries_both_recipients(self):
+		reception = make_reception()
+
+		attach_gate_in(reception)
+
+		self.assertEqual(reception.receiver_email, "edi@example.com")
+		self.assertEqual(reception.receiver_cc_email, "ops@example.com")
+
+	def test_gate_out_of_an_smtp_partner_carries_both_recipients(self):
+		gate_pass = make_gate_pass(self.make_container())
+		gate_pass.submitted_date = nowdate()
+		gate_pass.submitted_time = "10:00:00"
+
+		attach_gate_out(gate_pass)
+
+		self.assertTrue(gate_pass.edi_file)
+		self.assertEqual(gate_pass.receiver_email, "edi@example.com")
+		self.assertEqual(gate_pass.receiver_cc_email, "ops@example.com")
+
+	def test_an_amended_reception_of_an_unconfigured_line_drops_the_inherited_recipients(self):
+		reception = make_reception(shipping_line_code="NOSUCH", **INHERITED_EDI_VALUES)
+
+		attach_gate_in(reception)
+
+		for fieldname in INHERITED_EDI_VALUES:
+			self.assertFalse(reception.get(fieldname), fieldname)
+
+	def test_an_amended_reception_of_an_sftp_partner_drops_the_inherited_recipients(self):
+		frappe.db.set_value("EDI Partner", "CMA", "connection_type", "SFTP")
+		frappe.clear_document_cache("EDI Partner", "CMA")
+		reception = make_reception(**INHERITED_EDI_VALUES)
+
+		attach_gate_in(reception)
+
+		self.assertNotEqual(reception.edi_file, INHERITED_EDI_VALUES["edi_file"])
+		self.assertFalse(reception.receiver_email)
+		self.assertFalse(reception.receiver_cc_email)
+
+	def test_an_amended_hbl_gate_pass_drops_the_inherited_recipients(self):
+		gate_pass = make_gate_pass(self.make_container(has_hbl=1, h_bl_no="HBL-1"))
+		gate_pass.update(INHERITED_EDI_VALUES)
+
+		attach_gate_out(gate_pass)
+
+		for fieldname in INHERITED_EDI_VALUES:
+			self.assertFalse(gate_pass.get(fieldname), fieldname)
 
 	def test_gate_out_takes_the_shipping_line_from_the_container(self):
 		movement = from_gate_pass(make_gate_pass(self.make_container()))
