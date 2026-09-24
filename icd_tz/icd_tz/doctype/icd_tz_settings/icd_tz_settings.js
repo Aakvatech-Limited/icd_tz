@@ -27,10 +27,16 @@ frappe.ui.form.on("ICD TZ Settings", {
 
     for (const field of ["wip_account", "cogs_account"]) {
       frm.set_query(field, () => {
+        const company = frappe.defaults.get_user_default("Company");
         return {
           filters: {
             is_group: 0,
-            company: frappe.defaults.get_user_default("Company"),
+            company: company,
+            // the balance moves in company currency, so an account in another
+            // currency cannot be released without a rate to convert it back
+            account_currency:
+              frappe.get_doc(":Company", company)?.default_currency ||
+              frappe.boot.sysdefaults.currency,
           },
         };
       });
