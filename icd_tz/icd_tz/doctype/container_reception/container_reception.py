@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import DocType
 from frappe.utils import get_link_to_form, getdate, nowdate, time_diff_in_hours
@@ -56,8 +57,8 @@ class ContainerReception(Document):
 		attach_gate_in(self)
 
 	def on_submit(self):
-		self.create_mbl_container()
-		self.create_hbl_container()
+		mbl_container = self.create_mbl_container()
+		self.create_hbl_container(mbl_container)
 		self.update_container_storage_days()
 		self.update_cmo_status("Received")
 		self.set_icd_container_status(RECEIVED_STATUS, self.posting_date)
@@ -111,7 +112,54 @@ class ContainerReception(Document):
 				)
 
 	def create_mbl_container(self):
-		"""Create a Container record from the Container Reception"""
+		"""Container record under the M BL, the box as it arrived"""
+
+		container = self.new_container()
+		container.container_count = self.container_count
+		container.save(ignore_permissions=True)
+
+		enqueue(method=daily_update_date_container_stay, container_id=container.name)
+
+		return container.name
+
+	def create_single_consignee_container(self, mbl_container: str):
+		"""Cargo record for an LCL box whose one consignee gives it no house bill
+
+		Without a house bill there is nothing to split the cargo onto, so the box and
+		its contents would be one record. This makes the cargo its own record, billed
+		to the consignee under the M BL, and leaves the box itself in the yard on the
+		shipping line account.
+		"""
+
+		# TODO: the cargo record is indistinguishable from the box it came out of. It has
+		# has_hbl 0 and the box's container number, size and type, so anything that tracks
+		# physical boxes treats it as a second box:
+		#   - EDI: a Gate Pass on the cargo record sends the shipping line a gate-out CODECO
+		#     for the container while the empty box is still in the yard, and the box sends
+		#     a second one when it really leaves.
+		#   - Reports: Current Container Stock, Received, Exited and Daily Stripped
+		#     Containers count the box twice, Container Status Flow counts the cargo as a
+		#     container, and Loose Cargo Tracking leaves the cargo out.
+		# House bill records avoid this by carrying has_hbl 1, which this record cannot,
+		# because billing finds the consignee's cargo under the M BL with has_hbl 0.
+		container = self.new_container()
+		container.container_count = 1
+		container.save(ignore_permissions=True)
+
+		enqueue(method=daily_update_date_container_stay, container_id=container.name)
+		frappe.db.set_value("Container", mbl_container, "is_empty_container", 1)
+
+		frappe.msgprint(
+			_("Container {0} has one consignee, so its cargo and the empty box are recorded apart").format(
+				frappe.bold(self.container_no)
+			),
+			alert=True,
+		)
+
+		return container.name
+
+	def new_container(self):
+		"""Unsaved Container carrying what every record made from this reception shares"""
 
 		container = frappe.new_doc("Container")
 		container.container_reception = self.name
@@ -134,11 +182,7 @@ class ContainerReception(Document):
 		container.manifest = self.manifest
 		container.movement_order = self.movement_order
 		container.m_bl_no = self.m_bl_no
-		container.container_count = self.container_count
 		container.status = "In Yard"
-
-		if self.freight_indicator == "LCL":
-			container.is_empty_container = 1
 
 		container.append(
 			"container_dates",
@@ -146,14 +190,11 @@ class ContainerReception(Document):
 				"date": self.received_date,
 			},
 		)
-		container.save(ignore_permissions=True)
 
-		enqueue(method=daily_update_date_container_stay, container_id=container.name)
+		return container
 
-		return container.name
-
-	def create_hbl_container(self):
-		"""Create a HBL Container record based on freight indicator on container reception"""
+	def create_hbl_container(self, mbl_container: str | None = None):
+		"""Container record per house bill, the luggage taken out of the M BL container"""
 
 		if self.freight_indicator != "LCL":
 			return
@@ -166,9 +207,9 @@ class ContainerReception(Document):
 		)
 
 		if len(hbl_containers) == 0:
-			frappe.msgprint(
-				f"No HBL Container records found for Container No: <b>{self.container_no}</b> in Manifest: <b>{self.manifest}</b>"
-			)
+			if mbl_container:
+				self.create_single_consignee_container(mbl_container)
+
 			return
 
 		# Create containers based on the information found
@@ -219,6 +260,11 @@ class ContainerReception(Document):
 			enqueue(method=daily_update_date_container_stay, container_id=container.name)
 
 		if count > 0:
+			# what is left in the yard is the box the luggage came out of, and it is
+			# owed by the shipping line, so it is only empty once that has happened
+			if mbl_container:
+				frappe.db.set_value("Container", mbl_container, "is_empty_container", 1)
+
 			frappe.msgprint(
 				f"HBL records: {count} were created for container {self.container_no}", alert=True
 			)
