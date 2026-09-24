@@ -40,11 +40,11 @@ class CODECOGenerator:
 	def message_code(self) -> str:
 		return MESSAGE_CODES["gate_in" if self.movement.is_gate_in else "gate_out"]
 
-	@property
-	def filename(self) -> str:
-		"""Partner naming convention: sender, receiver, message type, timestamp"""
+	def get_filename(self, message_function: str = "original") -> str:
+		context = self.get_context(MESSAGE_FUNCTIONS.get(message_function, "9"))
 
-		return f"{self.partner.sender}_{self.partner.shipping_line_code}_CODECO_{self.reference}.edi"
+		# the message and the interchange share one reference
+		return self.partner.get_file_name(EDI_TYPE, self.reference, self.reference, context)
 
 	def get_interchange_reference(self) -> str:
 		"""Fourteen characters, timestamp shaped, unique even inside one second"""
@@ -179,7 +179,7 @@ def attach(document, movement):
 		document.receiver_cc_email = partner.receiver_cc_email
 
 	generator = CODECOGenerator(movement, partner)
-	document.edi_file = save_message(document, generator.filename, generator.generate())
+	document.edi_file = save_message(document, generator.get_filename(), generator.generate())
 
 
 def save_message(document, filename: str, content: str) -> str:
@@ -230,6 +230,6 @@ def preview(movement, message_function: str) -> dict | None:
 
 	return {
 		"edi_content": generator.generate(message_function),
-		"filename": generator.filename,
+		"filename": generator.get_filename(message_function),
 		"movement_type": "gate_in" if movement.is_gate_in else "gate_out",
 	}

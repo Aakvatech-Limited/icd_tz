@@ -2,19 +2,32 @@
 # For license information, please see license.txt
 
 import io
+import re
 import socket
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import comma_or, escape_html
 
 from icd_tz.icd_tz.api.edi.templates import (
+	RULES,
 	SEEDED_EDI_TYPE,
 	get_default_template,
 	validate_template,
 )
 
 CONNECT_TIMEOUT = 30
+
+DEFAULT_FILE_NAME_FORMAT = "<sender ID>_<receiver ID>_<message type>_<message #>"
+FILE_NAME_PLACEHOLDERS = ("<sender ID>", "<receiver ID>", "<message type>", "<control #>", "<message #>")
+# every value a message template can use is also a placeholder, as <container_no> for {{ container_no }}
+MESSAGE_PLACEHOLDERS = tuple(sorted({f"<{name}>" for rules in RULES.values() for name in rules["variables"]}))
+# without one of these every file of the partner would carry the same name
+UNIQUE_PLACEHOLDERS = ("<control #>", "<message #>", "<reference>")
+PLACEHOLDER_PATTERN = re.compile(r"<[^>]*>")
+# what a file name may carry outside the placeholders, and what their values are cut down to
+FILE_UNSAFE_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 class EDIPartner(Document):
@@ -39,6 +52,8 @@ class EDIPartner(Document):
 		connection_type: DF.Literal["", "SFTP", "SMTP"]
 		directory: DF.Data | None
 		enable_edi: DF.Check
+		file_extension: DF.Literal["edi", "txt"]
+		file_name_format: DF.Data
 		ip_behind_dns: DF.Data | None
 		password: DF.Password | None
 		port: DF.Int
@@ -58,6 +73,9 @@ class EDIPartner(Document):
 		self.normalise_code()
 
 	def before_insert(self):
+		if not self.file_name_format:
+			self.file_name_format = DEFAULT_FILE_NAME_FORMAT
+
 		# a new partner starts from the shipped template, one it brought is left alone
 		if not self.get_template_row(SEEDED_EDI_TYPE):
 			self.append(
@@ -67,7 +85,40 @@ class EDIPartner(Document):
 
 	def validate(self):
 		self.normalise_code()
+		self.validate_file_name_format()
+		self.validate_file_name_text()
 		self.validate_templates()
+
+	def validate_file_name_format(self):
+		self.file_name_format = (self.file_name_format or "").strip()
+
+		allowed = FILE_NAME_PLACEHOLDERS + MESSAGE_PLACEHOLDERS
+		unknown = sorted(set(PLACEHOLDER_PATTERN.findall(self.file_name_format)) - set(allowed))
+		if unknown:
+			frappe.throw(
+				_(
+					"File Name Format uses unknown placeholders: {0}. The available placeholders are: {1}"
+				).format(", ".join(get_code_list(unknown)), ", ".join(get_code_list(allowed)))
+			)
+
+		if not any(placeholder in self.file_name_format for placeholder in UNIQUE_PLACEHOLDERS):
+			frappe.throw(
+				_("File Name Format must include {0} so that each file gets its own name").format(
+					comma_or(get_code_list(UNIQUE_PLACEHOLDERS), add_quotes=False)
+				)
+			)
+
+	def validate_file_name_text(self):
+		"""The text around the placeholders goes into the file name as typed, so it must be safe there"""
+
+		text = PLACEHOLDER_PATTERN.sub("", self.file_name_format)
+		unsafe = sorted({character for character in text if FILE_UNSAFE_PATTERN.match(character)})
+		if unsafe:
+			frappe.throw(
+				_(
+					"File Name Format may only use letters, digits, dot, dash and underscore outside the placeholders. Remove: {0}"
+				).format(", ".join(get_code_list(repr(character) for character in unsafe)))
+			)
 
 	def validate_templates(self):
 		seen = set()
@@ -90,6 +141,29 @@ class EDIPartner(Document):
 		row = self.get_template_row(edi_type)
 
 		return row.template if row and row.template else get_default_template(edi_type)
+
+	def get_file_name(
+		self, message_type: str, control_reference: str, message_reference: str, message_values: dict
+	) -> str:
+		"""File name of one interchange, in this partner's naming convention.
+
+		`message_values` is the context the message template is rendered with.
+		"""
+
+		values = {
+			**{f"<{name}>": value for name, value in message_values.items()},
+			"<sender ID>": self.sender,
+			"<receiver ID>": self.shipping_line_code,
+			"<message type>": message_type,
+			"<control #>": control_reference,
+			"<message #>": message_reference,
+		}
+
+		file_name = PLACEHOLDER_PATTERN.sub(
+			lambda match: get_file_safe_text(values[match.group()]), self.file_name_format
+		)
+
+		return f"{file_name}.{self.file_extension}"
 
 	def normalise_code(self):
 		self.shipping_line_code = (self.shipping_line_code or "").strip().upper()
@@ -238,3 +312,15 @@ def get_partner(shipping_line_code: str | None) -> EDIPartner | None:
 		return None
 
 	return frappe.get_cached_doc("EDI Partner", name)
+
+
+def get_file_safe_text(value: str) -> str:
+	"""A message value fit for a file name. A released character goes with its release character."""
+
+	return FILE_UNSAFE_PATTERN.sub("_", value).strip("_")
+
+
+def get_code_list(values) -> list[str]:
+	"""Escaped, so the message dialog shows a placeholder instead of reading it as an HTML tag"""
+
+	return [f"<code>{escape_html(value)}</code>" for value in values]
