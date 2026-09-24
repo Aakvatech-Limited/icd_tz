@@ -39,18 +39,18 @@
   "column_break_pxctr",
   "purchase_order",
   "purchase_invoice",
+  "column_break_mnsz",
+  "expenses_released",
+  "expenses_released_on",
+  "expense_release_entry",
   "booked_charges_section",
   "is_shore_booked",
   "is_levy_booked",
   "column_break_bkctr",
   "is_removal_booked",
-  "storage_dates_section",
-  "storage_dates",
-  "expense_release_section",
-  "expenses_released",
-  "expenses_released_on",
-  "column_break_release",
-  "expense_release_entry"
+  "port_storage_days_tab",
+  "section_break_gelp",
+  "storage_dates"
  ],
  "fields": [
   {
@@ -272,12 +272,6 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
-   "fieldname": "storage_dates_section",
-   "fieldtype": "Section Break",
-   "label": "Port Storage Days"
-  },
-  {
    "description": "One row per day at the port. A row with no Purchase Order is an unbilled day.",
    "fieldname": "storage_dates",
    "fieldtype": "Table",
@@ -317,41 +311,46 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "expense_release_section",
-   "fieldtype": "Section Break",
-   "label": "Expense Release"
-  },
-  {
    "default": "0",
+   "description": "Port expenses of this container have been moved from WIP to COGS",
    "fieldname": "expenses_released",
    "fieldtype": "Check",
    "label": "Expenses Released",
-   "read_only": 1,
-   "description": "Port expenses of this container have been moved from WIP to COGS"
+   "read_only": 1
   },
   {
+   "depends_on": "expenses_released",
    "fieldname": "expenses_released_on",
    "fieldtype": "Date",
    "label": "Expenses Released On",
-   "read_only": 1,
-   "depends_on": "expenses_released"
+   "read_only": 1
   },
   {
-   "fieldname": "column_break_release",
-   "fieldtype": "Column Break"
-  },
-  {
+   "depends_on": "expenses_released",
    "fieldname": "expense_release_entry",
    "fieldtype": "Small Text",
    "label": "Expense Release Entry",
-   "read_only": 1,
-   "depends_on": "expenses_released"
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mnsz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "port_storage_days_tab",
+   "fieldtype": "Tab Break",
+   "label": "Port Storage Days"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_gelp",
+   "fieldtype": "Section Break"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-24 09:00:00.000000",
+ "modified": "2026-09-24 13:14:18.389264",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
