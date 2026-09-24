@@ -13,6 +13,10 @@
   "column_break_identity",
   "sender_id",
   "enable_edi",
+  "file_section",
+  "file_name_format",
+  "column_break_file",
+  "file_extension",
   "connection_section",
   "connection_type",
   "column_break_channel",
@@ -72,6 +76,32 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Enable EDI"
+  },
+  {
+   "depends_on": "eval:doc.enable_edi==1",
+   "fieldname": "file_section",
+   "fieldtype": "Section Break",
+   "label": "File Naming"
+  },
+  {
+   "description": "Name of every file sent to this partner, without the extension. Placeholders: &lt;sender ID&gt;, &lt;receiver ID&gt;, &lt;message type&gt;, &lt;control #&gt;, &lt;message #&gt;, and every value the message template uses, such as &lt;container_no&gt; for {{ container_no }}. Change it to the convention the shipping line asks for.",
+   "fieldname": "file_name_format",
+   "fieldtype": "Data",
+   "ignore_xss_filter": 1,
+   "label": "File Name Format",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_file",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "edi",
+   "fieldname": "file_extension",
+   "fieldtype": "Select",
+   "label": "File Extension",
+   "options": "edi\ntxt",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.enable_edi==1",
@@ -224,7 +254,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-19 14:46:42.077302",
+ "modified": "2026-09-24 19:32:08.637162",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Partner",
