@@ -138,7 +138,15 @@ after_migrate = [
 doc_events = {
 	"Sales Invoice": {
 		"before_save": "icd_tz.icd_tz.api.sales_invoice.before_save",
-		"on_submit": "icd_tz.icd_tz.api.sales_invoice.on_submit",
+		"on_submit": [
+			"icd_tz.icd_tz.api.sales_invoice.on_submit",
+			"icd_tz.icd_tz.api.expense_release.on_submit",
+		],
+		"on_cancel": "icd_tz.icd_tz.api.expense_release.on_cancel",
+	},
+	"Journal Entry": {
+		"before_cancel": "icd_tz.icd_tz.api.expense_release.before_journal_entry_cancel",
+		"on_cancel": "icd_tz.icd_tz.api.expense_release.on_journal_entry_cancel",
 	},
 	"Sales Order": {
 		"before_save": "icd_tz.icd_tz.api.sales_order.before_save",
