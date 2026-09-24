@@ -65,6 +65,23 @@ class ICDTZSettings(Document):
 
 			companies.add(account.company)
 
+		currencies = {
+			frappe.get_cached_value("Account", self.get(field), "account_currency")
+			for field in ("wip_account", "cogs_account")
+		}
+		currencies.discard(None)
+		currencies.discard("")
+		company_currencies = {
+			frappe.get_cached_value("Company", company, "default_currency") for company in companies
+		}
+		if currencies - company_currencies:
+			frappe.throw(
+				_(
+					"WIP Account and COGS Account must be in the company currency, or a released expense cannot be converted back"
+				),
+				title=_("WIP Accounts Not Set"),
+			)
+
 		if len(companies) > 1:
 			frappe.throw(
 				_("WIP Account and COGS Account belong to different companies: {0}").format(
