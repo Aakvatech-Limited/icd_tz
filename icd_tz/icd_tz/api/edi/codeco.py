@@ -154,6 +154,11 @@ def attach(document, movement):
 	or EDI is switched off. Only a genuine data fault stops the document.
 	"""
 
+	# an amended document arrives carrying the file and the recipients of the one it replaces
+	document.edi_file = None
+	document.receiver_email = None
+	document.receiver_cc_email = None
+
 	if movement is None:
 		return
 
