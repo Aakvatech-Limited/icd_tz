@@ -45,7 +45,12 @@
   "column_break_bkctr",
   "is_removal_booked",
   "storage_dates_section",
-  "storage_dates"
+  "storage_dates",
+  "expense_release_section",
+  "expenses_released",
+  "expenses_released_on",
+  "column_break_release",
+  "expense_release_entry"
  ],
  "fields": [
   {
@@ -310,12 +315,43 @@
   {
    "fieldname": "column_break_aiwp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expense_release_section",
+   "fieldtype": "Section Break",
+   "label": "Expense Release"
+  },
+  {
+   "default": "0",
+   "fieldname": "expenses_released",
+   "fieldtype": "Check",
+   "label": "Expenses Released",
+   "read_only": 1,
+   "description": "Port expenses of this container have been moved from WIP to COGS"
+  },
+  {
+   "fieldname": "expenses_released_on",
+   "fieldtype": "Date",
+   "label": "Expenses Released On",
+   "read_only": 1,
+   "depends_on": "expenses_released"
+  },
+  {
+   "fieldname": "column_break_release",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expense_release_entry",
+   "fieldtype": "Small Text",
+   "label": "Expense Release Entry",
+   "read_only": 1,
+   "depends_on": "expenses_released"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-22 15:00:00.000000",
+ "modified": "2026-09-24 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
