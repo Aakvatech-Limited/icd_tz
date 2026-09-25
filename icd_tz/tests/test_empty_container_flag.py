@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
+from icd_tz.tests.test_storage_contract import set_settings_storage_days
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -16,6 +17,7 @@ class TestEmptyContainerFlag(FrappeTestCase):
 
 	def setUp(self):
 		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_settings_storage_days()
 		self.manifest = make_manifest()
 
 	def tearDown(self):
@@ -38,26 +40,28 @@ class TestEmptyContainerFlag(FrappeTestCase):
 		self.assertEqual(box.is_empty_container, 1)
 		self.assertEqual([row.is_empty_container for row in luggage], [0] * len(H_BL_NOS))
 
-	def test_a_single_consignee_box_records_its_cargo_and_the_empty_box_apart(self):
+	def test_a_box_with_no_house_bill_gets_an_internal_one(self):
 		# no house bill to split the cargo onto, so the cargo becomes its own record
-		# billed to the consignee and the box stays on the shipping line account
+		# under an ICD house bill and the box stays on the shipping line account
 		containers = self.receive(freight_indicator="LCL")
 		box, cargo = containers
 
 		self.assertEqual(len(containers), 2)
 		self.assertEqual(box.is_empty_container, 1)
 		self.assertEqual(cargo.is_empty_container, 0)
-		self.assertEqual([box.has_hbl, cargo.has_hbl], [0, 0])
-		self.assertFalse(cargo.h_bl_no)
+		self.assertEqual([box.has_hbl, cargo.has_hbl], [0, 1])
+		self.assertTrue(cargo.h_bl_no.startswith("ICD-HBL-"))
 		self.assertEqual({row.m_bl_no for row in containers}, {M_BL_NO})
 
-	def test_the_cargo_record_of_a_single_consignee_box_is_billable(self):
+	def test_the_internal_house_bill_cargo_is_billed_on_its_house_bill(self):
 		from icd_tz.icd_tz.api.utils import get_cargo_container_ids
 
-		containers = self.receive(freight_indicator="LCL")
-		cargo = containers[1]
+		cargo = self.receive(freight_indicator="LCL")[1]
 
-		self.assertEqual(get_cargo_container_ids(M_BL_NO), [cargo.name])
+		self.assertEqual(get_cargo_container_ids(M_BL_NO), [])
+		self.assertEqual(
+			frappe.get_all("Container", {"h_bl_no": cargo.h_bl_no, "has_hbl": 1}, pluck="name"), [cargo.name]
+		)
 
 	def add_house_bills(self):
 		for h_bl_no in H_BL_NOS:

@@ -173,16 +173,47 @@ class TestAccountingDimensions(FrappeTestCase):
 		)
 		self.assertRaises(frappe.ValidationError, self.manifest.cancel)
 
-	def test_one_container_under_two_bills_is_rejected(self):
-		"""Costs booked on it could not be attributed to one bill, so the manifest is refused"""
+	def test_an_fcl_container_under_two_bills_is_rejected(self):
+		"""An FCL box belongs to one bill, so the manifest is refused"""
 
 		self.manifest.append(
 			"containers",
-			{"m_bl_no": "MAEU000000000", "container_no": CONTAINER_NO, "type_of_container": "C"},
+			{
+				"m_bl_no": "MAEU000000000",
+				"container_no": CONTAINER_NO,
+				"type_of_container": "C",
+				"freight_indicator": "FCL",
+			},
 		)
 		self.manifest.save()
 
 		self.assertRaises(frappe.ValidationError, self.manifest.submit)
+
+	def test_an_lcl_container_under_two_bills_gets_one_shared_record(self):
+		"""The box keeps its first bill and belongs to no one consignee"""
+
+		self.manifest.containers[0].freight_indicator = "LCL"
+		self.manifest.append(
+			"containers",
+			{
+				"m_bl_no": "MAEU000000000",
+				"container_no": CONTAINER_NO,
+				"type_of_container": "C",
+				"freight_indicator": "LCL",
+			},
+		)
+		self.manifest.save()
+		self.manifest.submit()
+
+		records = frappe.get_all(
+			"ICD Container",
+			filters={"manifest": self.manifest.name, "container_no": CONTAINER_NO},
+			fields=["m_bl_no", "master_bl", "consignee"],
+		)
+		self.assertEqual(len(records), 1)
+		self.assertEqual(records[0].m_bl_no, M_BL_NO)
+		self.assertEqual(records[0].master_bl, self.master_bl_dimension)
+		self.assertFalse(records[0].consignee)
 
 	def test_the_duplicate_bill_message_carries_no_live_markup(self):
 		"""msgprint renders HTML and these values come from the uploaded file"""

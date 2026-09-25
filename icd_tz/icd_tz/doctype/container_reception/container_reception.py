@@ -4,16 +4,21 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.model.naming import getseries
 from frappe.query_builder import DocType
 from frappe.utils import get_link_to_form, getdate, nowdate, time_diff_in_hours
 from frappe.utils.background_jobs import enqueue
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
+from icd_tz.icd_tz.api.port_expenses import get_cargo_type
 from icd_tz.icd_tz.api.utils import validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
 
 cr = DocType("Container Reception")
+
+# house bill number the ICD gives cargo the manifest lists under no house bill
+INTERNAL_HBL_PREFIX = "ICD-HBL-"
 
 
 class ContainerReception(Document):
@@ -122,42 +127,6 @@ class ContainerReception(Document):
 
 		return container.name
 
-	def create_single_consignee_container(self, mbl_container: str):
-		"""Cargo record for an LCL box whose one consignee gives it no house bill
-
-		Without a house bill there is nothing to split the cargo onto, so the box and
-		its contents would be one record. This makes the cargo its own record, billed
-		to the consignee under the M BL, and leaves the box itself in the yard on the
-		shipping line account.
-		"""
-
-		# TODO: the cargo record is indistinguishable from the box it came out of. It has
-		# has_hbl 0 and the box's container number, size and type, so anything that tracks
-		# physical boxes treats it as a second box:
-		#   - EDI: a Gate Pass on the cargo record sends the shipping line a gate-out CODECO
-		#     for the container while the empty box is still in the yard, and the box sends
-		#     a second one when it really leaves.
-		#   - Reports: Current Container Stock, Received, Exited and Daily Stripped
-		#     Containers count the box twice, Container Status Flow counts the cargo as a
-		#     container, and Loose Cargo Tracking leaves the cargo out.
-		# House bill records avoid this by carrying has_hbl 1, which this record cannot,
-		# because billing finds the consignee's cargo under the M BL with has_hbl 0.
-		container = self.new_container()
-		container.container_count = 1
-		container.save(ignore_permissions=True)
-
-		enqueue(method=daily_update_date_container_stay, container_id=container.name)
-		frappe.db.set_value("Container", mbl_container, "is_empty_container", 1)
-
-		frappe.msgprint(
-			_("Container {0} has one consignee, so its cargo and the empty box are recorded apart").format(
-				frappe.bold(self.container_no)
-			),
-			alert=True,
-		)
-
-		return container.name
-
 	def new_container(self):
 		"""Unsaved Container carrying what every record made from this reception shares"""
 
@@ -208,7 +177,7 @@ class ContainerReception(Document):
 
 		if len(hbl_containers) == 0:
 			if mbl_container:
-				self.create_single_consignee_container(mbl_container)
+				self.create_internal_hbl_containers(mbl_container)
 
 			return
 
@@ -268,6 +237,40 @@ class ContainerReception(Document):
 			frappe.msgprint(
 				f"HBL records: {count} were created for container {self.container_no}", alert=True
 			)
+
+	def create_internal_hbl_containers(self, mbl_container: str):
+		"""Cargo record per bill for an LCL box the manifest gives no house bills
+
+		The box can be listed under several bills, one Containers Detail row each. Every
+		row becomes its own cargo record under an ICD house bill number, so each consignee
+		is billed on its own bill while the empty box stays on the shipping line account.
+		"""
+
+		rows = {}
+		for row in frappe.db.get_all(
+			"Containers Detail",
+			filters={"parent": self.manifest, "container_no": self.container_no},
+			fields=["*"],
+			order_by="idx",
+		):
+			# a box repeated under the same bill is still one consignee's cargo
+			rows.setdefault(row.m_bl_no, row)
+
+		for row in rows.values():
+			container = self.new_container()
+			container.update(get_internal_hbl_details(self.manifest, row))
+			container.save(ignore_permissions=True)
+
+			enqueue(method=daily_update_date_container_stay, container_id=container.name)
+
+		frappe.db.set_value("Container", mbl_container, "is_empty_container", 1)
+
+		frappe.msgprint(
+			_("Internal HBL records: {0} were created for container {1}").format(
+				len(rows), frappe.bold(self.container_no)
+			),
+			alert=True,
+		)
 
 	def update_container_storage_days(self):
 		"""Update the storage days of the containers based on the current received date and m_bl_no"""
@@ -567,20 +570,64 @@ def get_container_details(manifest, container_no):
 		abbr_for_destination = frappe.db.get_value(
 			"Master BL", {"parent": manifest, "m_bl_no": container_row.m_bl_no}, "place_of_destination"
 		)
-		container_row["abbr_for_destination"] = abbr_for_destination
-
-		country_code = str(abbr_for_destination)[:2]
-		country_of_destination = frappe.get_cached_value("Country", {"code": country_code.lower()}, "name")
-		container_row["country_of_destination"] = country_of_destination
-
-		place_of_destination = ""
-		if country_code == "TZ":
-			place_of_destination = "Local"
-		elif country_code == "CD":
-			place_of_destination = "DRC"
-		else:
-			place_of_destination = "Other"
-
-		container_row["place_of_destination"] = place_of_destination
+		container_row.update(get_destination_details(abbr_for_destination))
 
 		return container_row
+
+
+def get_destination_details(abbr_for_destination: str | None) -> dict:
+	"""Country and destination group of a place of destination code, such as TZDAR"""
+
+	country_code = str(abbr_for_destination)[:2]
+	place_of_destination = {"TZ": "Local", "CD": "DRC"}.get(country_code, "Other")
+
+	return {
+		"abbr_for_destination": abbr_for_destination,
+		"country_of_destination": frappe.get_cached_value("Country", {"code": country_code.lower()}, "name"),
+		"place_of_destination": place_of_destination,
+	}
+
+
+def get_internal_hbl_details(manifest: str, row: dict) -> dict:
+	"""Container fields of one bill's cargo in a box the manifest gives no house bills
+
+	The consignee and gross volume come from the bill's Master BL on insert.
+	"""
+
+	master_bl = frappe.db.get_value(
+		"Master BL",
+		{"parent": manifest, "m_bl_no": row.m_bl_no},
+		["cargo_classification", "place_of_destination"],
+		as_dict=True,
+	)
+	if not master_bl:
+		frappe.throw(
+			_("Bill {0} of container {1} is not on the Master BL sheet of manifest {2}").format(
+				frappe.bold(row.m_bl_no), frappe.bold(row.container_no), frappe.bold(manifest)
+			),
+			title=_("Master BL Missing"),
+		)
+
+	return {
+		"has_hbl": 1,
+		"h_bl_no": INTERNAL_HBL_PREFIX + getseries(INTERNAL_HBL_PREFIX, 4),
+		"m_bl_no": row.m_bl_no,
+		"container_count": 1,
+		"size": row.container_size,
+		"type_of_container": row.type_of_container,
+		"freight_indicator": row.freight_indicator,
+		"seal_no_1": row.seal_no1,
+		"seal_no_2": row.seal_no2,
+		"seal_no_3": row.seal_no3,
+		"no_of_packages": row.no_of_packages,
+		"package_unit": row.package_unit,
+		"volume": row.volume,
+		"volume_unit": row.volume_unit,
+		"weight": row.weight,
+		"weight_unit": row.weight_unit,
+		"plug_type_of_reefer": row.plug_type_of_reefer,
+		"minimum_temperature": row.minimum_temperature,
+		"maximum_temperature": row.maximum_temperature,
+		"cargo_type": get_cargo_type(master_bl.cargo_classification),
+		**get_destination_details(master_bl.place_of_destination),
+	}
