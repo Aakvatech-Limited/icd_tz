@@ -23,6 +23,7 @@ class ServiceOrder(Document):
 		self.validate_not_an_empty_container()
 		validate_delivered_container(self.container_id, self.container_no)
 		self.set_missing_values()
+		self.set_gross_volume()
 		self.validate_draft_references()
 		self.get_services()
 
@@ -33,14 +34,14 @@ class ServiceOrder(Document):
 		if not self.company:
 			self.company = frappe.defaults.get_user_default("Company")
 
-		self.check_gross_volume()
+		self.set_gross_volume()
 
 	def validate(self):
 		validate_cf_agent(self)
 
 	def before_submit(self):
 		self.validate_mandatory_fields()
-		self.check_gross_volume(raise_exception=True)
+		self.set_gross_volume()
 
 	def on_submit(self):
 		self.create_getpass()
@@ -152,26 +153,24 @@ class ServiceOrder(Document):
 
 		return self.container_status == "LCL"
 
-	@property
-	def is_missing_gross_volume(self) -> bool:
-		return self.is_loose_cargo and not flt(self.gross_volume)
+	def set_gross_volume(self):
+		"""LCL services are charged by volume, so an order without one would bill nothing
 
-	def check_gross_volume(self, raise_exception: bool = False):
-		"""LCL services are charged by volume, so without one they bill nothing
-
-		Saving only warns, the volume can still be set on the container before submit.
+		The Container is where a missing volume is corrected, so it is read again here.
 		"""
 
-		if not self.is_missing_gross_volume:
+		if not self.is_loose_cargo or flt(self.gross_volume):
 			return
 
-		frappe.msgprint(
-			_(
-				"Container {0} is LCL and has no Gross Volume, set it on the container before submitting"
-			).format(frappe.bold(self.container_no)),
+		self.gross_volume = frappe.db.get_value("Container", self.container_id, "gross_volume")
+		if flt(self.gross_volume):
+			return
+
+		frappe.throw(
+			_("Container {0} is LCL and has no Gross Volume, set it on the container to continue").format(
+				frappe.bold(self.container_no)
+			),
 			title=_("Gross Volume Missing"),
-			indicator="red" if raise_exception else "orange",
-			raise_exception=frappe.ValidationError if raise_exception else False,
 		)
 
 	def get_criteria_key(self, cargo_type: str | None = None) -> dict:
