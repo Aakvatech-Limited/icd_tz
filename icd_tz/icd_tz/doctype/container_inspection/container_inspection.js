@@ -35,29 +35,6 @@ frappe.ui.form.on("Container Inspection", {
       };
     });
   },
-  in_yard_container_booking: (frm) => {
-    frm.trigger("get_container_custom_verification");
-  },
-  get_container_custom_verification: (frm) => {
-    if (frm.doc.in_yard_container_booking) {
-      frappe.call({
-        method: "get_custom_verification_services",
-        doc: frm.doc,
-        args: {
-          // self: frm.doc,
-          caller: "Front End",
-        },
-        callback: (r) => {
-          if (r.message) {
-            frm.add_child("services", {
-              service: r.message,
-            });
-            frm.refresh_field("services");
-          }
-        },
-      });
-    }
-  },
   create_additional_booking: (frm) => {
     if (frm.doc.docstatus != 1) {
       return;
