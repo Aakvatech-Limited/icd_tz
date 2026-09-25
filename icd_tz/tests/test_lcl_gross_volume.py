@@ -72,23 +72,43 @@ class TestSalesOrderGrossVolume(FrappeTestCase):
 
 
 class TestServiceOrderGrossVolume(FrappeTestCase):
-	"""A Service Order warns on save and refuses to submit LCL cargo with no gross volume"""
+	"""A Service Order takes a missing gross volume from the Container, or refuses to go on"""
 
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_saving_warns_that_the_gross_volume_is_missing(self):
-		frappe.clear_messages()
+	def make_container(self, gross_volume):
+		container = frappe.new_doc("Container")
+		container.update(
+			{"container_no": "LCLU1234567", "freight_indicator": "LCL", "gross_volume": gross_volume}
+		)
+		container.db_insert()
 
-		make_service_order().before_save()
+		return container.name
 
-		self.assertIn("Gross Volume", str(frappe.get_message_log()))
+	def test_a_missing_volume_is_taken_from_the_container(self):
+		order = make_service_order(container_id=self.make_container(4.2))
 
-	def test_submitting_is_refused_without_a_gross_volume(self):
-		self.assertRaises(frappe.ValidationError, make_service_order().before_submit)
+		order.set_gross_volume()
 
-	def test_a_gross_volume_clears_the_check(self):
-		self.assertFalse(make_service_order(gross_volume=3.5).is_missing_gross_volume)
+		self.assertEqual(order.gross_volume, 4.2)
+
+	def test_saving_is_refused_when_the_container_has_no_volume(self):
+		order = make_service_order(container_id=self.make_container(0))
+
+		self.assertRaises(frappe.ValidationError, order.before_save)
+
+	def test_submitting_is_refused_when_the_container_has_no_volume(self):
+		order = make_service_order(container_id=self.make_container(0))
+
+		self.assertRaises(frappe.ValidationError, order.before_submit)
+
+	def test_a_volume_on_the_order_is_kept(self):
+		order = make_service_order(container_id=self.make_container(0), gross_volume=3.5)
+
+		order.set_gross_volume()
+
+		self.assertEqual(order.gross_volume, 3.5)
 
 	def test_an_fcl_container_needs_no_gross_volume(self):
-		self.assertFalse(make_service_order(container_status="FCL").is_missing_gross_volume)
+		make_service_order(container_status="FCL").set_gross_volume()
