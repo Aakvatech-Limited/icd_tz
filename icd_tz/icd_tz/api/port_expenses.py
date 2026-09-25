@@ -3,6 +3,7 @@ from frappe import _
 from frappe.query_builder.functions import Count
 from frappe.utils import date_diff, flt, getdate, nowdate
 
+from icd_tz.icd_tz.api.accounting_dimensions import build_dimension_name
 from icd_tz.icd_tz.api.utils import get_best_criteria, get_size_bucket
 
 ONE_OFF_EXPENSE_TYPES = {
@@ -127,13 +128,52 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 	# seeded before any container is read, so a charge no container matches still shows
 	buckets = {row.name: get_expense_bucket(row) for row in criteria_rows}
 
+	shared_bills = get_shared_container_bills(manifest)
 	for container in get_manifest_containers(manifest):
-		key = get_container_key(container, master_bls.get(container.master_bl) or {}, header.port)
-
-		for expense_type, criteria_row in get_matching_criteria(criteria_rows, key).items():
-			add_container_to_bucket(buckets[criteria_row.name], container, expense_type, unbilled_days)
+		charge_keys = get_container_charge_keys(
+			container, shared_bills.get(container.container_no, []), master_bls, header.port
+		)
+		add_container_charges(buckets, criteria_rows, charge_keys, unbilled_days)
 
 	return price_expense_rows(list(buckets.values()), buying_price_list)
+
+
+def get_container_charge_keys(container, other_bills: list, master_bls: dict, port: str | None) -> list:
+	"""The container on its own bill, then on the first bill of each further cargo type
+	the bills sharing an LCL box carry, as (container tagged with that bill, criteria key)
+	"""
+
+	key = get_container_key(container, master_bls.get(container.master_bl) or {}, port)
+	keys = [(container, key)]
+
+	cargo_types = {key["cargo_type"]}
+	for bill in other_bills:
+		bill_key = get_container_key(container, master_bls.get(bill) or {}, port)
+		if bill_key["cargo_type"] in cargo_types:
+			continue
+
+		cargo_types.add(bill_key["cargo_type"])
+		keys.append((frappe._dict(container, master_bl=bill), bill_key))
+
+	return keys
+
+
+def add_container_charges(buckets: dict, criteria_rows: list, charge_keys: list, unbilled_days: dict):
+	"""Every charge of the first key, then each one off charge a further cargo type
+	prices on another criteria row
+
+	The port charges a shared box once per cargo type only where the rate differs, and
+	storage stays on the first bill, its day rows belong to the box.
+	"""
+
+	charged_rows = set()
+	for index, (container, key) in enumerate(charge_keys):
+		for expense_type, criteria_row in get_matching_criteria(criteria_rows, key).items():
+			if index and (expense_type not in ONE_OFF_EXPENSE_TYPES or criteria_row.name in charged_rows):
+				continue
+
+			charged_rows.add(criteria_row.name)
+			add_container_to_bucket(buckets[criteria_row.name], container, expense_type, unbilled_days)
 
 
 def validate_storage_bands_configured(settings_doc, criteria_rows: list):
@@ -248,6 +288,24 @@ def get_manifest_master_bls(manifest: str) -> dict:
 	)
 
 	return {row.name: row for row in rows}
+
+
+def get_shared_container_bills(manifest: str) -> dict:
+	"""ICD Master BL of every bill after the first, for each box listed under several"""
+
+	bills = {}
+	for row in frappe.get_all(
+		"Containers Detail",
+		filters={"parent": manifest, "m_bl_no": ("is", "set")},
+		fields=["container_no", "m_bl_no"],
+		order_by="idx asc",
+	):
+		names = bills.setdefault(row.container_no, [])
+		name = build_dimension_name(row.m_bl_no, manifest)
+		if name not in names:
+			names.append(name)
+
+	return {container_no: names[1:] for container_no, names in bills.items() if len(names) > 1}
 
 
 def get_unbilled_storage_days(manifest: str, with_day_rows: bool = False) -> dict:
