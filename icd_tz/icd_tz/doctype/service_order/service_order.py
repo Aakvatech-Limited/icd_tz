@@ -332,6 +332,7 @@ class ServiceOrder(Document):
 				if d.get("sales_invoice"):
 					continue
 
+				# only inspections made before it stopped being added carry a verification row
 				if "verification" in str(d.get("service")).lower():
 					continue
 
