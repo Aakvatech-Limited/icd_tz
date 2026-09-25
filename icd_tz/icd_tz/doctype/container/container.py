@@ -219,7 +219,7 @@ class Container(Document):
 
 		if self.h_bl_no:
 			house_bl_info = frappe.db.get_value(
-				"House BL", {"parent": self.manifest, "m_bl_no": self.h_bl_no}, ["*"], as_dict=True
+				"House BL", {"parent": self.manifest, "h_bl_no": self.h_bl_no}, ["*"], as_dict=True
 			)
 			# [
 			# 	"cargo_classification", "place_of_destination", "place_of_delivery", "port_of_loading", "consignee_name",
@@ -272,7 +272,9 @@ class Container(Document):
 					self.sline_code = house_bl_info.shipping_agent_code
 				if not self.sline:
 					self.sline = house_bl_info.shipping_agent_name
-				if not self.consignee:
+				# the Master BL names the consolidator and has already been applied, so the
+				# house bill's own consignee has to win or it is never the one invoiced
+				if house_bl_info.consignee_name:
 					self.consignee = house_bl_info.consignee_name
 				if not self.cargo_description:
 					self.cargo_description = house_bl_info.cargo_description
