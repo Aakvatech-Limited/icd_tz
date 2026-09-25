@@ -4,6 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import flt
 
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
@@ -22,6 +23,7 @@ class ServiceOrder(Document):
 		self.validate_not_an_empty_container()
 		validate_delivered_container(self.container_id, self.container_no)
 		self.set_missing_values()
+		self.set_gross_volume()
 		self.validate_draft_references()
 		self.get_services()
 
@@ -32,11 +34,14 @@ class ServiceOrder(Document):
 		if not self.company:
 			self.company = frappe.defaults.get_user_default("Company")
 
+		self.set_gross_volume()
+
 	def validate(self):
 		validate_cf_agent(self)
 
 	def before_submit(self):
 		self.validate_mandatory_fields()
+		self.set_gross_volume()
 
 	def on_submit(self):
 		self.create_getpass()
@@ -147,6 +152,26 @@ class ServiceOrder(Document):
 		"""Loose cargo is priced on its own table, where a container size does not apply"""
 
 		return self.container_status == "LCL"
+
+	def set_gross_volume(self):
+		"""LCL services are charged by volume, so an order without one would bill nothing
+
+		The Container is where a missing volume is corrected, so it is read again here.
+		"""
+
+		if not self.is_loose_cargo or flt(self.gross_volume):
+			return
+
+		self.gross_volume = frappe.db.get_value("Container", self.container_id, "gross_volume")
+		if flt(self.gross_volume):
+			return
+
+		frappe.throw(
+			_("Container {0} is LCL and has no Gross Volume, set it on the container to continue").format(
+				frappe.bold(self.container_no)
+			),
+			title=_("Gross Volume Missing"),
+		)
 
 	def get_criteria_key(self, cargo_type: str | None = None) -> dict:
 		"""Criteria this container is matched on when a service is priced

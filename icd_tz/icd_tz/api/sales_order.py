@@ -2,7 +2,7 @@ from time import sleep
 
 import frappe
 from frappe import _
-from frappe.utils import cint, nowdate
+from frappe.utils import cint, flt, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
@@ -16,6 +16,7 @@ from icd_tz.icd_tz.doctype.waiver_request.waiver_request import apply_approved_w
 
 
 def before_save(doc, method):
+	validate_lcl_gross_volume(doc)
 	validate_qty_storage_item(doc)
 
 
@@ -53,10 +54,42 @@ def validate_empty_containers_are_billed_apart(doc):
 	)
 
 
+def validate_lcl_gross_volume(doc):
+	"""LCL cargo is billed by volume, so a container with none would bill every charge at zero"""
+
+	container_ids = get_order_container_ids(doc)
+	if not container_ids:
+		return
+
+	containers = frappe.get_all(
+		"Container",
+		filters={"name": ("in", list(container_ids)), "freight_indicator": "LCL", "is_empty_container": 0},
+		fields=["container_no", "h_bl_no", "gross_volume"],
+	)
+	missing = sorted(
+		f"{row.container_no} ({row.h_bl_no})" if row.h_bl_no else row.container_no
+		for row in containers
+		if not flt(row.gross_volume)
+	)
+	if not missing:
+		return
+
+	frappe.throw(
+		_("Set the Gross Volume on these LCL containers before billing them: {0}").format(
+			frappe.bold(", ".join(missing))
+		),
+		title=_("Gross Volume Missing"),
+	)
+
+
+def get_order_container_ids(doc) -> set:
+	return {item.container_id for item in doc.items if item.get("container_id")}
+
+
 def get_order_containers(doc) -> tuple[set, list]:
 	"""The containers an order bills, and which of them are empty boxes"""
 
-	container_ids = {item.container_id for item in doc.items if item.get("container_id")}
+	container_ids = get_order_container_ids(doc)
 	if not container_ids:
 		return set(), []
 
