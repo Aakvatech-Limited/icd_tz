@@ -8,9 +8,6 @@ from frappe.utils import get_url_to_form, nowdate
 from icd_tz.icd_tz.api.utils import (
 	get_cargo_container_ids,
 	get_delivered_containers,
-	get_service_item,
-	get_service_key,
-	throw_missing_criteria,
 	validate_cf_agent,
 	validate_delivered_container,
 	validate_draft_doc,
@@ -18,9 +15,6 @@ from icd_tz.icd_tz.api.utils import (
 
 
 class ContainerInspection(Document):
-	def before_insert(self):
-		self.get_custom_verification_services()
-
 	def before_cancel(self):
 		validate_delivered_container(self.container_id, self.container_no, action="cancelled")
 
@@ -124,44 +118,6 @@ class ContainerInspection(Document):
 
 		container_doc.last_inspection_date = nowdate()
 		container_doc.save(ignore_permissions=True)
-
-	@frappe.whitelist()
-	def get_custom_verification_services(self, caller=None):
-		if caller == "Front End" and isinstance(self, str):
-			self = frappe.parse_json(self)
-
-		if not self.get("in_yard_container_booking"):
-			return
-
-		has_custom_verification_charges = frappe.db.get_value(
-			"In Yard Container Booking",
-			self.get("in_yard_container_booking"),
-			"has_custom_verification_charges",
-		)
-
-		if has_custom_verification_charges != "Yes":
-			return
-
-		settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-
-		container = frappe.get_cached_value(
-			"Container", self.container_id, ["cargo_type", "port_of_destination"], as_dict=True
-		)
-		key = get_service_key(
-			size=self.container_size,
-			cargo_type=container.cargo_type,
-			port=container.port_of_destination,
-		)
-		verification_item = get_service_item(settings_doc, "Verification", key)
-		if not verification_item:
-			throw_missing_criteria("Verification", key)
-
-		service_names = [row.get("service") for row in self.get("services")]
-		if verification_item not in service_names:
-			if caller == "Front End":
-				return verification_item
-			else:
-				self.append("services", {"service": verification_item})
 
 
 @frappe.whitelist()
