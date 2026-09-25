@@ -20,7 +20,6 @@ cmo = DocType("Container Movement Order")
 class ContainerMovementOrder(Document):
 	def before_insert(self):
 		self.update_container_count()
-		self.set_ship_dc_date()
 
 	def before_save(self):
 		if not self.company:
@@ -69,12 +68,18 @@ class ContainerMovementOrder(Document):
 			)
 
 	def set_ship_dc_date(self):
-		"""Fetch the discharge date from TANeSW, a date already on the document is kept"""
+		"""Discharge date of the container, a date already on the document is kept
 
-		if self.ship_dc_date:
+		The discharge job has usually stored it on the ICD Container already, so
+		TANeSW is asked only when it has not.
+		"""
+
+		if self.ship_dc_date or not self.manifest or not self.container_no:
 			return
 
-		self.ship_dc_date = get_discharge_date(self.container_no, self.m_bl_no)
+		self.ship_dc_date = frappe.db.get_value(
+			"ICD Container", {"manifest": self.manifest, "container_no": self.container_no}, "ship_dc_date"
+		) or get_discharge_date(self.container_no, self.m_bl_no)
 
 	def validate_ship_dc_date(self):
 		if not self.ship_dc_date:
