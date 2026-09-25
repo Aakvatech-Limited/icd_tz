@@ -156,7 +156,7 @@ def create_containers(manifest_doc, consignees: dict, master_bl_names: dict):
 			continue
 
 		if row.container_no in rows:
-			validate_one_bill_of_lading(row, rows[row.container_no]["m_bl_no"])
+			mark_shared_container(rows[row.container_no], row)
 			continue
 
 		rows[row.container_no] = {
@@ -211,21 +211,25 @@ def bulk_insert_dimension(doctype: str, rows: list):
 	frappe.db.bulk_insert(doctype, fields, [[record[field] for field in fields] for record in records])
 
 
-def validate_one_bill_of_lading(row, first_m_bl_no: str | None):
-	"""One container gets one dimension record per manifest
+def mark_shared_container(record: dict, row):
+	"""Keep one dimension record for an LCL box the manifest lists under several bills
 
-	If the manifest puts a container under two bills, every cost booked on it would land
-	on whichever bill was read first, so the manifest is rejected instead.
+	The record keeps the first bill, which the box's port charges are booked against,
+	and leaves consignee blank, as the box belongs to no one consignee. An FCL box
+	belongs to one bill, so a repeat is a manifest error.
 	"""
 
-	if not row.m_bl_no or not first_m_bl_no or row.m_bl_no == first_m_bl_no:
+	if not row.m_bl_no or not record["m_bl_no"] or row.m_bl_no == record["m_bl_no"]:
 		return
 
-	frappe.throw(
-		f"Container <b>{row.container_no}</b> appears on this manifest under more than one bill of "
-		f"lading, including <b>{first_m_bl_no}</b> and <b>{row.m_bl_no}</b>."
-		"<br>Correct the manifest file, its costs cannot be attributed to one bill."
-	)
+	if row.freight_indicator != "LCL" or record["freight_indicator"] != "LCL":
+		frappe.throw(
+			f"Container <b>{row.container_no}</b> appears on this manifest under more than one bill of "
+			f"lading, including <b>{record['m_bl_no']}</b> and <b>{row.m_bl_no}</b>."
+			"<br>Only an LCL container can be shared by several bills, correct the manifest file."
+		)
+
+	record["consignee"] = None
 
 
 def validate_manifest_not_in_accounts(manifest: str):
