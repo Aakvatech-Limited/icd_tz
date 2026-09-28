@@ -55,15 +55,14 @@ class GatePass(Document):
 	def validate_pending_payments(self):
 		"""Validate the pending payments for the Gate Pass"""
 
-		if self.is_empty_container == 1:
-			return
-
-		charges = [
-			self.validate_container_charges(),
-			self.validate_in_yard_booking(),
-			self.validate_reception_charges(),
-			self.validate_inspection_charges(),
-		]
+		charges = [self.validate_storage_charges()]
+		if not self.is_empty_container:
+			charges += [
+				self.validate_container_charges(),
+				self.validate_in_yard_booking(),
+				self.validate_reception_charges(),
+				self.validate_inspection_charges(),
+			]
 
 		service_msg = ""
 		invoices = []
@@ -119,8 +118,24 @@ class GatePass(Document):
 			+ " </ul>"
 		)
 
+	def validate_storage_charges(self):
+		"""Validate the storage days for the Gate Pass and return their linked invoices"""
+
+		msg = ""
+		days_to_be_billed = frappe.db.get_value("Container", self.container_id, "days_to_be_billed")
+		if days_to_be_billed > 0:
+			msg = f"<li>Storage Charges:  <b>{days_to_be_billed} Days</b></li>"
+
+		invoices = frappe.db.get_all(
+			"Container Service Detail",
+			filters={"parent": self.container_id, "parenttype": "Container"},
+			pluck="sales_invoice",
+		)
+
+		return msg, invoices
+
 	def validate_container_charges(self):
-		"""Validate the storage payments for the Gate Pass and return its linked invoices"""
+		"""Validate the removal, corridor levy and cancellation payments and return their linked invoices"""
 
 		msg = ""
 		invoices = []
@@ -135,13 +150,9 @@ class GatePass(Document):
 				"c_sales_invoice",
 				"has_cancellation_charge",
 				"g_sales_invoice",
-				"days_to_be_billed",
 			],
 			as_dict=True,
 		)
-
-		if container_info.days_to_be_billed > 0:
-			msg += f"<li>Storage Charges:  <b>{container_info.days_to_be_billed} Days</b></li>"
 
 		if container_info.has_removal_charges == "Yes" and not container_info.r_sales_invoice:
 			msg += "<li>Removal Charges</li>"
@@ -155,13 +166,6 @@ class GatePass(Document):
 		invoices.append(container_info.r_sales_invoice)
 		invoices.append(container_info.c_sales_invoice)
 		invoices.append(container_info.g_sales_invoice)
-		invoices.extend(
-			frappe.db.get_all(
-				"Container Service Detail",
-				filters={"parent": self.container_id, "parenttype": "Container"},
-				pluck="sales_invoice",
-			)
-		)
 
 		return msg, invoices
 
