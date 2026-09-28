@@ -204,30 +204,40 @@ def save_message(document, filename: str, content: str) -> str:
 
 
 @frappe.whitelist()
-def generate_codeco_gate_in(container_reception: str, message_function: str = "original") -> dict | None:
+def generate_codeco_gate_in(
+	container_reception: str, message_function: str = "original", edi_partner: str | None = None
+) -> dict | None:
 	"""Preview the gate-in message of a Container Reception without attaching it"""
 
 	reception = frappe.get_doc("Container Reception", container_reception)
 	reception.check_permission("read")
 
-	return preview(from_container_reception(reception), message_function)
+	return preview(from_container_reception(reception), message_function, edi_partner)
 
 
 @frappe.whitelist()
-def generate_codeco_gate_out(gate_pass: str, message_function: str = "original") -> dict | None:
+def generate_codeco_gate_out(
+	gate_pass: str, message_function: str = "original", edi_partner: str | None = None
+) -> dict | None:
 	"""Preview the gate-out message of a Gate Pass without attaching it"""
 
 	document = frappe.get_doc("Gate Pass", gate_pass)
 	document.check_permission("read")
 
-	return preview(from_gate_pass(document), message_function)
+	return preview(from_gate_pass(document), message_function, edi_partner)
 
 
-def preview(movement, message_function: str) -> dict | None:
+def preview(movement, message_function: str, edi_partner: str | None = None) -> dict | None:
+	"""The message a movement would send, to the given partner or to its shipping line's
+
+	A named partner is previewed even while its EDI is switched off, so it can be
+	checked before it goes live.
+	"""
+
 	if movement is None:
 		return None
 
-	partner = get_partner(movement.shipping_line_code)
+	partner = get_preview_partner(edi_partner) if edi_partner else get_partner(movement.shipping_line_code)
 	if partner is None:
 		return None
 
@@ -238,3 +248,10 @@ def preview(movement, message_function: str) -> dict | None:
 		"filename": generator.get_filename(message_function),
 		"movement_type": "gate_in" if movement.is_gate_in else "gate_out",
 	}
+
+
+def get_preview_partner(edi_partner: str):
+	partner = frappe.get_doc("EDI Partner", edi_partner)
+	partner.check_permission("read")
+
+	return partner
