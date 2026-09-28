@@ -31,6 +31,9 @@ frappe.ui.form.on("ICD TZ Settings", {
         return {
           filters: {
             is_group: 0,
+            disabled: 0,
+            // port expenses are booked here, so only accounts that hold expenses
+            root_type: "Expense",
             company: company,
             // the balance moves in company currency, so an account in another
             // currency cannot be released without a rate to convert it back
