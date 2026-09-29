@@ -336,21 +336,49 @@ def revoke_dimension_records(manifest: str):
 
 
 def add_accounting_dimension(document_type: str):
-	"""Register one dimension and create its fields now, shared by the dimension patches"""
+	"""Ensure one dimension and all of its Custom Fields exist.
+
+	Accounting Dimension creation is not atomic because adding a dimension alters several
+	tables. A failed migrate can therefore leave the Accounting Dimension itself and only
+	some of its Custom Fields behind. Re-running this helper must repair that partial state
+	instead of returning merely because the parent Accounting Dimension already exists.
+	"""
 
 	from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
+		get_doctypes_with_dimensions,
 		make_dimension_in_accounting_doctypes,
 	)
 
-	if frappe.db.exists("Accounting Dimension", {"document_type": document_type}):
-		return
+	dimension_name = frappe.db.get_value(
+		"Accounting Dimension", {"document_type": document_type}, "name"
+	)
 
-	dimension = frappe.new_doc("Accounting Dimension")
-	dimension.document_type = document_type
-	dimension.flags.ignore_permissions = True
-	dimension.insert()
+	if dimension_name:
+		dimension = frappe.get_doc("Accounting Dimension", dimension_name)
+		created = False
+	else:
+		dimension = frappe.new_doc("Accounting Dimension")
+		dimension.document_type = document_type
+		dimension.flags.ignore_permissions = True
+		dimension.insert()
+		created = True
 
-	# on_update only queues the field creation, run it here so the fields exist once the patch ends
-	make_dimension_in_accounting_doctypes(doc=dimension)
+	missing_doctypes = [
+		doctype
+		for doctype in get_doctypes_with_dimensions()
+		if not frappe.db.exists(
+			"Custom Field",
+			{"dt": doctype, "fieldname": dimension.fieldname},
+		)
+	]
 
-	print(f"Added the {document_type} accounting dimension, field: {dimension.fieldname}")
+	# on_update only queues field creation. Create only what is missing so this stays safe
+	# after a previous migrate stopped halfway through the schema changes.
+	if missing_doctypes:
+		make_dimension_in_accounting_doctypes(doc=dimension, doclist=missing_doctypes)
+
+	action = "Added" if created else "Reconciled"
+	print(
+		f"{action} the {document_type} accounting dimension, field: {dimension.fieldname}; "
+		f"created {len(missing_doctypes)} missing field(s)"
+	)
