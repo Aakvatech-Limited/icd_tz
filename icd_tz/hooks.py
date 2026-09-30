@@ -32,6 +32,7 @@ doctype_js = {
 	"Driver": "public/js/driver.js",
 	"Vehicle": "public/js/vehicle.js",
 	"Contract": "public/js/contract.js",
+	"Purchase Invoice": "public/js/purchase_invoice.js",
 }
 
 doctype_list_js = {
@@ -164,6 +165,7 @@ doc_events = {
 	},
 	"Purchase Invoice": {
 		"before_validate": "icd_tz.icd_tz.api.purchase_invoice.set_wip_account",
+		"before_submit": "icd_tz.icd_tz.api.purchase_invoice.validate_no_zero_rate",
 		"on_submit": "icd_tz.icd_tz.api.purchase_invoice.on_submit",
 		"on_cancel": "icd_tz.icd_tz.api.purchase_invoice.on_cancel",
 	},
