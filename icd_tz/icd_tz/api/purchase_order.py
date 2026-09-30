@@ -3,6 +3,7 @@ from frappe import _
 from frappe.utils import create_batch, flt, nowdate
 
 from icd_tz.icd_tz.api.port_expenses import (
+	CHARGE_FLAGS,
 	CRITERIA_FIELDS,
 	ONE_OFF_EXPENSE_TYPES,
 	STORAGE_EXPENSE_TYPES,
@@ -195,39 +196,41 @@ def get_expense_description(row: dict, container: dict) -> str:
 
 def on_submit(doc, method):
 	coverage = get_expense_coverage(doc)
-	validate_not_already_booked(coverage)
+	validate_not_already_claimed(coverage, doc.doctype)
 	book_expense_containers(doc, coverage)
 
 
-def validate_not_already_booked(coverage: tuple):
-	"""Refuse an order whose charge another order already booked
+def validate_not_already_claimed(coverage: tuple, doctype: str):
+	"""Refuse a Purchase Order or Invoice for a charge another one of its kind carries
 
-	The draft guard runs when the order is built, so two people building at the
-	same time both pass it. This is the check that actually stops a double bill.
+	The draft guard runs when an order is built, so two people building at the
+	same time both pass it, and ERPNext limits billing per order line only, so an
+	invoice raised on its own passes that. This is the check that stops a double bill.
 	"""
 
 	one_off, storage_day_rows = coverage
+	flags = CHARGE_FLAGS[doctype]
 
 	clashes = []
-	for booked_field, container_ids in one_off.items():
+	for expense_type, container_ids in one_off.items():
 		clashes += frappe.get_all(
 			"ICD Container",
-			filters={"name": ("in", list(container_ids)), booked_field: 1},
+			filters={"name": ("in", list(container_ids)), flags[expense_type]: 1},
 			pluck="container_no",
 		)
 
 	clashes += frappe.get_all(
 		"ICD Container Storage Date",
-		filters={"name": ("in", list(storage_day_rows)), "purchase_order": ("is", "set")},
+		filters={"name": ("in", list(storage_day_rows)), frappe.scrub(doctype): ("is", "set")},
 		pluck="parent",
 	)
 
 	if clashes:
 		frappe.throw(
-			_("These containers are already booked for a charge on this order: {0}").format(
-				frappe.bold(", ".join(sorted(set(clashes))))
+			_("These containers already have a charge of this document on another {0}: {1}").format(
+				_(doctype), frappe.bold(", ".join(sorted(set(clashes))))
 			),
-			title=_("Already Booked"),
+			title=_("Charge Already on {0}").format(_(doctype)),
 		)
 
 
@@ -240,8 +243,12 @@ def book_expense_containers(doc, coverage: tuple):
 
 	one_off, storage_day_rows = coverage
 
-	for booked_field, container_ids in one_off.items():
-		set_rows("ICD Container", container_ids, {booked_field: 1, "purchase_order": doc.name})
+	for expense_type, container_ids in one_off.items():
+		set_rows(
+			"ICD Container",
+			container_ids,
+			{ONE_OFF_EXPENSE_TYPES[expense_type]: 1, "purchase_order": doc.name},
+		)
 
 	set_rows("ICD Container Storage Date", storage_day_rows, {"purchase_order": doc.name})
 
@@ -256,8 +263,8 @@ def release_expense_containers(doc):
 
 	one_off, storage_day_rows = get_expense_coverage(doc)
 
-	for booked_field, container_ids in one_off.items():
-		set_rows("ICD Container", container_ids, {booked_field: 0}, doc.name)
+	for expense_type, container_ids in one_off.items():
+		set_rows("ICD Container", container_ids, {ONE_OFF_EXPENSE_TYPES[expense_type]: 0}, doc.name)
 
 	claimed = {container for container_ids in one_off.values() for container in container_ids}
 	set_rows("ICD Container", claimed, {"purchase_order": ""}, doc.name)
@@ -270,7 +277,7 @@ def release_expense_containers(doc):
 
 
 def get_expense_coverage(doc) -> tuple[dict, set]:
-	"""What an order covers: containers per booked flag, and storage day rows
+	"""What an order or invoice covers: containers per one off expense type, and storage day rows
 
 	A plain purchase order carries no icd_container, so this costs one attribute
 	read per line and returns nothing.
@@ -286,7 +293,7 @@ def get_expense_coverage(doc) -> tuple[dict, set]:
 
 		expense_type = expense_items.get(item.item_code)
 		if expense_type in ONE_OFF_EXPENSE_TYPES:
-			one_off.setdefault(ONE_OFF_EXPENSE_TYPES[expense_type], set()).add(item.icd_container)
+			one_off.setdefault(expense_type, set()).add(item.icd_container)
 
 		elif expense_type in STORAGE_EXPENSE_TYPES and item.get("container_child_refs"):
 			storage_day_rows.update(ref for ref in item.container_child_refs.split(",") if ref)

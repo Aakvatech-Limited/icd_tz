@@ -1,10 +1,12 @@
 import frappe
 
+from icd_tz.icd_tz.api.port_expenses import ONE_OFF_BILLED_FIELDS
 from icd_tz.icd_tz.api.purchase_order import (
 	get_expense_coverage,
 	get_expense_items_by_type,
 	get_wip_account,
 	set_rows,
+	validate_not_already_claimed,
 )
 
 
@@ -32,24 +34,32 @@ def set_wip_account(doc, method=None):
 
 
 def on_submit(doc, method):
-	stamp_expense_invoice(doc, doc.name)
+	coverage = get_expense_coverage(doc)
+	validate_not_already_claimed(coverage, doc.doctype)
+	stamp_expense_invoice(coverage, doc.name)
 
 
 def on_cancel(doc, method):
-	"""Take the invoice stamp back off, or a cancelled invoice stays recorded for ever"""
+	"""Take the invoice back off, or a cancelled invoice stays recorded for ever"""
 
-	stamp_expense_invoice(doc, "")
+	stamp_expense_invoice(get_expense_coverage(doc), "")
 
 
-def stamp_expense_invoice(doc, invoice: str):
-	"""Record the invoice on the containers and storage days its own lines bill
+def stamp_expense_invoice(coverage: tuple, invoice: str):
+	"""Record the invoice, and its billed flags, on the containers and storage days its own lines bill
 
 	Read from the invoice lines rather than from the orders they reference, so a
-	part invoice does not stamp the whole order.
+	part invoice does not stamp the whole order. An empty invoice clears them.
 	"""
 
-	one_off, storage_day_rows = get_expense_coverage(doc)
+	one_off, storage_day_rows = coverage
+	billed = 1 if invoice else 0
 
-	containers = {container for container_ids in one_off.values() for container in container_ids}
-	set_rows("ICD Container", containers, {"purchase_invoice": invoice})
+	for expense_type, container_ids in one_off.items():
+		set_rows(
+			"ICD Container",
+			container_ids,
+			{ONE_OFF_BILLED_FIELDS[expense_type]: billed, "purchase_invoice": invoice},
+		)
+
 	set_rows("ICD Container Storage Date", storage_day_rows, {"purchase_invoice": invoice})

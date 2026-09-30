@@ -11,6 +11,13 @@ ONE_OFF_EXPENSE_TYPES = {
 	"Levy": "is_levy_booked",
 	"Removal": "is_removal_booked",
 }
+ONE_OFF_BILLED_FIELDS = {
+	"Shore": "is_shore_billed",
+	"Levy": "is_levy_billed",
+	"Removal": "is_removal_billed",
+}
+# the flags each document ticks, its storage day column is its scrubbed name
+CHARGE_FLAGS = {"Purchase Order": ONE_OFF_EXPENSE_TYPES, "Purchase Invoice": ONE_OFF_BILLED_FIELDS}
 STORAGE_EXPENSE_TYPES = {"Storage-Single": "Single", "Storage-Double": "Double"}
 # the contract against the ICD TZ Expense Detail select options, asserted by a test
 EXPENSE_TYPES = (*ONE_OFF_EXPENSE_TYPES, *STORAGE_EXPENSE_TYPES)
@@ -421,40 +428,48 @@ def get_draft_expense_orders(manifest: str, rows: list) -> list:
 
 
 def get_unpaid_port_charges(manifest: str, container_no: str) -> list:
-	"""Port charges the terminal has not been paid for this container yet
+	"""Port charges this container is not yet on the document the movement order requires
 
 	Only the charges this ICD actually configures are reported. A site that does
 	not track port expenses has nothing to answer for, and neither does a charge
 	no criteria row asks for.
 	"""
 
+	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	required = settings_doc.movement_order_requires or "Purchase Order"
+	charge_fields = CHARGE_FLAGS[required]
+
 	icd_container = frappe.db.get_value(
 		"ICD Container",
 		{"manifest": manifest, "container_no": container_no},
-		["name", *ONE_OFF_EXPENSE_TYPES.values()],
+		["name", *charge_fields.values()],
 		as_dict=True,
 	)
 	if not icd_container:
 		return []
 
-	configured = {row.expense_type for row in frappe.get_cached_doc("ICD TZ Settings").expense_types}
+	configured = {row.expense_type for row in settings_doc.expense_types}
 
 	unpaid = [
 		expense_type
-		for expense_type, booked_field in ONE_OFF_EXPENSE_TYPES.items()
-		if expense_type in configured and not icd_container.get(booked_field)
+		for expense_type, charge_field in charge_fields.items()
+		if expense_type in configured and not icd_container.get(charge_field)
 	]
 
-	if configured & set(STORAGE_EXPENSE_TYPES) and has_unbilled_storage_days(icd_container.name):
+	stamp_field = frappe.scrub(required)
+	if configured & set(STORAGE_EXPENSE_TYPES) and has_unstamped_storage_days(
+		icd_container.name, stamp_field
+	):
 		unpaid.append(STORAGE_CHARGE_LABEL)
 
 	return unpaid
 
 
-def has_unbilled_storage_days(icd_container: str) -> bool:
-	"""Whether any day the terminal charges for is still not on a purchase order"""
+def has_unstamped_storage_days(icd_container: str, stamp_field: str) -> bool:
+	"""Whether any day the terminal charges for is still not on a purchase order or invoice"""
 
 	storage_date = frappe.qb.DocType("ICD Container Storage Date")
+	stamp = getattr(storage_date, stamp_field)
 
 	# an unset Data column is NULL, and IN (NULL) matches nothing, so both the
 	# empty string and NULL have to be asked for explicitly
@@ -465,7 +480,7 @@ def has_unbilled_storage_days(icd_container: str) -> bool:
 			(storage_date.parent == icd_container)
 			& (storage_date.charge.notnull())
 			& (storage_date.charge.notin(["", FREE_CHARGE]))
-			& ((storage_date.purchase_order.isnull()) | (storage_date.purchase_order == ""))
+			& ((stamp.isnull()) | (stamp == ""))
 		)
 		.limit(1)
 	).run()

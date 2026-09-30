@@ -451,25 +451,7 @@ class TestPortExpenses(FrappeTestCase):
 		order = frappe.get_doc("Purchase Order", name)
 		order.submit()
 
-		line = order.items[0]
-		invoice = frappe.new_doc("Purchase Invoice")
-		invoice.update({"supplier": order.supplier, "company": order.company, "posting_date": nowdate()})
-		invoice.append(
-			"items",
-			{
-				"item_code": line.item_code,
-				"qty": line.qty,
-				"rate": line.rate,
-				"expense_account": get_expense_account(order.company),
-				"purchase_order": name,
-				"po_detail": line.name,
-				"container_no": line.container_no,
-				"icd_container": line.icd_container,
-				"container_child_refs": line.container_child_refs,
-			},
-		)
-		invoice.insert()
-		invoice.submit()
+		invoice = make_invoice(order, order.items[:1])
 
 		container = frappe.get_doc("ICD Container", get_container(self.manifest.name, BOX_20))
 		invoiced = [row for row in container.storage_dates if row.purchase_invoice == invoice.name]
@@ -489,23 +471,7 @@ class TestPortExpenses(FrappeTestCase):
 		order.submit()
 
 		billed = order.items[0]
-		invoice = frappe.new_doc("Purchase Invoice")
-		invoice.update({"supplier": order.supplier, "company": order.company, "posting_date": nowdate()})
-		invoice.append(
-			"items",
-			{
-				"item_code": billed.item_code,
-				"qty": billed.qty,
-				"rate": billed.rate,
-				"expense_account": get_expense_account(order.company),
-				"purchase_order": name,
-				"po_detail": billed.name,
-				"container_no": billed.container_no,
-				"icd_container": billed.icd_container,
-			},
-		)
-		invoice.insert()
-		invoice.submit()
+		invoice = make_invoice(order, [billed])
 
 		stamped = frappe.get_all(
 			"ICD Container",
@@ -514,6 +480,73 @@ class TestPortExpenses(FrappeTestCase):
 		)
 
 		self.assertEqual(stamped, [billed.container_no])
+
+	# billing on the purchase invoice
+
+	def test_the_order_books_the_charge_and_the_invoice_bills_it(self):
+		order = submit_order(self.manifest.name)
+		self.assertEqual(get_charge_flag(self.manifest.name, BOX_20, "is_shore_booked"), 1)
+		self.assertEqual(get_charge_flag(self.manifest.name, BOX_20, "is_shore_billed"), 0)
+
+		make_invoice(order, order.items)
+		self.assertEqual(get_charge_flag(self.manifest.name, BOX_20, "is_shore_billed"), 1)
+
+	def test_an_invoice_cancel_clears_only_the_billed_flag(self):
+		order = submit_order(self.manifest.name)
+		make_invoice(order, order.items).cancel()
+
+		self.assertEqual(get_charge_flag(self.manifest.name, BOX_20, "is_shore_booked"), 1)
+		self.assertEqual(get_charge_flag(self.manifest.name, BOX_20, "is_shore_billed"), 0)
+
+	def test_a_billed_charge_cannot_be_billed_again(self):
+		"""ERPNext limits billing per order line only, so a standalone invoice must be refused"""
+
+		order = submit_order(self.manifest.name)
+		first = make_invoice(order, order.items)
+
+		second = frappe.copy_doc(first)
+		second.docstatus = 0
+		for item in second.items:
+			item.purchase_order = None
+			item.po_detail = None
+		second.insert()
+
+		self.assertRaises(frappe.ValidationError, second.submit)
+
+	def test_a_billed_storage_day_cannot_be_billed_again(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		order = submit_order(self.manifest.name, [get_criteria_row("Storage-Single", "")])
+		first = make_invoice(order, order.items)
+
+		second = frappe.copy_doc(first)
+		second.docstatus = 0
+		for item in second.items:
+			item.purchase_order = None
+			item.po_detail = None
+		second.insert()
+
+		self.assertRaises(frappe.ValidationError, second.submit)
+
+	def test_a_movement_order_requiring_the_invoice_waits_for_it(self):
+		set_movement_order_requires("Purchase Invoice")
+		order = submit_order(self.manifest.name)
+		self.assertIn("Shore", get_unpaid_port_charges(self.manifest.name, BOX_20))
+
+		make_invoice(order, order.items)
+		self.assertNotIn("Shore", get_unpaid_port_charges(self.manifest.name, BOX_20))
+
+	def test_storage_waits_for_the_invoice_when_the_movement_order_requires_it(self):
+		set_movement_order_requires("Purchase Invoice")
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		order = submit_order(self.manifest.name, [get_criteria_row("Storage-Single", "")])
+		self.assertIn("Storage", get_unpaid_port_charges(self.manifest.name, BOX_20))
+
+		make_invoice(order, order.items)
+		self.assertNotIn("Storage", get_unpaid_port_charges(self.manifest.name, BOX_20))
 
 	# what the port is still owed for a container
 
@@ -793,6 +826,50 @@ def make_movement_order(manifest, container_no):
 	return order
 
 
+def submit_order(manifest, criteria_rows=None):
+	name = create_purchase_order(manifest, PRICE_LIST, get_supplier(), criteria_rows or get_shore_rows())
+	order = frappe.get_doc("Purchase Order", name)
+	order.submit()
+
+	return order
+
+
+def make_invoice(order, lines):
+	"""Submitted invoice billing the given lines of a submitted order"""
+
+	invoice = frappe.new_doc("Purchase Invoice")
+	invoice.update({"supplier": order.supplier, "company": order.company, "posting_date": nowdate()})
+	for line in lines:
+		invoice.append(
+			"items",
+			{
+				"item_code": line.item_code,
+				"qty": line.qty,
+				"rate": line.rate,
+				"expense_account": get_expense_account(order.company),
+				"purchase_order": order.name,
+				"po_detail": line.name,
+				"container_no": line.container_no,
+				"icd_container": line.icd_container,
+				"container_child_refs": line.container_child_refs,
+			},
+		)
+
+	invoice.insert()
+	invoice.submit()
+
+	return invoice
+
+
+def get_charge_flag(manifest, container_no, fieldname):
+	return frappe.db.get_value("ICD Container", get_container(manifest, container_no), fieldname)
+
+
+def set_movement_order_requires(doctype):
+	frappe.db.set_single_value("ICD TZ Settings", "movement_order_requires", doctype)
+	frappe.clear_cache(doctype="ICD TZ Settings")
+
+
 def get_shore_rows():
 	return [get_criteria_row("Shore", "20ft"), get_criteria_row("Shore", "")]
 
@@ -819,6 +896,7 @@ def set_discharge_date(manifest, container_no, discharge_date):
 def set_expense_settings():
 	settings_doc = frappe.get_doc("ICD TZ Settings")
 	settings_doc.default_buying_price_list = PRICE_LIST
+	settings_doc.movement_order_requires = "Purchase Order"
 	settings_doc.expense_types = []
 	settings_doc.port_storage_days = []
 
