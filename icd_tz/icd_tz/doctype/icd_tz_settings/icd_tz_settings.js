@@ -25,15 +25,16 @@ frappe.ui.form.on("ICD TZ Settings", {
       };
     });
 
-    for (const field of ["wip_account", "cogs_account"]) {
+    // WIP holds the expense until release, then COGS takes it
+    const root_types = { wip_account: "Asset", cogs_account: "Expense" };
+    for (const [field, root_type] of Object.entries(root_types)) {
       frm.set_query(field, () => {
         const company = frappe.defaults.get_user_default("Company");
         return {
           filters: {
             is_group: 0,
             disabled: 0,
-            // port expenses are booked here, so only accounts that hold expenses
-            root_type: "Expense",
+            root_type: root_type,
             company: company,
             // the balance moves in company currency, so an account in another
             // currency cannot be released without a rate to convert it back
