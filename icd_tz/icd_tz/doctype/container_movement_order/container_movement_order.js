@@ -60,8 +60,28 @@ frappe.ui.form.on("Container Movement Order", {
   manifest: (frm) => {
     frm.trigger("get_containers");
   },
+  best_pick: (frm) => {
+    if (!frm.doc.best_pick) {
+      return;
+    }
+
+    // the container, and all that came with it, is only known at the port
+    [
+      "container_no",
+      "m_bl_no",
+      "size",
+      "freight_indicator",
+      "cargo_type",
+      "ship_dc_date",
+      "container_count",
+    ].forEach((fieldname) => frm.set_value(fieldname, null));
+  },
   create_container_reception: (frm) => {
-    if (frm.doc.docstatus == 1 && frm.doc.status != "Received") {
+    if (
+      frm.doc.docstatus == 1 &&
+      frm.doc.status != "Received" &&
+      frm.doc.container_no
+    ) {
       frm
         .add_custom_button(__("Create Container Reception"), () => {
           frappe.new_doc(
@@ -110,7 +130,9 @@ frappe.ui.form.on("Container Movement Order", {
 
             frm.refresh_fields();
 
-            show_dialog(frm, data);
+            if (!frm.doc.best_pick || frm.doc.docstatus == 1) {
+              show_dialog(frm, data);
+            }
           }
         },
       });
@@ -190,6 +212,10 @@ var show_dialog = (frm, data) => {
 
       frm.refresh_fields();
       d.hide();
+
+      if (frm.doc.docstatus == 1) {
+        frm.save("Update");
+      }
     } else {
       frappe.msgprint({
         title: __("Message"),

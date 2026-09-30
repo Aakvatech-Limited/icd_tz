@@ -123,7 +123,7 @@ def cache_bill_crns(m_bl_no: str, containers: dict) -> list:
 	return crns
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def enqueue_ship_dc_dates(manifest: str) -> bool:
 	"""Look up the missing discharge dates of one manifest in the background"""
 
