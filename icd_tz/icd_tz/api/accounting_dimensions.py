@@ -349,9 +349,7 @@ def add_accounting_dimension(document_type: str):
 		make_dimension_in_accounting_doctypes,
 	)
 
-	dimension_name = frappe.db.get_value(
-		"Accounting Dimension", {"document_type": document_type}, "name"
-	)
+	dimension_name = frappe.db.get_value("Accounting Dimension", {"document_type": document_type}, "name")
 
 	if dimension_name:
 		dimension = frappe.get_doc("Accounting Dimension", dimension_name)
