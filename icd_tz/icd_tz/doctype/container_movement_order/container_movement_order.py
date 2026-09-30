@@ -16,6 +16,17 @@ mb = DocType("Master BL")
 cd = DocType("Containers Detail")
 cmo = DocType("Container Movement Order")
 
+# filled after submit on a best pick order, once the driver has picked the container
+CONTAINER_FIELDS = (
+	"container_no",
+	"m_bl_no",
+	"size",
+	"freight_indicator",
+	"cargo_type",
+	"ship_dc_date",
+	"container_count",
+)
+
 
 class ContainerMovementOrder(Document):
 	def before_insert(self):
@@ -29,15 +40,65 @@ class ContainerMovementOrder(Document):
 
 	def validate(self):
 		if self.container_no:
-			self.validate_container_is_in_manifest()
-			self.validate_duplicate_cmo_per_container_number()
+			self.validate_container()
 			self.report_unpaid_port_charges()
 
 	def before_submit(self):
+		self.validate_best_pick()
+		if self.container_no:
+			self.validate_container_can_leave_port()
+
+		self.status = "Pending"
+
+	def validate_container(self):
+		self.validate_container_is_in_manifest()
+		self.validate_duplicate_cmo_per_container_number()
+
+	def validate_container_can_leave_port(self):
 		self.validate_ship_dc_date()
 		self.validate_port_charges_are_paid()
 
-		self.status = "Pending"
+	def validate_best_pick(self):
+		"""A best pick order leaves for the port before anyone can say which container it brings"""
+
+		if self.best_pick and self.container_no:
+			frappe.throw(
+				_(
+					"Remove Container No or untick Based on Best Pick, a Best Pick order is submitted without a container"
+				),
+				title=_("Best Pick"),
+			)
+
+		if not self.best_pick and not self.container_no:
+			frappe.throw(
+				_("Container No is required, tick Based on Best Pick if the container is not known yet"),
+				title=_("Best Pick"),
+			)
+
+	def before_update_after_submit(self):
+		if not any(self.has_value_changed(fieldname) for fieldname in CONTAINER_FIELDS):
+			return
+
+		self.validate_container_can_be_set()
+		self.validate_container()
+		self.set_ship_dc_date()
+		self.validate_container_can_leave_port()
+		self.update_container_count()
+
+	def validate_container_can_be_set(self):
+		"""Only the container a best pick order brought is set after submit, and only once"""
+
+		if not self.best_pick or self.get_doc_before_save().container_no or not self.container_no:
+			frappe.throw(
+				_(
+					"Container details of a submitted Movement Order can only be set once, on a Best Pick order"
+				),
+				title=_("Best Pick"),
+			)
+
+	def on_update_after_submit(self):
+		if self.has_value_changed("container_no"):
+			self.update_container_has_order()
 
 	def report_unpaid_port_charges(self):
 		"""Say what the terminal is still owed, while the order can still wait
