@@ -10,6 +10,7 @@ from icd_tz.icd_tz.api.accounting_dimensions import (
 	DIMENSION_DISPLAY_ORDER,
 	DIMENSIONS,
 	GUARDED_DOCTYPES,
+	add_accounting_dimension,
 	build_dimension_name,
 	get_container_dimensions,
 	get_dimension_names,
@@ -246,6 +247,60 @@ class TestAccountingDimensions(FrappeTestCase):
 			frappe.db.count("ICD Container", {"manifest": self.manifest.name, "container_no": CONTAINER_NO}),
 			1,
 		)
+
+	def test_existing_dimension_reconciles_only_missing_custom_fields(self):
+		"""A failed migrate can leave the dimension parent plus only some fields."""
+
+		document_type = "ICD Master BL"
+		dimension = frappe.get_doc(
+			"Accounting Dimension",
+			frappe.db.get_value("Accounting Dimension", {"document_type": document_type}, "name"),
+		)
+		doctypes = ["GL Entry", "Purchase Order Item", "Sales Order Item"]
+
+		original_get_hooks = frappe.get_hooks
+		original_exists = frappe.db.exists
+		original_get_value = frappe.db.get_value
+
+		created_for = []
+
+		def fake_get_hooks(key):
+			if key == "accounting_dimension_doctypes":
+				return doctypes
+			return original_get_hooks(key)
+
+		def fake_exists(doctype, filters):
+			if doctype == "Custom Field" and isinstance(filters, dict):
+				if filters.get("fieldname") == dimension.fieldname:
+					return filters.get("dt") != "Sales Order Item"
+			return original_exists(doctype, filters)
+
+		def fake_get_value(doctype, filters, fieldname=None, *args, **kwargs):
+			if doctype == "Accounting Dimension" and filters == {"document_type": document_type}:
+				return dimension.name
+			return original_get_value(doctype, filters, fieldname, *args, **kwargs)
+
+		from erpnext.accounts.doctype.accounting_dimension import accounting_dimension as accounting_dimension_module
+
+		original_make = accounting_dimension_module.make_dimension_in_accounting_doctypes
+
+		def fake_make(doc, doclist=None):
+			created_for.extend(doclist or [])
+
+		try:
+			frappe.get_hooks = fake_get_hooks
+			frappe.db.exists = fake_exists
+			frappe.db.get_value = fake_get_value
+			accounting_dimension_module.make_dimension_in_accounting_doctypes = fake_make
+
+			add_accounting_dimension(document_type)
+		finally:
+			frappe.get_hooks = original_get_hooks
+			frappe.db.exists = original_exists
+			frappe.db.get_value = original_get_value
+			accounting_dimension_module.make_dimension_in_accounting_doctypes = original_make
+
+		self.assertEqual(created_for, ["Sales Order Item"])
 
 	def test_both_dimensions_are_registered(self):
 		for doctype, fieldname in DIMENSIONS.items():
