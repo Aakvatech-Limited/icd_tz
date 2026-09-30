@@ -189,7 +189,8 @@
    "fieldtype": "Select",
    "label": "Has Stripping Charges",
    "options": "Yes\nNo",
-   "permlevel": 1
+   "permlevel": 1,
+   "hidden": 1
   },
   {
    "fieldname": "c_and_f_company",
@@ -239,14 +240,16 @@
    "fieldname": "s_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "description": "Invoice for container custom verification charges",
    "fieldname": "cv_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "allow_on_submit": 1,
@@ -255,7 +258,8 @@
    "fieldtype": "Select",
    "label": "Has Custom Verification Charges",
    "options": "Yes\nNo",
-   "permlevel": 1
+   "permlevel": 1,
+   "hidden": 1
   },
   {
    "fieldname": "container_id",
@@ -340,7 +344,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-03 15:51:42.128059",
+ "modified": "2026-09-30 19:51:56.061498",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "In Yard Container Booking",
