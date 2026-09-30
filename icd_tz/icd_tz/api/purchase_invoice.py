@@ -1,4 +1,6 @@
 import frappe
+from frappe import _
+from frappe.utils import flt
 
 from icd_tz.icd_tz.api.port_expenses import ONE_OFF_BILLED_FIELDS
 from icd_tz.icd_tz.api.purchase_order import (
@@ -7,6 +9,11 @@ from icd_tz.icd_tz.api.purchase_order import (
 	get_wip_account,
 	set_rows,
 	validate_not_already_claimed,
+)
+from icd_tz.icd_tz.api.transport_charges import (
+	clear_transport_invoice,
+	get_transport_charge_item,
+	stamp_transport_invoice,
 )
 
 
@@ -27,22 +34,35 @@ def set_wip_account(doc, method=None):
 	if not wip_account:
 		return
 
-	expense_items = get_expense_items_by_type()
+	held_items = {*get_expense_items_by_type(), get_transport_charge_item()}
 	for item in doc.items:
-		if item.get("icd_container") and item.item_code in expense_items:
+		if item.get("icd_container") and item.item_code in held_items:
 			item.expense_account = wip_account
+
+
+def validate_no_zero_rate(doc, method=None):
+	"""Every line of every purchase invoice must be priced before it is submitted"""
+
+	unpriced = [str(item.idx) for item in doc.items if not flt(item.rate)]
+	if unpriced:
+		frappe.throw(
+			_("Set a rate on row {0} before submitting").format(", ".join(unpriced)),
+			title=_("Zero Rate"),
+		)
 
 
 def on_submit(doc, method):
 	coverage = get_expense_coverage(doc)
 	validate_not_already_claimed(coverage, doc.doctype)
 	stamp_expense_invoice(coverage, doc.name)
+	stamp_transport_invoice(doc)
 
 
 def on_cancel(doc, method):
 	"""Take the invoice back off, or a cancelled invoice stays recorded for ever"""
 
 	stamp_expense_invoice(get_expense_coverage(doc), "")
+	clear_transport_invoice(doc)
 
 
 def stamp_expense_invoice(coverage: tuple, invoice: str):
