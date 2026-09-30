@@ -22,6 +22,7 @@ frappe.ui.form.on("Container Reception", {
         filters: {
           docstatus: 1,
           status: ["!=", "Received"],
+          container_no: ["is", "set"],
         },
       };
     });
