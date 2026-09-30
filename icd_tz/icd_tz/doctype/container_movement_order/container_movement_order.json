@@ -16,6 +16,7 @@
   "m_bl_no",
   "container_no",
   "select_container",
+  "best_pick",
   "freight_indicator",
   "column_break_tnol5",
   "size",
@@ -112,6 +113,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval: doc.container_no",
    "fieldname": "size",
    "fieldtype": "Data",
@@ -205,6 +207,7 @@
    "options": "Company"
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval: doc.manifest",
    "fieldname": "container_no",
    "fieldtype": "Data",
@@ -213,7 +216,6 @@
    "in_standard_filter": 1,
    "label": "Container No",
    "read_only": 1,
-   "reqd": 1,
    "search_index": 1
   },
   {
@@ -277,6 +279,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "m_bl_no",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -287,6 +290,7 @@
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "container_count",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -295,6 +299,7 @@
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "bold": 1,
    "fieldname": "cargo_type",
    "fieldtype": "Data",
@@ -303,21 +308,25 @@
    "search_index": 1
   },
   {
-   "depends_on": "eval: doc.docstatus == 0;",
+   "allow_on_submit": 1,
+   "depends_on": "eval: !doc.container_no && ((doc.docstatus == 0 && doc.best_pick == 0) || (doc.docstatus == 1 && doc.best_pick == 1));",
    "fieldname": "select_container",
    "fieldtype": "Button",
    "label": "Select Container"
   },
   {
-   "depends_on": "eval: !doc.__islocal",
+   "allow_on_submit": 1,
+   "depends_on": "eval: !doc.__islocal;",
    "fieldname": "ship_dc_date",
    "fieldtype": "Date",
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Ship D/C Date",
+   "read_only_depends_on": "eval: doc.docstatus == 1;",
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "freight_indicator",
    "fieldtype": "Data",
    "label": "Freight Indicator",
@@ -335,12 +344,18 @@
    "options": "\nPending\nReceived",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "best_pick",
+   "fieldtype": "Check",
+   "label": "Based on Best Pick"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-28 05:49:46.088764",
+ "modified": "2026-09-30 18:56:49.454146",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Movement Order",
