@@ -357,20 +357,20 @@ class Container(Document):
 		"""Check if the container is eligible to remove charges"""
 
 		if self.r_sales_invoice:
-			self.has_removal_charges = "No"
+			self.has_removal_charges = 0
 		elif self.days_to_be_billed > 0:
-			self.has_removal_charges = "Yes"
+			self.has_removal_charges = 1
 		elif self.days_to_be_billed <= 0:
 			if self.has_single_charge == 1 or self.has_double_charge == 1:
-				self.has_removal_charges = "Yes"
+				self.has_removal_charges = 1
 			else:
-				self.has_removal_charges = "No"
+				self.has_removal_charges = 0
 
 	def check_corridor_levy_eligibility(self):
 		"""Check if the container is eligible for Corridor Levy payments"""
 
 		if not self.country_of_destination:
-			self.has_corridor_levy_charges = "No"
+			self.has_corridor_levy_charges = 0
 			return
 
 		is_eligible_for_corridor_levy_payments = False
@@ -382,9 +382,9 @@ class Container(Document):
 
 		if is_eligible_for_corridor_levy_payments:
 			if self.c_sales_invoice:
-				self.has_corridor_levy_charges = "No"
+				self.has_corridor_levy_charges = 0
 			else:
-				self.has_corridor_levy_charges = "Yes"
+				self.has_corridor_levy_charges = 1
 
 			# corridor levy does not depend on storage days (2025-04-19)
 			# elif self.days_to_be_billed > 0:
@@ -395,7 +395,7 @@ class Container(Document):
 			# 	else:
 			# 		self.has_corridor_levy_charges = "No"
 		else:
-			self.has_corridor_levy_charges = "No"
+			self.has_corridor_levy_charges = 0
 
 	def update_container_reception(self):
 		container_reception = frappe.get_cached_doc("Container Reception", self.container_reception)
