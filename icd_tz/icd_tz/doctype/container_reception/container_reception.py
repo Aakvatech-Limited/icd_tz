@@ -49,7 +49,19 @@ class ContainerReception(Document):
 		self.received_date = get_received_date(self.posting_date, self.ship_dc_date)
 
 	def validate(self):
+		self.validate_container_no()
 		self.validate_duplicate_cr()
+
+	def validate_container_no(self):
+		"""A best pick movement order names its container only once the driver has picked it"""
+
+		if not self.container_no:
+			frappe.throw(
+				_(
+					"Container No is missing, set the container on Movement Order {0} before receiving it"
+				).format(get_link_to_form("Container Movement Order", self.movement_order)),
+				title=_("Container Not Set"),
+			)
 
 	def before_submit(self):
 		if not self.received_date:
