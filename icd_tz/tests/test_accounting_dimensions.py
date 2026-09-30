@@ -280,7 +280,9 @@ class TestAccountingDimensions(FrappeTestCase):
 				return dimension.name
 			return original_get_value(doctype, filters, fieldname, *args, **kwargs)
 
-		from erpnext.accounts.doctype.accounting_dimension import accounting_dimension as accounting_dimension_module
+		from erpnext.accounts.doctype.accounting_dimension import (
+			accounting_dimension as accounting_dimension_module,
+		)
 
 		original_make = accounting_dimension_module.make_dimension_in_accounting_doctypes
 
