@@ -11,6 +11,7 @@ from frappe.utils.background_jobs import enqueue
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
 from icd_tz.icd_tz.api.port_expenses import get_cargo_type
+from icd_tz.icd_tz.api.transport_charges import validate_reception_transport_unpaid
 from icd_tz.icd_tz.api.utils import validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
@@ -66,10 +67,10 @@ class ContainerReception(Document):
 		self.create_hbl_container(mbl_container)
 		self.update_container_storage_days()
 		self.update_cmo_status("Received")
-		self.set_icd_container_status(RECEIVED_STATUS, self.posting_date)
+		self.set_icd_container_status(RECEIVED_STATUS, self.posting_date, self.transporter)
 
-	def set_icd_container_status(self, status, received_date=None):
-		"""Whether the port storage job still counts this container
+	def set_icd_container_status(self, status, received_date=None, transporter=None):
+		"""Whether the port storage job still counts this container, and who is paid for bringing it
 
 		Received once the box is in the yard, and back to pending if the receipt
 		is cancelled, or the port would stop charging for a box still sitting in it.
@@ -82,11 +83,12 @@ class ContainerReception(Document):
 			frappe.db.set_value(
 				"ICD Container",
 				icd_container,
-				{"status": status, "received_date": received_date},
+				{"status": status, "received_date": received_date, "transporter": transporter},
 				update_modified=False,
 			)
 
 	def before_cancel(self):
+		validate_reception_transport_unpaid(self.manifest, self.container_no)
 		self.validate_delivered_containers()
 		self.cancel_linked_docs()
 

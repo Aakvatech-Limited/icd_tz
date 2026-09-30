@@ -32,6 +32,8 @@
   "voyage_no",
   "column_break_vsctr",
   "arrival_date",
+  "column_break_nobv",
+  "transporter",
   "port_expense_section",
   "ship_dc_date",
   "received_date",
@@ -39,6 +41,7 @@
   "column_break_pxctr",
   "purchase_order",
   "purchase_invoice",
+  "transport_purchase_invoice",
   "column_break_mnsz",
   "expenses_released",
   "expenses_released_on",
@@ -202,7 +205,7 @@
   {
    "fieldname": "arrival_date",
    "fieldtype": "Date",
-   "label": "Arrival Date",
+   "label": "Ship Arrival Date",
    "read_only": 1
   },
   {
@@ -242,6 +245,14 @@
    "fieldtype": "Data",
    "label": "Purchase Invoice",
    "read_only": 1
+  },
+  {
+   "fieldname": "transport_purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Transport Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "collapsible": 1,
@@ -369,12 +380,24 @@
    "fieldtype": "Check",
    "label": "Removal Billed",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nobv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Supplier",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-30 13:01:49.295736",
+ "modified": "2026-09-30 17:20:27.236671",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
