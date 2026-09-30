@@ -367,7 +367,8 @@
    "fieldtype": "Select",
    "label": "Has Transport Charges",
    "options": "Yes\nNo",
-   "permlevel": 1
+   "permlevel": 1,
+   "hidden": 1
   },
   {
    "fieldname": "column_break_eqvx2",
@@ -378,14 +379,16 @@
    "fieldname": "s_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "description": "Invoice for transport charges",
    "fieldname": "t_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "allow_on_submit": 1,
@@ -394,7 +397,8 @@
    "fieldtype": "Select",
    "label": "Has Shore Handling Charges",
    "options": "Yes\nNo",
-   "permlevel": 1
+   "permlevel": 1,
+   "hidden": 1
   },
   {
    "fieldname": "abbr_for_destination",
@@ -546,7 +550,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-28 05:57:18.170551",
+ "modified": "2026-09-30 19:51:56.061498",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Reception",
