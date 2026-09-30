@@ -46,8 +46,11 @@
   "booked_charges_section",
   "is_shore_booked",
   "is_levy_booked",
-  "column_break_bkctr",
   "is_removal_booked",
+  "column_break_bkctr",
+  "is_shore_billed",
+  "is_levy_billed",
+  "is_removal_billed",
   "port_storage_days_tab",
   "section_break_gelp",
   "storage_dates"
@@ -345,12 +348,33 @@
    "collapsible": 1,
    "fieldname": "section_break_gelp",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_shore_billed",
+   "fieldtype": "Check",
+   "label": "Shore Billed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_levy_billed",
+   "fieldtype": "Check",
+   "label": "Levy Billed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_removal_billed",
+   "fieldtype": "Check",
+   "label": "Removal Billed",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-24 13:14:18.389264",
+ "modified": "2026-09-30 13:01:49.295736",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Container",
