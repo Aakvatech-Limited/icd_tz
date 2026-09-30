@@ -1,6 +1,8 @@
 # Copyright (c) 2024, elius mgani and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
+
 import frappe
 from frappe.model.document import Document
 from frappe.model.workflow import apply_workflow
@@ -118,11 +120,40 @@ class GatePass(Document):
 			+ " </ul>"
 		)
 
+	@cached_property
+	def container_charges(self):
+		"""Payment flags and invoices of the Container, read once for every charge validation"""
+
+		return frappe.db.get_value(
+			"Container",
+			self.container_id,
+			[
+				"cargo_type",
+				"container_reception",
+				"days_to_be_billed",
+				"has_removal_charges",
+				"r_sales_invoice",
+				"has_corridor_levy_charges",
+				"c_sales_invoice",
+				"has_cancellation_charge",
+				"g_sales_invoice",
+				"has_transport_charges",
+				"t_sales_invoice",
+				"has_shore_handling_charges",
+				"sh_sales_invoice",
+				"has_stripping_charges",
+				"st_sales_invoice",
+				"has_custom_verification_charges",
+				"cv_sales_invoice",
+			],
+			as_dict=True,
+		)
+
 	def validate_storage_charges(self):
 		"""Validate the storage days for the Gate Pass and return their linked invoices"""
 
 		msg = ""
-		days_to_be_billed = frappe.db.get_value("Container", self.container_id, "days_to_be_billed")
+		days_to_be_billed = self.container_charges.days_to_be_billed
 		if days_to_be_billed > 0:
 			msg = f"<li>Storage Charges:  <b>{days_to_be_billed} Days</b></li>"
 
@@ -138,117 +169,68 @@ class GatePass(Document):
 		"""Validate the removal, corridor levy and cancellation payments and return their linked invoices"""
 
 		msg = ""
-		invoices = []
+		container = self.container_charges
 
-		container_info = frappe.db.get_value(
-			"Container",
-			self.container_id,
-			[
-				"has_removal_charges",
-				"r_sales_invoice",
-				"has_corridor_levy_charges",
-				"c_sales_invoice",
-				"has_cancellation_charge",
-				"g_sales_invoice",
-			],
-			as_dict=True,
-		)
-
-		if container_info.has_removal_charges == "Yes" and not container_info.r_sales_invoice:
+		if container.has_removal_charges and not container.r_sales_invoice:
 			msg += "<li>Removal Charges</li>"
 
-		if container_info.has_corridor_levy_charges == "Yes" and not container_info.c_sales_invoice:
+		if container.has_corridor_levy_charges and not container.c_sales_invoice:
 			msg += "<li>Corridor Levy Charges</li>"
 
-		if container_info.has_cancellation_charge == 1 and not container_info.g_sales_invoice:
+		if container.has_cancellation_charge == 1 and not container.g_sales_invoice:
 			msg += "<li>Gate Pass Cancellation Charges</li>"
 
-		invoices.append(container_info.r_sales_invoice)
-		invoices.append(container_info.c_sales_invoice)
-		invoices.append(container_info.g_sales_invoice)
-
-		return msg, invoices
+		return msg, [container.r_sales_invoice, container.c_sales_invoice, container.g_sales_invoice]
 
 	def validate_in_yard_booking(self):
-		"""Validate the In Yard Container Booking for the Gate Pass and return its linked invoices"""
+		"""Validate the stripping and custom verification payments and return their linked invoices"""
 
 		msg = ""
-		invoices = []
-
-		booking_info = frappe.db.get_all(
+		container = self.container_charges
+		has_booking = frappe.db.exists(
 			"In Yard Container Booking",
-			{
-				"container_id": self.container_id,
-				"docstatus": ["!=", 2],  # Exclude cancelled bookings
-			},
-			[
-				"has_stripping_charges",
-				"s_sales_invoice",
-				"has_custom_verification_charges",
-				"cv_sales_invoice",
-			],
+			{"container_id": self.container_id, "docstatus": ["!=", 2]},
 		)
-		cargo_type = frappe.get_cached_value("Container", self.container_id, "cargo_type")
 
 		if (
-			len(booking_info) == 0
-			and cargo_type != "Transit"  # Transit containers are not required to have booking
+			not has_booking
+			and container.cargo_type != "Transit"  # Transit containers are not required to have booking
 			and self.action_for_missing_booking == "Stop"
 		):
 			frappe.throw(
-				f"No Booking found for container: <b>{self.container_no}</b>, Cargo Type: <b>{cargo_type}</b><br>If you want to proceed, Please inform relevant person to Approve this Gate Pass"
+				f"No Booking found for container: <b>{self.container_no}</b>, Cargo Type: <b>{container.cargo_type}</b><br>If you want to proceed, Please inform relevant person to Approve this Gate Pass"
 			)
 
-		for row in booking_info:
-			if row.has_stripping_charges == "Yes" and not row.s_sales_invoice:
-				msg += "<li>Stripping Charges</li>"
+		if container.has_stripping_charges and not container.st_sales_invoice:
+			msg += "<li>Stripping Charges</li>"
 
-			if row.has_custom_verification_charges == "Yes" and not row.cv_sales_invoice:
-				msg += "<li>Custom Verification Charges</li>"
+		if container.has_custom_verification_charges and not container.cv_sales_invoice:
+			msg += "<li>Custom Verification Charges</li>"
 
-			invoices.append(row.s_sales_invoice)
-			invoices.append(row.cv_sales_invoice)
-
-		return msg, invoices
+		return msg, [container.st_sales_invoice, container.cv_sales_invoice]
 
 	def validate_reception_charges(self):
-		"""Validate the Reception Charges for the Gate Pass and return its linked invoices"""
+		"""Validate the transport and shore handling payments and return their linked invoices"""
 
 		msg = ""
-		invoices = []
-
-		container_reception = frappe.db.get_value("Container", self.container_id, "container_reception")
-		if not container_reception:
+		container = self.container_charges
+		if not container.container_reception:
 			return "", []
 
-		reception_info = frappe.db.get_value(
-			"Container Reception",
-			container_reception,
-			[
-				"cargo_type",
-				"has_transport_charges",
-				"t_sales_invoice",
-				"has_shore_handling_charges",
-				"s_sales_invoice",
-			],
-			as_dict=True,
-		)
+		cargo_type = frappe.db.get_value("Container Reception", container.container_reception, "cargo_type")
 
 		if (
-			reception_info.has_transport_charges == "Yes"
-			and not reception_info.t_sales_invoice
+			container.has_transport_charges
+			and not container.t_sales_invoice
 			# Transport is not mandatory service for Transit container
-			and reception_info.cargo_type != "Transit"
+			and cargo_type != "Transit"
 		):
 			msg += "<li>Transport Charges</li>"
 
-		if reception_info.has_shore_handling_charges == "Yes" and not reception_info.s_sales_invoice:
+		if container.has_shore_handling_charges and not container.sh_sales_invoice:
 			msg += "<li>Shore Handling Charges</li>"
 
-		invoices.append(reception_info.t_sales_invoice)
-		invoices.append(reception_info.s_sales_invoice)
-
-		return msg, invoices
+		return msg, [container.t_sales_invoice, container.sh_sales_invoice]
 
 	def validate_inspection_charges(self):
 		"""Validate the Inspection Charges for the Gate Pass and return its linked invoices"""
