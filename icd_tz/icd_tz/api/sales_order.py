@@ -489,7 +489,7 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 
 				services.append(new_row)
 
-		if not container_doc.r_sales_invoice and container_doc.has_removal_charges == "Yes":
+		if not container_doc.r_sales_invoice and container_doc.has_removal_charges:
 			removal_item = get_charged_item(container_doc, settings_doc, "Removal")
 
 			services.append(

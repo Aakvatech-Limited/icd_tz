@@ -15,9 +15,7 @@ class TestInspectionVerification(FrappeTestCase):
 
 	def test_a_verification_booking_adds_no_service_to_the_inspection(self):
 		booking = frappe.new_doc("In Yard Container Booking")
-		booking.update(
-			{"container_no": "VERU1234567", "has_custom_verification_charges": "Yes", "docstatus": 1}
-		)
+		booking.update({"container_no": "VERU1234567", "docstatus": 1})
 		booking.flags.ignore_mandatory = True
 		booking.db_insert()
 

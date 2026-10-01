@@ -81,6 +81,7 @@
   "company",
   "c_and_f_company",
   "tab_break_edoll",
+  "section_break_xzkv",
   "total_days",
   "column_break_dlhui",
   "no_of_free_days",
@@ -92,6 +93,18 @@
   "days_to_be_billed",
   "column_break_rs2fh",
   "no_of_billed_days",
+  "income_services_section",
+  "has_transport_charges",
+  "t_sales_invoice",
+  "column_break_shore",
+  "has_shore_handling_charges",
+  "sh_sales_invoice",
+  "column_break_stripping",
+  "has_stripping_charges",
+  "st_sales_invoice",
+  "column_break_verification",
+  "has_custom_verification_charges",
+  "cv_sales_invoice",
   "section_break_twu7u",
   "has_removal_charges",
   "r_sales_invoice",
@@ -334,6 +347,74 @@
    "label": "Package Unit"
   },
   {
+   "fieldname": "income_services_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_transport_charges",
+   "fieldtype": "Check",
+   "label": "Has Transport Charges",
+   "read_only": 1
+  },
+  {
+   "fieldname": "t_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Transport Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_shore",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_shore_handling_charges",
+   "fieldtype": "Check",
+   "label": "Has Shore Handling Charges",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sh_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Shore Handling Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_stripping",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_stripping_charges",
+   "fieldtype": "Check",
+   "label": "Has Stripping Charges",
+   "read_only": 1
+  },
+  {
+   "fieldname": "st_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Stripping Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_verification",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_custom_verification_charges",
+   "fieldtype": "Check",
+   "label": "Has Custom Verification Charges",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cv_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Custom Verification Sales Invoice",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_break_517wd",
    "fieldtype": "Section Break",
    "label": "Dates"
@@ -422,12 +503,11 @@
    "search_index": 1
   },
   {
-   "default": "Yes",
+   "default": "0",
    "fieldname": "has_removal_charges",
-   "fieldtype": "Select",
+   "fieldtype": "Check",
    "label": "Has Removal Charges",
-   "options": "Yes\nNo",
-   "permlevel": 1
+   "read_only": 1
   },
   {
    "description": "Invoice for Removal Charges",
@@ -441,12 +521,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "Yes",
+   "default": "0",
    "fieldname": "has_corridor_levy_charges",
-   "fieldtype": "Select",
+   "fieldtype": "Check",
    "label": "Has Corridor Levy Charges",
-   "options": "Yes\nNo",
-   "permlevel": 1
+   "read_only": 1
   },
   {
    "description": "Invoice for corridor levy charges",
@@ -725,12 +804,16 @@
    "label": "Gate Out Date",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "section_break_xzkv",
+   "fieldtype": "Section Break"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-04 09:14:16.744506",
+ "modified": "2026-09-30 20:31:42.200210",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",

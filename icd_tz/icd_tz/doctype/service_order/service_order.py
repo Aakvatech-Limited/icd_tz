@@ -202,28 +202,31 @@ class ServiceOrder(Document):
 		if not self.container_id:
 			return
 
-		container_reception = frappe.db.get_value("Container", self.container_id, "container_reception")
-		reception_details = frappe.get_cached_value(
-			"Container Reception",
-			container_reception,
+		reception_details = frappe.db.get_value(
+			"Container",
+			self.container_id,
 			[
-				"cargo_type",
+				"container_reception",
 				"has_transport_charges",
 				"t_sales_invoice",
 				"has_shore_handling_charges",
-				"s_sales_invoice",
+				"sh_sales_invoice",
 			],
 			as_dict=True,
 		)
-		if not reception_details:
+		if not reception_details or not reception_details.container_reception:
 			return
 
+		cargo_type = frappe.get_cached_value(
+			"Container Reception", reception_details.container_reception, "cargo_type"
+		)
+
 		service_names = [row.get("service") for row in self.get("services")]
-		if reception_details.has_transport_charges == "Yes":
+		if reception_details.has_transport_charges:
 			transport_item = None
 
 			if self.is_loose_cargo or not reception_details.t_sales_invoice:
-				key = self.get_criteria_key(reception_details.cargo_type)
+				key = self.get_criteria_key(cargo_type)
 				transport_item = self.find_service_item(settings_doc, "Transport", key)
 
 				if not transport_item and not reception_details.t_sales_invoice:
@@ -238,14 +241,14 @@ class ServiceOrder(Document):
 					},
 				)
 
-		if reception_details.has_shore_handling_charges == "Yes":
+		if reception_details.has_shore_handling_charges:
 			shore_handling_item = None
 
-			if self.is_loose_cargo or not reception_details.s_sales_invoice:
-				key = self.get_criteria_key(reception_details.cargo_type)
+			if self.is_loose_cargo or not reception_details.sh_sales_invoice:
+				key = self.get_criteria_key(cargo_type)
 				shore_handling_item = self.find_service_item(settings_doc, "Shore", key)
 
-				if not shore_handling_item and not reception_details.s_sales_invoice:
+				if not shore_handling_item and not reception_details.sh_sales_invoice:
 					throw_missing_criteria("Shore Handling", key)
 
 			if shore_handling_item and shore_handling_item not in service_names:
@@ -254,7 +257,7 @@ class ServiceOrder(Document):
 					{
 						"service": shore_handling_item,
 						"qty": self.gross_volume if self.container_status == "LCL" else 1,
-						"remarks": f"Size: <b>{self.container_size}</b>, Cargo Type: <b>{reception_details.cargo_type}</b>, Port: <b>{self.port}</b>",
+						"remarks": f"Size: <b>{self.container_size}</b>, Cargo Type: <b>{cargo_type}</b>, Port: <b>{self.port}</b>",
 					},
 				)
 
@@ -262,57 +265,35 @@ class ServiceOrder(Document):
 		if not self.container_id:
 			return
 
-		booking_details = frappe.db.get_all(
-			"In Yard Container Booking",
-			{"container_id": self.container_id, "docstatus": 1},
+		booking_charges = frappe.db.get_value(
+			"Container",
+			self.container_id,
 			[
 				"has_stripping_charges",
-				"s_sales_invoice",
+				"st_sales_invoice",
 				"has_custom_verification_charges",
 				"cv_sales_invoice",
 			],
+			as_dict=True,
 		)
-		if len(booking_details) == 0:
+		if not booking_charges:
 			return
 
-		strips = []
-		verifications = []
 		key = self.get_criteria_key()
-		for booking in booking_details:
-			if not booking.s_sales_invoice and booking.has_stripping_charges == "Yes":
-				stripping_item = self.find_service_item(settings_doc, "Stripping", key)
-				if not stripping_item:
-					throw_missing_criteria("Stripping", key)
+		for service_type, label, has_charges, invoice in (
+			("Stripping", "Stripping", "has_stripping_charges", "st_sales_invoice"),
+			("Verification", "Custom Verification", "has_custom_verification_charges", "cv_sales_invoice"),
+		):
+			if not booking_charges.get(has_charges) or booking_charges.get(invoice):
+				continue
 
-				strips.append(stripping_item)
+			service_item = self.find_service_item(settings_doc, service_type, key)
+			if not service_item:
+				throw_missing_criteria(label, key)
 
-			if not booking.cv_sales_invoice and booking.has_custom_verification_charges == "Yes":
-				verification_item = self.find_service_item(settings_doc, "Verification", key)
-				if not verification_item:
-					throw_missing_criteria("Custom Verification", key)
-
-				verifications.append(verification_item)
-
-		if len(strips) > 0:
 			self.append(
 				"services",
-				{
-					"service": strips[0],
-					"qty": len(strips) * self.gross_volume if self.container_status == "LCL" else len(strips),
-					"remarks": "<b>Having multiple bookings</b>" if len(strips) > 1 else "",
-				},
-			)
-
-		if len(verifications) > 0:
-			self.append(
-				"services",
-				{
-					"service": verifications[0],
-					"qty": len(verifications) * self.gross_volume
-					if self.container_status == "LCL"
-					else len(verifications),
-					"remarks": "<b>Having multiple bookings</b>" if len(verifications) > 1 else "",
-				},
+				{"service": service_item, "qty": self.gross_volume if self.container_status == "LCL" else 1},
 			)
 
 	def get_corridor_services(self, settings_doc):
@@ -320,7 +301,7 @@ class ServiceOrder(Document):
 			return
 
 		container_doc = frappe.get_doc("Container", self.container_id)
-		if container_doc.has_corridor_levy_charges != "Yes":
+		if not container_doc.has_corridor_levy_charges:
 			return
 
 		if container_doc.c_sales_invoice:

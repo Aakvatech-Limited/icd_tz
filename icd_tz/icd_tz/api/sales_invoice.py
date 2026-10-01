@@ -65,16 +65,16 @@ def update_sales_references(doc):
 
 	for item in doc.items:
 		if item.item_code in transport_services:
-			update_container_reception(item.container_id, invoice_id, "t_sales_invoice")
+			update_reception_container_refs(item.container_id, invoice_id, "t_sales_invoice")
 
 		elif item.item_code in shore_services:
-			update_container_reception(item.container_id, invoice_id, "s_sales_invoice")
+			update_reception_container_refs(item.container_id, invoice_id, "sh_sales_invoice")
 
 		elif item.item_code in stripping_services:
-			update_booking_refs(item.container_id, invoice_id, "s_sales_invoice")
+			frappe.db.set_value("Container", item.container_id, "st_sales_invoice", invoice_id)
 
 		elif item.item_code in verification_services:
-			update_booking_refs(item.container_id, invoice_id, "cv_sales_invoice")
+			frappe.db.set_value("Container", item.container_id, "cv_sales_invoice", invoice_id)
 
 		elif item.item_code in removal_services:
 			update_container_refs(item.container_id, invoice_id, "r_sales_invoice")
@@ -100,22 +100,17 @@ def update_sales_references(doc):
 		frappe.db.set_value("Service Order", row.name, "sales_invoice", invoice_id)
 
 
-def update_container_reception(container_id, invoice_id, field):
+def update_reception_container_refs(container_id, invoice_id, field):
+	"""Set the invoice on every Container of the same Container Reception, HBL containers included"""
+
 	container_reception = frappe.db.get_value("Container", container_id, "container_reception")
 
-	if container_reception:
-		frappe.db.set_value("Container Reception", container_reception, field, invoice_id)
-
-
-def update_booking_refs(container_id, invoice_id, field):
-	filters = {"container_id": container_id, "docstatus": 1}
-
-	booking_ids = frappe.db.get_all("In Yard Container Booking", filters, pluck="name")
-	if len(booking_ids) == 0:
+	if not container_reception:
 		return
 
-	for booking_id in booking_ids:
-		frappe.db.set_value("In Yard Container Booking", booking_id, field, invoice_id)
+	# by name, a filter would clear the document cache of every Container
+	for container in frappe.get_all("Container", {"container_reception": container_reception}, pluck="name"):
+		frappe.db.set_value("Container", container, field, invoice_id)
 
 
 def update_container_refs(container_id, invoice_id, field):
