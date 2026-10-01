@@ -9,6 +9,7 @@ from frappe.utils import flt
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
 	get_service_item,
+	get_service_items,
 	get_service_key,
 	set_container_cf_company,
 	throw_missing_criteria,
@@ -262,39 +263,33 @@ class ServiceOrder(Document):
 				)
 
 	def get_booking_services(self, settings_doc):
+		"""Each submitted booking is stripped and verified once, less what was already billed"""
+
 		if not self.container_id:
 			return
 
-		booking_charges = frappe.db.get_value(
-			"Container",
-			self.container_id,
-			[
-				"has_stripping_charges",
-				"st_sales_invoice",
-				"has_custom_verification_charges",
-				"cv_sales_invoice",
-			],
-			as_dict=True,
-		)
-		if not booking_charges:
-			return
+		container = frappe.get_doc("Container", self.container_id)
+		unit_qty = flt(self.gross_volume) if self.container_status == "LCL" else 1
+		booked_qty = container.booking_count * unit_qty
 
 		key = self.get_criteria_key()
 		for service_type, label, has_charges, invoice in (
 			("Stripping", "Stripping", "has_stripping_charges", "st_sales_invoice"),
 			("Verification", "Custom Verification", "has_custom_verification_charges", "cv_sales_invoice"),
 		):
-			if not booking_charges.get(has_charges) or booking_charges.get(invoice):
+			if not container.get(has_charges):
+				continue
+
+			billed_qty = container.get_billed_qty(invoice, get_service_items(settings_doc, service_type))
+			qty = flt(booked_qty - billed_qty, self.precision("qty", "services"))
+			if qty <= 0:
 				continue
 
 			service_item = self.find_service_item(settings_doc, service_type, key)
 			if not service_item:
 				throw_missing_criteria(label, key)
 
-			self.append(
-				"services",
-				{"service": service_item, "qty": self.gross_volume if self.container_status == "LCL" else 1},
-			)
+			self.append("services", {"service": service_item, "qty": qty})
 
 	def get_corridor_services(self, settings_doc):
 		if not self.container_id:
