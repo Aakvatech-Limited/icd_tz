@@ -26,7 +26,7 @@ from icd_tz.icd_tz.api.icd_services import (
 	SERVICE_FIELDS,
 	get_scope_services,
 )
-from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
+from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_no_draft_container_records
 
 
 class GatePass(Document):
@@ -34,6 +34,7 @@ class GatePass(Document):
 		validate_cf_agent(self)
 
 	def before_submit(self):
+		validate_no_draft_container_records(self.container_id, self.container_no)
 		self.validate_pending_payments()
 		self.validate_mandatory_fields()
 		self.update_submitted_info()
