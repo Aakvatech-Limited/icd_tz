@@ -13,6 +13,9 @@ from icd_tz.icd_tz.api.utils import validate_delivered_container
 
 class Container(Document):
 	def before_insert(self):
+		self.has_transport_charges = 1
+		self.has_shore_handling_charges = 1
+
 		if self.container_no and self.container_reception:
 			self.update_m_bl_based_container_details()
 			self.update_hbl_based_container_details()
@@ -354,48 +357,22 @@ class Container(Document):
 			self.days_to_be_billed = no_of_billable_days - no_of_billed_days
 
 	def check_removal_charges_elibility(self):
-		"""Check if the container is eligible to remove charges"""
+		"""A container with storage charges pays removal; an invoiced removal stays charged"""
 
-		if self.r_sales_invoice:
-			self.has_removal_charges = 0
-		elif self.days_to_be_billed > 0:
-			self.has_removal_charges = 1
-		elif self.days_to_be_billed <= 0:
-			if self.has_single_charge == 1 or self.has_double_charge == 1:
-				self.has_removal_charges = 1
-			else:
-				self.has_removal_charges = 0
+		self.has_removal_charges = int(
+			bool(self.r_sales_invoice)
+			or self.days_to_be_billed > 0
+			or self.has_single_charge == 1
+			or self.has_double_charge == 1
+		)
 
 	def check_corridor_levy_eligibility(self):
-		"""Check if the container is eligible for Corridor Levy payments"""
+		"""A container bound for a Corridor Levy country pays the levy; an invoiced levy stays charged"""
 
-		if not self.country_of_destination:
-			self.has_corridor_levy_charges = 0
-			return
-
-		is_eligible_for_corridor_levy_payments = False
-		icd_settings = frappe.get_doc("ICD TZ Settings")
-		for row in icd_settings.countries:
-			if row.country == self.country_of_destination:
-				is_eligible_for_corridor_levy_payments = True
-				break
-
-		if is_eligible_for_corridor_levy_payments:
-			if self.c_sales_invoice:
-				self.has_corridor_levy_charges = 0
-			else:
-				self.has_corridor_levy_charges = 1
-
-			# corridor levy does not depend on storage days (2025-04-19)
-			# elif self.days_to_be_billed > 0:
-			# 	self.has_corridor_levy_charges = "Yes"
-			# elif self.days_to_be_billed <= 0:
-			# 	if self.has_single_charge == 1 or self.has_double_charge == 1:
-			# 		self.has_corridor_levy_charges = "Yes"
-			# 	else:
-			# 		self.has_corridor_levy_charges = "No"
-		else:
-			self.has_corridor_levy_charges = 0
+		levy_countries = {row.country for row in frappe.get_cached_doc("ICD TZ Settings").countries}
+		self.has_corridor_levy_charges = int(
+			bool(self.c_sales_invoice) or self.country_of_destination in levy_countries
+		)
 
 	def update_container_reception(self):
 		container_reception = frappe.get_cached_doc("Container Reception", self.container_reception)
