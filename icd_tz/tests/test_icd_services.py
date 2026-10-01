@@ -253,6 +253,29 @@ class TestServiceOrderServiceLines(FrappeTestCase):
 
 		self.assertIn("Size: <b>22G1</b>", service_order.services[0].remarks)
 
+	def test_reception_services_are_priced_on_the_container_cargo_type(self):
+		mbl, _ = make_reception_containers(cargo_type="Transit")
+		frappe.db.set_value(
+			"Container",
+			mbl,
+			{"cargo_type": "Local", "has_transport_charges": 1, "has_shore_handling_charges": 1},
+		)
+		settings_doc = services_settings()
+		settings_doc.service_types = [
+			criteria("Transport", "_T Transit Transport", cargo_type="Transit"),
+			criteria("Transport", "_T Local Transport", cargo_type="Local"),
+			criteria("Shore", "_T Shore"),
+		]
+		service_order = make_service_order(
+			container_id=mbl, container_status="FCL", container_size="22G1", port="TEAGTL"
+		)
+
+		with with_settings(settings_doc):
+			service_order.get_services()
+
+		self.assertEqual([row.service for row in service_order.services], ["_T Local Transport", "_T Shore"])
+		self.assertIn("Cargo Type: <b>Local</b>", service_order.services[1].remarks)
+
 	def test_missing_criteria_stops_an_uninvoiced_service(self):
 		mbl = self.charged_container(has_corridor_levy_charges=1)
 		settings_doc = frappe._dict(settings(), gatepass_cancellation_item=None)
