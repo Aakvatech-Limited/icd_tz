@@ -6,6 +6,7 @@ from frappe.utils import cint, flt, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
+from icd_tz.icd_tz.api.icd_services import GATE_PASS_CANCELLATION, REMOVAL
 from icd_tz.icd_tz.api.utils import (
 	get_service_item,
 	get_service_key,
@@ -506,7 +507,7 @@ def get_storage_day_services(container_doc, settings_doc, container_refs: dict) 
 def get_removal_service(container_doc, settings_doc, container_refs: dict) -> dict:
 	"""Removal row for a container that owes removal, even after its storage days are invoiced"""
 
-	if not container_doc.has_removal_charges or container_doc.r_sales_invoice:
+	if not REMOVAL.is_payment_pending(container_doc):
 		return {}
 
 	return {
@@ -539,7 +540,7 @@ def get_charged_item(container_doc, settings_doc, service_type: str) -> str:
 def get_gatepass_cancellation_service(container_doc, settings_doc, container_refs: dict):
 	"""Charge row for a container whose Gate Pass was cancelled and is not yet invoiced"""
 
-	if container_doc.has_cancellation_charge != 1 or container_doc.g_sales_invoice:
+	if not GATE_PASS_CANCELLATION.is_payment_pending(container_doc):
 		return {}
 
 	if not settings_doc.gatepass_cancellation_item:
