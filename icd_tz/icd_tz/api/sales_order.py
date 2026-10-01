@@ -454,53 +454,66 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 		if cancellation_service:
 			services.append(cancellation_service)
 
-		if container.days_to_be_billed == 0:
-			continue
+		if container.days_to_be_billed != 0:
+			services += get_storage_day_services(container_doc, settings_doc, container_refs)
 
-		single_days, double_days = get_container_days_to_be_billed(container_doc)
-
-		if container_doc.has_single_charge == 1:
-			single_storage_item = get_charged_item(container_doc, settings_doc, "Storage-Single")
-
-			if len(single_days) > 0:
-				new_row = {
-					"item_code": single_storage_item,
-					"qty": len(single_days) * container_doc.gross_volume
-					if container_doc.freight_indicator == "LCL"
-					else len(single_days),
-					"container_child_refs": ",".join(single_days),
-					**container_refs,
-				}
-
-				services.append(new_row)
-
-		if container_doc.has_double_charge == 1:
-			double_storage_item = get_charged_item(container_doc, settings_doc, "Storage-Double")
-
-			if len(double_days) > 0:
-				new_row = {
-					"item_code": double_storage_item,
-					"qty": len(double_days) * container_doc.gross_volume
-					if container_doc.freight_indicator == "LCL"
-					else len(double_days),
-					"container_child_refs": ",".join(double_days),
-					**container_refs,
-				}
-
-				services.append(new_row)
-
-		if not container_doc.r_sales_invoice and container_doc.has_removal_charges:
-			removal_item = get_charged_item(container_doc, settings_doc, "Removal")
-
-			services.append(
-				{
-					"item_code": removal_item,
-					"qty": container_doc.gross_volume if container_doc.freight_indicator == "LCL" else 1,
-					**container_refs,
-				}
-			)
+		removal_service = get_removal_service(container_doc, settings_doc, container_refs)
+		if removal_service:
+			services.append(removal_service)
 
 	return services
+
+
+def get_storage_day_services(container_doc, settings_doc, container_refs: dict) -> list[dict]:
+	"""Single and double storage rows for the days not yet invoiced"""
+
+	services = []
+	single_days, double_days = get_container_days_to_be_billed(container_doc)
+
+	if container_doc.has_single_charge == 1:
+		single_storage_item = get_charged_item(container_doc, settings_doc, "Storage-Single")
+
+		if len(single_days) > 0:
+			new_row = {
+				"item_code": single_storage_item,
+				"qty": len(single_days) * container_doc.gross_volume
+				if container_doc.freight_indicator == "LCL"
+				else len(single_days),
+				"container_child_refs": ",".join(single_days),
+				**container_refs,
+			}
+
+			services.append(new_row)
+
+	if container_doc.has_double_charge == 1:
+		double_storage_item = get_charged_item(container_doc, settings_doc, "Storage-Double")
+
+		if len(double_days) > 0:
+			new_row = {
+				"item_code": double_storage_item,
+				"qty": len(double_days) * container_doc.gross_volume
+				if container_doc.freight_indicator == "LCL"
+				else len(double_days),
+				"container_child_refs": ",".join(double_days),
+				**container_refs,
+			}
+
+			services.append(new_row)
+
+	return services
+
+
+def get_removal_service(container_doc, settings_doc, container_refs: dict) -> dict:
+	"""Removal row for a container that owes removal, even after its storage days are invoiced"""
+
+	if not container_doc.has_removal_charges or container_doc.r_sales_invoice:
+		return {}
+
+	return {
+		"item_code": get_charged_item(container_doc, settings_doc, "Removal"),
+		"qty": container_doc.gross_volume if container_doc.freight_indicator == "LCL" else 1,
+		**container_refs,
+	}
 
 
 def get_charged_item(container_doc, settings_doc, service_type: str) -> str:
