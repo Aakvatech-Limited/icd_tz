@@ -1,6 +1,6 @@
 import frappe
 
-from icd_tz.icd_tz.api.utils import validate_qty_storage_item
+from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_qty_storage_item
 
 
 def before_save(doc, method):
@@ -71,10 +71,10 @@ def update_sales_references(doc):
 			update_reception_container_refs(item.container_id, invoice_id, "sh_sales_invoice")
 
 		elif item.item_code in stripping_services:
-			frappe.db.set_value("Container", item.container_id, "st_sales_invoice", invoice_id)
+			update_booking_invoice_refs(item.container_id, doc, "st_sales_invoice")
 
 		elif item.item_code in verification_services:
-			frappe.db.set_value("Container", item.container_id, "cv_sales_invoice", invoice_id)
+			update_booking_invoice_refs(item.container_id, doc, "cv_sales_invoice")
 
 		elif item.item_code in removal_services:
 			update_container_refs(item.container_id, invoice_id, "r_sales_invoice")
@@ -111,6 +111,20 @@ def update_reception_container_refs(container_id, invoice_id, field):
 	# by name, a filter would clear the document cache of every Container
 	for container in frappe.get_all("Container", {"container_reception": container_reception}, pluck="name"):
 		frappe.db.set_value("Container", container, field, invoice_id)
+
+
+def update_booking_invoice_refs(container_id, doc, field):
+	"""Keep every invoice of a repeated booking service, a return drops the invoice it reverses"""
+
+	invoices = get_invoice_refs(frappe.db.get_value("Container", container_id, field))
+
+	# TODO: a partial return drops the whole invoice, so its unreturned qty is charged again
+	if doc.is_return:
+		invoices = [name for name in invoices if name != doc.return_against]
+	elif doc.name not in invoices:
+		invoices.append(doc.name)
+
+	frappe.db.set_value("Container", container_id, field, ",".join(invoices) or None)
 
 
 def update_container_refs(container_id, invoice_id, field):
