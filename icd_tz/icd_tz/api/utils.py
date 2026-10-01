@@ -147,6 +147,22 @@ def get_service_item(settings_doc, service_type: str, key: dict, is_loose_cargo:
 	return row.service_name if row else None
 
 
+def get_service_items(settings_doc, service_type: str) -> list:
+	"""Every item a service is charged on, container and loose cargo alike"""
+
+	return [
+		row.service_name
+		for row in settings_doc.service_types + settings_doc.loose_types
+		if row.service_type == service_type
+	]
+
+
+def get_invoice_refs(value: str | None) -> list:
+	"""Invoice names kept comma separated in one Container field"""
+
+	return [name.strip() for name in (value or "").split(",") if name.strip()]
+
+
 def throw_missing_criteria(service_type: str, key: dict):
 	"""Name the criteria that were looked for, so the row to add is obvious"""
 
