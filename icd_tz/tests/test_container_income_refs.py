@@ -17,6 +17,8 @@ test_ignore = ["Company", "Cost Center"]
 
 RECEPTION = "_T-INCOME-REC"
 
+GET_CACHED_DOC = frappe.get_cached_doc
+
 
 def insert(doctype, **values):
 	doc = frappe.get_doc({"doctype": doctype, **values})
@@ -46,16 +48,29 @@ def income_settings():
 	return frappe._dict(settings(service_rows), gatepass_cancellation_item=None)
 
 
-def submit_invoice(item_code, container_id, is_return=0, name="_T-SINV-1", return_against=None):
+def with_settings(settings_doc):
+	"""Serve the test ICD TZ Settings, every other cached doc stays real"""
+
+	def get_cached_doc(doctype, *args, **kwargs):
+		if doctype == "ICD TZ Settings":
+			return settings_doc
+		return GET_CACHED_DOC(doctype, *args, **kwargs)
+
+	return patch("frappe.get_cached_doc", side_effect=get_cached_doc)
+
+
+def submit_invoice(
+	item_code, container_id, is_return=0, name="_T-SINV-1", return_against=None, settings_doc=None, **item
+):
 	invoice = SimpleNamespace(
 		name=name,
 		m_bl_no="MBL-1",
 		h_bl_no=None,
 		is_return=is_return,
 		return_against=return_against,
-		items=[frappe._dict(item_code=item_code, container_id=container_id, sales_order=None)],
+		items=[frappe._dict(item_code=item_code, container_id=container_id, sales_order=None, **item)],
 	)
-	with patch("frappe.get_cached_doc", return_value=income_settings()):
+	with with_settings(settings_doc or income_settings()):
 		update_sales_references(invoice)
 
 
@@ -95,21 +110,21 @@ class TestSalesInvoiceRefs(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_transport_invoice_reaches_every_container_of_the_reception(self):
+	def test_transport_invoice_stays_on_its_own_container(self):
 		mbl, hbl = make_reception_containers()
 
 		submit_invoice("_T Transport", mbl)
 
 		self.assertEqual(get_container(mbl).t_sales_invoice, "_T-SINV-1")
-		self.assertEqual(get_container(hbl).t_sales_invoice, "_T-SINV-1")
+		self.assertIsNone(get_container(hbl).t_sales_invoice)
 		self.assertIsNone(frappe.db.get_value("Container Reception", RECEPTION, "t_sales_invoice"))
 
-	def test_shore_handling_invoice_reaches_every_container_of_the_reception(self):
+	def test_shore_handling_invoice_stays_on_its_own_container(self):
 		mbl, hbl = make_reception_containers()
 
 		submit_invoice("_T Shore", hbl)
 
-		self.assertEqual(get_container(mbl).sh_sales_invoice, "_T-SINV-1")
+		self.assertIsNone(get_container(mbl).sh_sales_invoice)
 		self.assertEqual(get_container(hbl).sh_sales_invoice, "_T-SINV-1")
 
 	def test_booking_invoices_stay_on_their_own_container(self):
@@ -183,13 +198,38 @@ class TestGatePassIncomeCharges(FrappeTestCase):
 		self.assertEqual(msg, "")
 		self.assertEqual(invoices, ["_T-SINV-T", "_T-SINV-S"])
 
-	def test_transit_reception_skips_transport(self):
+	def test_transit_container_skips_transport(self):
+		mbl, _ = make_reception_containers(cargo_type="Local")
+		frappe.db.set_value("Container", mbl, {"has_transport_charges": 1, "cargo_type": "Transit"})
+
+		msg, _ = make_gate_pass(frappe.get_doc("Container", mbl)).validate_reception_charges()
+
+		self.assertNotIn("Transport Charges", msg)
+
+	def test_the_container_cargo_type_decides_the_transit_exemption(self):
 		mbl, _ = make_reception_containers(cargo_type="Transit")
 		frappe.db.set_value("Container", mbl, {"has_transport_charges": 1, "cargo_type": "Local"})
 
 		msg, _ = make_gate_pass(frappe.get_doc("Container", mbl)).validate_reception_charges()
 
-		self.assertNotIn("Transport Charges", msg)
+		self.assertIn("Transport Charges", msg)
+
+	def test_a_sibling_invoice_does_not_pay_for_the_container(self):
+		mbl, hbl = make_reception_containers(cargo_type="Local")
+		for name in (mbl, hbl):
+			frappe.db.set_value("Container", name, {"cargo_type": "Local", "has_transport_charges": 1})
+		frappe.db.set_value("Container", mbl, "t_sales_invoice", "_T-SINV-T")
+
+		msg, _ = make_gate_pass(frappe.get_doc("Container", hbl)).validate_reception_charges()
+
+		self.assertIn("Transport Charges", msg)
+
+	def test_a_container_without_reception_is_still_checked(self):
+		container = make_container(cargo_type="Local", has_shore_handling_charges=1)
+
+		msg, _ = make_gate_pass(container).validate_reception_charges()
+
+		self.assertIn("Shore Handling Charges", msg)
 
 	def test_unpaid_stripping_and_verification_are_pending(self):
 		mbl, _ = make_reception_containers()
@@ -261,8 +301,7 @@ class TestServiceOrderIncomeServices(FrappeTestCase):
 			container_id=mbl, container_status="FCL", container_size="22G1", port="TEAGTL"
 		)
 
-		service_order.get_reception_services(income_settings())
-		service_order.get_booking_services(income_settings())
+		service_order.add_container_services(income_settings())
 
 		self.assertEqual([row.service for row in service_order.services], ["_T Transport", "_T Stripping"])
 
@@ -272,8 +311,7 @@ class TestServiceOrderIncomeServices(FrappeTestCase):
 			container_id=mbl, container_status="FCL", container_size="22G1", port="TEAGTL"
 		)
 
-		service_order.get_reception_services(income_settings())
-		service_order.get_booking_services(income_settings())
+		service_order.add_container_services(income_settings())
 
 		self.assertEqual(service_order.services, [])
 
@@ -281,7 +319,7 @@ class TestServiceOrderIncomeServices(FrappeTestCase):
 		service_order = make_service_order(
 			container_id=container_id, container_status="FCL", container_size="22G1", port="TEAGTL", **values
 		)
-		service_order.get_booking_services(income_settings())
+		service_order.add_container_services(income_settings())
 		return [(row.service, row.qty) for row in service_order.services]
 
 	def charged_container(self, **values):

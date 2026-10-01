@@ -8,13 +8,14 @@ from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
 from icd_tz.icd_tz.api.contract import get_storage_day_counts
+from icd_tz.icd_tz.api.icd_services import RECEPTION, get_scope_services
 from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_delivered_container
 
 
 class Container(Document):
 	def before_insert(self):
-		self.has_transport_charges = 1
-		self.has_shore_handling_charges = 1
+		for service in get_scope_services(RECEPTION):
+			self.set(service.flag_field, 1)
 
 		if self.container_no and self.container_reception:
 			self.update_m_bl_based_container_details()

@@ -1,6 +1,7 @@
 import frappe
 
-from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_qty_storage_item
+from icd_tz.icd_tz.api.icd_services import get_item_services
+from icd_tz.icd_tz.api.utils import get_service_items, validate_qty_storage_item
 
 
 def before_save(doc, method):
@@ -20,72 +21,17 @@ def update_sales_references(doc):
 		invoice_id = None
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-	corridor_services = [row.service_name for row in settings_doc.service_types if row.service_type == "Levy"]
-	verification_services = [
-		row.service_name for row in settings_doc.service_types if row.service_type == "Verification"
-	]
-	stripping_services = [
-		row.service_name for row in settings_doc.service_types if row.service_type == "Stripping"
-	]
-	removal_services = [
-		row.service_name for row in settings_doc.service_types if row.service_type == "Removal"
-	]
-	transport_services = [
-		row.service_name for row in settings_doc.service_types if row.service_type == "Transport"
-	]
-	storage_services = [
-		row.service_name
-		for row in settings_doc.service_types
-		if row.service_type in ["Storage-Single", "Storage-Double"]
-	]
-	shore_services = [row.service_name for row in settings_doc.service_types if row.service_type == "Shore"]
-
-	# for loose container
-	corridor_services += [row.service_name for row in settings_doc.loose_types if row.service_type == "Levy"]
-	verification_services += [
-		row.service_name for row in settings_doc.loose_types if row.service_type == "Verification"
-	]
-	stripping_services += [
-		row.service_name for row in settings_doc.loose_types if row.service_type == "Stripping"
-	]
-	removal_services += [
-		row.service_name for row in settings_doc.loose_types if row.service_type == "Removal"
-	]
-	transport_services += [
-		row.service_name for row in settings_doc.loose_types if row.service_type == "Transport"
-	]
-	storage_services += [
-		row.service_name
-		for row in settings_doc.loose_types
-		if row.service_type in ["Storage-Single", "Storage-Double"]
-	]
-	shore_services += [row.service_name for row in settings_doc.loose_types if row.service_type == "Shore"]
-
-	gatepass_cancellation_item = settings_doc.gatepass_cancellation_item
+	item_services = get_item_services(settings_doc)
+	storage_items = get_service_items(settings_doc, "Storage-Single") + get_service_items(
+		settings_doc, "Storage-Double"
+	)
 
 	for item in doc.items:
-		if item.item_code in transport_services:
-			update_reception_container_refs(item.container_id, invoice_id, "t_sales_invoice")
+		service = item_services.get(item.item_code)
+		if service:
+			service.set_invoice(item.container_id, doc)
 
-		elif item.item_code in shore_services:
-			update_reception_container_refs(item.container_id, invoice_id, "sh_sales_invoice")
-
-		elif item.item_code in stripping_services:
-			update_booking_invoice_refs(item.container_id, doc, "st_sales_invoice")
-
-		elif item.item_code in verification_services:
-			update_booking_invoice_refs(item.container_id, doc, "cv_sales_invoice")
-
-		elif item.item_code in removal_services:
-			update_container_refs(item.container_id, invoice_id, "r_sales_invoice")
-
-		elif item.item_code in corridor_services:
-			update_container_refs(item.container_id, invoice_id, "c_sales_invoice")
-
-		elif gatepass_cancellation_item and item.item_code == gatepass_cancellation_item:
-			update_container_refs(item.container_id, invoice_id, "g_sales_invoice")
-
-		elif item.item_code in storage_services:
+		elif item.item_code in storage_items:
 			update_storage_date_refs(item.container_id, invoice_id, item.container_child_refs)
 
 		else:
@@ -98,40 +44,6 @@ def update_sales_references(doc):
 	)
 	for row in service_orders:
 		frappe.db.set_value("Service Order", row.name, "sales_invoice", invoice_id)
-
-
-def update_reception_container_refs(container_id, invoice_id, field):
-	"""Set the invoice on every Container of the same Container Reception, HBL containers included"""
-
-	container_reception = frappe.db.get_value("Container", container_id, "container_reception")
-
-	if not container_reception:
-		return
-
-	# by name, a filter would clear the document cache of every Container
-	for container in frappe.get_all("Container", {"container_reception": container_reception}, pluck="name"):
-		frappe.db.set_value("Container", container, field, invoice_id)
-
-
-def update_booking_invoice_refs(container_id, doc, field):
-	"""Keep every invoice of a repeated booking service, a return drops the invoice it reverses"""
-
-	invoices = get_invoice_refs(frappe.db.get_value("Container", container_id, field))
-
-	# TODO: a partial return drops the whole invoice, so its unreturned qty is charged again
-	if doc.is_return:
-		invoices = [name for name in invoices if name != doc.return_against]
-	elif doc.name not in invoices:
-		invoices.append(doc.name)
-
-	frappe.db.set_value("Container", container_id, field, ",".join(invoices) or None)
-
-
-def update_container_refs(container_id, invoice_id, field):
-	container_doc = frappe.get_doc("Container", container_id)
-	container_doc.update({field: invoice_id})
-	container_doc.status = "At Gatepass"
-	container_doc.save(ignore_permissions=True)
 
 
 def update_storage_date_refs(container_id, invoice_id, child_refs):

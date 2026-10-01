@@ -6,13 +6,11 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
+from icd_tz.icd_tz.api.icd_services import BOOKING, SERVICES
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
-	get_service_item,
-	get_service_items,
 	get_service_key,
 	set_container_cf_company,
-	throw_missing_criteria,
 	validate_cf_agent,
 	validate_delivered_container,
 	validate_draft_doc,
@@ -174,148 +172,63 @@ class ServiceOrder(Document):
 			title=_("Gross Volume Missing"),
 		)
 
-	def get_criteria_key(self, cargo_type: str | None = None) -> dict:
-		"""Criteria this container is matched on when a service is priced
+	def get_criteria_key(self, container) -> dict:
+		"""Criteria this container is matched on when a service is priced"""
 
-		The reception carries its own cargo type, which the Container overwrites from the
-		house bill, so a caller holding the reception value passes it rather than losing it.
-		"""
+		return get_service_key(size=self.container_size, cargo_type=container.cargo_type, port=self.port)
 
-		if not cargo_type:
-			cargo_type = frappe.get_cached_value("Container", self.container_id, "cargo_type")
+	@property
+	def unit_qty(self) -> float:
+		"""Quantity of one service line: the volume for loose cargo, else one container"""
 
-		return get_service_key(size=self.container_size, cargo_type=cargo_type, port=self.port)
-
-	def find_service_item(self, settings_doc, service_type: str, key: dict) -> str | None:
-		"""Item this container is charged for a service, or None when no criteria row fits"""
-
-		return get_service_item(settings_doc, service_type, key, is_loose_cargo=self.is_loose_cargo)
+		return flt(self.gross_volume) if self.is_loose_cargo else 1
 
 	def get_services(self):
-		settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-
-		self.get_reception_services(settings_doc)
-		self.get_booking_services(settings_doc)
-		self.get_corridor_services(settings_doc)
+		self.add_container_services(frappe.get_cached_doc("ICD TZ Settings"))
 		self.get_other_charges()
 
-	def get_reception_services(self, settings_doc):
-		if not self.container_id:
-			return
-
-		reception_details = frappe.db.get_value(
-			"Container",
-			self.container_id,
-			[
-				"container_reception",
-				"has_transport_charges",
-				"t_sales_invoice",
-				"has_shore_handling_charges",
-				"sh_sales_invoice",
-			],
-			as_dict=True,
-		)
-		if not reception_details or not reception_details.container_reception:
-			return
-
-		cargo_type = frappe.get_cached_value(
-			"Container Reception", reception_details.container_reception, "cargo_type"
-		)
-
-		service_names = [row.get("service") for row in self.get("services")]
-		if reception_details.has_transport_charges:
-			transport_item = None
-
-			if self.is_loose_cargo or not reception_details.t_sales_invoice:
-				key = self.get_criteria_key(cargo_type)
-				transport_item = self.find_service_item(settings_doc, "Transport", key)
-
-				if not transport_item and not reception_details.t_sales_invoice:
-					throw_missing_criteria("Transport", key)
-
-			if transport_item and transport_item not in service_names:
-				self.append(
-					"services",
-					{
-						"service": transport_item,
-						"qty": self.gross_volume if self.container_status == "LCL" else 1,
-					},
-				)
-
-		if reception_details.has_shore_handling_charges:
-			shore_handling_item = None
-
-			if self.is_loose_cargo or not reception_details.sh_sales_invoice:
-				key = self.get_criteria_key(cargo_type)
-				shore_handling_item = self.find_service_item(settings_doc, "Shore", key)
-
-				if not shore_handling_item and not reception_details.sh_sales_invoice:
-					throw_missing_criteria("Shore Handling", key)
-
-			if shore_handling_item and shore_handling_item not in service_names:
-				self.append(
-					"services",
-					{
-						"service": shore_handling_item,
-						"qty": self.gross_volume if self.container_status == "LCL" else 1,
-						"remarks": f"Size: <b>{self.container_size}</b>, Cargo Type: <b>{cargo_type}</b>, Port: <b>{self.port}</b>",
-					},
-				)
-
-	def get_booking_services(self, settings_doc):
-		"""Each submitted booking is stripped and verified once, less what was already billed"""
+	def add_container_services(self, settings_doc):
+		"""Add a line for each flagged service the Container still owes"""
 
 		if not self.container_id:
 			return
 
 		container = frappe.get_doc("Container", self.container_id)
-		unit_qty = flt(self.gross_volume) if self.container_status == "LCL" else 1
-		booked_qty = container.booking_count * unit_qty
+		booked_qty = container.booking_count * self.unit_qty
+		for service in SERVICES:
+			if service.scope == BOOKING:
+				self.add_booking_service(settings_doc, container, service, booked_qty)
+			elif service.on_service_order:
+				self.add_charged_service(settings_doc, container, service)
 
-		key = self.get_criteria_key()
-		for service_type, label, has_charges, invoice in (
-			("Stripping", "Stripping", "has_stripping_charges", "st_sales_invoice"),
-			("Verification", "Custom Verification", "has_custom_verification_charges", "cv_sales_invoice"),
-		):
-			if not container.get(has_charges):
-				continue
+	def add_charged_service(self, settings_doc, container, service):
+		"""Add a service charged once on the Container"""
 
-			billed_qty = container.get_billed_qty(invoice, get_service_items(settings_doc, service_type))
-			qty = flt(booked_qty - billed_qty, self.precision("qty", "services"))
-			if qty <= 0:
-				continue
-
-			service_item = self.find_service_item(settings_doc, service_type, key)
-			if not service_item:
-				throw_missing_criteria(label, key)
-
-			self.append("services", {"service": service_item, "qty": qty})
-
-	def get_corridor_services(self, settings_doc):
-		if not self.container_id:
+		key = self.get_criteria_key(container)
+		service_item = service.get_order_item(container, settings_doc, key, self.is_loose_cargo)
+		if not service_item or service_item in [row.service for row in self.services]:
 			return
 
-		levy_charges = frappe.db.get_value(
-			"Container",
-			self.container_id,
-			["has_corridor_levy_charges", "c_sales_invoice", "cargo_type"],
-			as_dict=True,
-		)
-		if not levy_charges or not levy_charges.has_corridor_levy_charges or levy_charges.c_sales_invoice:
-			return
-
-		service_names = [row.get("service") for row in self.get("services")]
-
-		key = self.get_criteria_key(levy_charges.cargo_type)
-		corridor_item = self.find_service_item(settings_doc, "Levy", key)
-		if not corridor_item:
-			throw_missing_criteria("Corridor Levy", key)
-
-		if corridor_item and corridor_item not in service_names:
-			self.append(
-				"services",
-				{"service": corridor_item, "qty": self.gross_volume if self.container_status == "LCL" else 1},
+		row = {"service": service_item, "qty": self.unit_qty}
+		if service.show_criteria:
+			row["remarks"] = (
+				f"Size: <b>{self.container_size}</b>, Cargo Type: <b>{container.cargo_type}</b>, Port: <b>{self.port}</b>"
 			)
+
+		self.append("services", row)
+
+	def add_booking_service(self, settings_doc, container, service, booked_qty):
+		"""Each submitted booking is stripped and verified once, less what was already billed"""
+
+		qty = flt(
+			service.get_unbilled_qty(container, settings_doc, booked_qty),
+			self.precision("qty", "services"),
+		)
+		if qty <= 0:
+			return
+
+		service_item = service.find_item(settings_doc, self.get_criteria_key(container), self.is_loose_cargo)
+		self.append("services", {"service": service_item, "qty": qty})
 
 	def get_other_charges(self):
 		if not self.container_id:
@@ -342,7 +255,7 @@ class ServiceOrder(Document):
 				if not d.get("service"):
 					continue
 
-				qty_to_add = self.gross_volume if self.container_status == "LCL" else 1
+				qty_to_add = self.unit_qty
 				if d.get("service") in insp_service_dict:
 					insp_service_dict[d.get("service")]["qty"] += qty_to_add
 					insp_service_dict[d.get("service")]["remarks"] = "<b>Having Multiple Inspections</b>"
