@@ -2,7 +2,7 @@ import re
 
 import frappe
 from frappe import _
-from frappe.utils import cint, nowdate
+from frappe.utils import cint, get_link_to_form, nowdate
 
 # Containers on these statuses are leaving or have left the ICD
 DELIVERED_CONTAINER_STATUSES = ["At Gate Confirmation", "Delivered"]
@@ -204,6 +204,25 @@ def validate_delivered_container(container_id, container_no=None, action="create
 	frappe.throw(
 		f"Container: <b>{container_no or container_id}</b> is on <b>{status}</b> status, "
 		f"this record cannot be {action}."
+	)
+
+
+def validate_no_draft_container_records(container_id, container_no=None):
+	"""Block a document that would move a container on while its booking or inspection is still a draft"""
+
+	drafts = []
+	for doctype in ("In Yard Container Booking", "Container Inspection"):
+		names = frappe.get_all(doctype, filters={"container_id": container_id, "docstatus": 0}, pluck="name")
+		drafts += [get_link_to_form(doctype, name) for name in names]
+
+	if not drafts:
+		return
+
+	frappe.throw(
+		_("Submit these draft documents of container {0} first: {1}").format(
+			frappe.bold(container_no or container_id), ", ".join(drafts)
+		),
+		title=_("Draft Documents Exist"),
 	)
 
 
