@@ -18,7 +18,15 @@ from frappe.utils import (
 )
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_out
-from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_cf_agent, validate_draft_doc
+from icd_tz.icd_tz.api.icd_services import (
+	BOOKING,
+	CONTAINER,
+	GATE_PASS_CANCELLATION,
+	RECEPTION,
+	SERVICE_FIELDS,
+	get_scope_services,
+)
+from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
 
 
 class GatePass(Document):
@@ -52,7 +60,7 @@ class GatePass(Document):
 		if not self.container_id:
 			return
 
-		frappe.db.set_value("Container", self.container_id, "has_cancellation_charge", 1)
+		frappe.db.set_value("Container", self.container_id, GATE_PASS_CANCELLATION.flag_field, 1)
 
 	def validate_pending_payments(self):
 		"""Validate the pending payments for the Gate Pass"""
@@ -127,25 +135,7 @@ class GatePass(Document):
 		return frappe.db.get_value(
 			"Container",
 			self.container_id,
-			[
-				"cargo_type",
-				"container_reception",
-				"days_to_be_billed",
-				"has_removal_charges",
-				"r_sales_invoice",
-				"has_corridor_levy_charges",
-				"c_sales_invoice",
-				"has_cancellation_charge",
-				"g_sales_invoice",
-				"has_transport_charges",
-				"t_sales_invoice",
-				"has_shore_handling_charges",
-				"sh_sales_invoice",
-				"has_stripping_charges",
-				"st_sales_invoice",
-				"has_custom_verification_charges",
-				"cv_sales_invoice",
-			],
+			["cargo_type", "days_to_be_billed", *SERVICE_FIELDS],
 			as_dict=True,
 		)
 
@@ -168,72 +158,46 @@ class GatePass(Document):
 	def validate_container_charges(self):
 		"""Validate the removal, corridor levy and cancellation payments and return their linked invoices"""
 
-		msg = ""
-		container = self.container_charges
-
-		if container.has_removal_charges and not container.r_sales_invoice:
-			msg += "<li>Removal Charges</li>"
-
-		if container.has_corridor_levy_charges and not container.c_sales_invoice:
-			msg += "<li>Corridor Levy Charges</li>"
-
-		if container.has_cancellation_charge == 1 and not container.g_sales_invoice:
-			msg += "<li>Gate Pass Cancellation Charges</li>"
-
-		return msg, [container.r_sales_invoice, container.c_sales_invoice, container.g_sales_invoice]
+		return self.get_pending_services(CONTAINER)
 
 	def validate_in_yard_booking(self):
 		"""Validate the stripping and custom verification payments and return their linked invoices"""
 
-		msg = ""
-		container = self.container_charges
 		has_booking = frappe.db.exists(
 			"In Yard Container Booking",
 			{"container_id": self.container_id, "docstatus": ["!=", 2]},
 		)
+		cargo_type = self.container_charges.cargo_type
 
 		if (
 			not has_booking
-			and container.cargo_type != "Transit"  # Transit containers are not required to have booking
+			and cargo_type != "Transit"  # Transit containers are not required to have booking
 			and self.action_for_missing_booking == "Stop"
 		):
 			frappe.throw(
-				f"No Booking found for container: <b>{self.container_no}</b>, Cargo Type: <b>{container.cargo_type}</b><br>If you want to proceed, Please inform relevant person to Approve this Gate Pass"
+				f"No Booking found for container: <b>{self.container_no}</b>, Cargo Type: <b>{cargo_type}</b><br>If you want to proceed, Please inform relevant person to Approve this Gate Pass"
 			)
 
 		# TODO: compare booking count with billed qty, any invoice now passes every repeated booking
-		if container.has_stripping_charges and not container.st_sales_invoice:
-			msg += "<li>Stripping Charges</li>"
-
-		if container.has_custom_verification_charges and not container.cv_sales_invoice:
-			msg += "<li>Custom Verification Charges</li>"
-
-		return msg, get_invoice_refs(container.st_sales_invoice) + get_invoice_refs(
-			container.cv_sales_invoice
-		)
+		return self.get_pending_services(BOOKING)
 
 	def validate_reception_charges(self):
 		"""Validate the transport and shore handling payments and return their linked invoices"""
 
+		return self.get_pending_services(RECEPTION, self.container_charges.cargo_type)
+
+	def get_pending_services(self, scope, cargo_type=None):
+		"""Unpaid services of one scope as message rows, and the invoices already raised for them"""
+
 		msg = ""
-		container = self.container_charges
-		if not container.container_reception:
-			return "", []
+		invoices = []
+		for service in get_scope_services(scope):
+			if service.is_payment_pending(self.container_charges, cargo_type):
+				msg += f"<li>{service.label} Charges</li>"
 
-		cargo_type = frappe.db.get_value("Container Reception", container.container_reception, "cargo_type")
+			invoices += service.get_invoices(self.container_charges)
 
-		if (
-			container.has_transport_charges
-			and not container.t_sales_invoice
-			# Transport is not mandatory service for Transit container
-			and cargo_type != "Transit"
-		):
-			msg += "<li>Transport Charges</li>"
-
-		if container.has_shore_handling_charges and not container.sh_sales_invoice:
-			msg += "<li>Shore Handling Charges</li>"
-
-		return msg, [container.t_sales_invoice, container.sh_sales_invoice]
+		return msg, invoices
 
 	def validate_inspection_charges(self):
 		"""Validate the Inspection Charges for the Gate Pass and return its linked invoices"""
