@@ -6,7 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
-from icd_tz.icd_tz.api.icd_services import BOOKING, RECEPTION, SERVICES
+from icd_tz.icd_tz.api.icd_services import BOOKING, SERVICES
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
 	get_service_key,
@@ -172,17 +172,10 @@ class ServiceOrder(Document):
 			title=_("Gross Volume Missing"),
 		)
 
-	def get_criteria_key(self, cargo_type: str | None = None) -> dict:
-		"""Criteria this container is matched on when a service is priced
+	def get_criteria_key(self, container) -> dict:
+		"""Criteria this container is matched on when a service is priced"""
 
-		The reception carries its own cargo type, which the Container overwrites from the
-		house bill, so a caller holding the reception value passes it rather than losing it.
-		"""
-
-		if not cargo_type:
-			cargo_type = frappe.get_cached_value("Container", self.container_id, "cargo_type")
-
-		return get_service_key(size=self.container_size, cargo_type=cargo_type, port=self.port)
+		return get_service_key(size=self.container_size, cargo_type=container.cargo_type, port=self.port)
 
 	@property
 	def unit_qty(self) -> float:
@@ -209,15 +202,9 @@ class ServiceOrder(Document):
 				self.add_charged_service(settings_doc, container, service)
 
 	def add_charged_service(self, settings_doc, container, service):
-		"""Add a service charged once, priced on the reception cargo type for a reception service"""
+		"""Add a service charged once on the Container"""
 
-		cargo_type = container.cargo_type
-		if service.scope == RECEPTION and container.container_reception:
-			cargo_type = frappe.get_cached_value(
-				"Container Reception", container.container_reception, "cargo_type"
-			)
-
-		key = self.get_criteria_key(cargo_type)
+		key = self.get_criteria_key(container)
 		service_item = service.get_order_item(container, settings_doc, key, self.is_loose_cargo)
 		if not service_item or service_item in [row.service for row in self.services]:
 			return
@@ -225,7 +212,7 @@ class ServiceOrder(Document):
 		row = {"service": service_item, "qty": self.unit_qty}
 		if service.show_criteria:
 			row["remarks"] = (
-				f"Size: <b>{self.container_size}</b>, Cargo Type: <b>{cargo_type}</b>, Port: <b>{self.port}</b>"
+				f"Size: <b>{self.container_size}</b>, Cargo Type: <b>{container.cargo_type}</b>, Port: <b>{self.port}</b>"
 			)
 
 		self.append("services", row)
@@ -240,7 +227,7 @@ class ServiceOrder(Document):
 		if qty <= 0:
 			return
 
-		service_item = service.find_item(settings_doc, self.get_criteria_key(), self.is_loose_cargo)
+		service_item = service.find_item(settings_doc, self.get_criteria_key(container), self.is_loose_cargo)
 		self.append("services", {"service": service_item, "qty": qty})
 
 	def get_other_charges(self):
