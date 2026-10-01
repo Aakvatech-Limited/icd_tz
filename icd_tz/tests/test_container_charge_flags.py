@@ -133,7 +133,7 @@ class TestRemovalAndLevyBilling(FrappeTestCase):
 			container_id=mbl, container_status="FCL", container_size="22G1", port="TEAGTL"
 		)
 
-		service_order.get_corridor_services(settings([criteria("Levy", "_T Levy")]))
+		service_order.add_container_services(settings([criteria("Levy", "_T Levy")]))
 		return [row.service for row in service_order.services]
 
 	def test_pending_levy_is_added_to_the_service_order(self):
