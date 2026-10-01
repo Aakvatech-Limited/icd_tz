@@ -13,7 +13,7 @@ from icd_tz.icd_tz.api.utils import (
 	set_container_cf_company,
 	validate_cf_agent,
 	validate_delivered_container,
-	validate_draft_doc,
+	validate_no_draft_container_records,
 )
 
 
@@ -39,6 +39,7 @@ class ServiceOrder(Document):
 		validate_cf_agent(self)
 
 	def before_submit(self):
+		validate_no_draft_container_records(self.container_id, self.container_no)
 		self.validate_mandatory_fields()
 		self.set_gross_volume()
 
