@@ -116,8 +116,6 @@ class ContainerInspection(Document):
 				container_doc.freight_indicator = row.status_changed_to
 				container_doc.gross_volume = row.volume
 
-		container_doc.has_stripping_charges = 1
-		container_doc.has_custom_verification_charges = 1
 		container_doc.last_inspection_date = nowdate()
 		container_doc.save(ignore_permissions=True)
 
