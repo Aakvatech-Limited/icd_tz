@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form, now_datetime, nowdate
 
+from icd_tz.icd_tz.api.icd_services import BOOKING, get_scope_services
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
 	set_container_cf_company,
@@ -65,8 +66,7 @@ class InYardContainerBooking(Document):
 			self.container_id,
 			{
 				"booking_date": nowdate(),
-				"has_stripping_charges": 1,
-				"has_custom_verification_charges": 1,
+				**{service.flag_field: 1 for service in get_scope_services(BOOKING)},
 			},
 		)
 		set_container_cf_company(self)
