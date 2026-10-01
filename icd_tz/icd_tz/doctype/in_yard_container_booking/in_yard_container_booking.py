@@ -60,7 +60,15 @@ class InYardContainerBooking(Document):
 		self.posting_datetime = now_datetime()
 
 	def on_submit(self):
-		frappe.db.set_value("Container", self.container_id, {"booking_date": nowdate()})
+		frappe.db.set_value(
+			"Container",
+			self.container_id,
+			{
+				"booking_date": nowdate(),
+				"has_stripping_charges": 1,
+				"has_custom_verification_charges": 1,
+			},
+		)
 		set_container_cf_company(self)
 
 

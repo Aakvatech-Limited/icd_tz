@@ -8,7 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
 from icd_tz.icd_tz.api.contract import get_storage_day_counts
-from icd_tz.icd_tz.api.utils import validate_delivered_container
+from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_delivered_container
 
 
 class Container(Document):
@@ -372,6 +372,38 @@ class Container(Document):
 		levy_countries = {row.country for row in frappe.get_cached_doc("ICD TZ Settings").countries}
 		self.has_corridor_levy_charges = int(
 			bool(self.c_sales_invoice) or self.country_of_destination in levy_countries
+		)
+
+	@property
+	def booking_count(self) -> int:
+		"""Submitted bookings of this container, each one is stripped and verified again"""
+
+		filters = {"container_no": self.container_no, "docstatus": 1}
+		if self.has_hbl:
+			filters["h_bl_no"] = self.h_bl_no
+		else:
+			filters.update({"m_bl_no": self.m_bl_no, "h_bl_no": ["is", "not set"]})
+
+		return frappe.db.count("In Yard Container Booking", filters)
+
+	def get_billed_qty(self, invoice_field: str, item_codes: list) -> float:
+		"""Quantity of the items this container was billed on the invoices of a field"""
+
+		invoices = get_invoice_refs(self.get(invoice_field))
+		if not invoices or not item_codes:
+			return 0
+
+		return sum(
+			frappe.get_all(
+				"Sales Invoice Item",
+				filters={
+					"parent": ["in", invoices],
+					"docstatus": 1,
+					"container_id": self.name,
+					"item_code": ["in", item_codes],
+				},
+				pluck="qty",
+			)
 		)
 
 	def update_container_reception(self):

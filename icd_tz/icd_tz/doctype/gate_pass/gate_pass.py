@@ -18,7 +18,7 @@ from frappe.utils import (
 )
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_out
-from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_draft_doc
+from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_cf_agent, validate_draft_doc
 
 
 class GatePass(Document):
@@ -201,13 +201,16 @@ class GatePass(Document):
 				f"No Booking found for container: <b>{self.container_no}</b>, Cargo Type: <b>{container.cargo_type}</b><br>If you want to proceed, Please inform relevant person to Approve this Gate Pass"
 			)
 
+		# TODO: compare booking count with billed qty, any invoice now passes every repeated booking
 		if container.has_stripping_charges and not container.st_sales_invoice:
 			msg += "<li>Stripping Charges</li>"
 
 		if container.has_custom_verification_charges and not container.cv_sales_invoice:
 			msg += "<li>Custom Verification Charges</li>"
 
-		return msg, [container.st_sales_invoice, container.cv_sales_invoice]
+		return msg, get_invoice_refs(container.st_sales_invoice) + get_invoice_refs(
+			container.cv_sales_invoice
+		)
 
 	def validate_reception_charges(self):
 		"""Validate the transport and shore handling payments and return their linked invoices"""

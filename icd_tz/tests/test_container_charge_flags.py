@@ -24,7 +24,7 @@ def new_container(**values):
 
 
 class TestCreationAndInspectionFlags(FrappeTestCase):
-	"""Reception charges are set on creation, booking charges on inspection submit"""
+	"""Reception charges are set on creation, booking charges on booking submit"""
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -42,15 +42,25 @@ class TestCreationAndInspectionFlags(FrappeTestCase):
 		self.assertEqual(container.has_transport_charges, 1)
 		self.assertEqual(container.has_shore_handling_charges, 1)
 
-	def test_a_submitted_inspection_charges_stripping_and_verification(self):
+	def test_a_submitted_booking_charges_stripping_and_verification(self):
+		mbl, _ = make_reception_containers()
+		booking = frappe.get_doc({"doctype": "In Yard Container Booking", "container_id": mbl})
+
+		booking.on_submit()
+
+		container = get_container(mbl)
+		self.assertEqual(container.has_stripping_charges, 1)
+		self.assertEqual(container.has_custom_verification_charges, 1)
+
+	def test_a_submitted_inspection_leaves_the_booking_charges(self):
 		mbl, _ = make_reception_containers()
 		inspection = frappe.get_doc({"doctype": "Container Inspection", "container_id": mbl})
 
 		inspection.update_container_doc()
 
 		container = get_container(mbl)
-		self.assertEqual(container.has_stripping_charges, 1)
-		self.assertEqual(container.has_custom_verification_charges, 1)
+		self.assertEqual(container.has_stripping_charges, 0)
+		self.assertEqual(container.has_custom_verification_charges, 0)
 
 
 class TestRemovalAndLevyFlags(FrappeTestCase):
