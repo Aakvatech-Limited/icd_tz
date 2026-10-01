@@ -300,16 +300,18 @@ class ServiceOrder(Document):
 		if not self.container_id:
 			return
 
-		container_doc = frappe.get_doc("Container", self.container_id)
-		if not container_doc.has_corridor_levy_charges:
-			return
-
-		if container_doc.c_sales_invoice:
+		levy_charges = frappe.db.get_value(
+			"Container",
+			self.container_id,
+			["has_corridor_levy_charges", "c_sales_invoice", "cargo_type"],
+			as_dict=True,
+		)
+		if not levy_charges or not levy_charges.has_corridor_levy_charges or levy_charges.c_sales_invoice:
 			return
 
 		service_names = [row.get("service") for row in self.get("services")]
 
-		key = self.get_criteria_key(container_doc.cargo_type)
+		key = self.get_criteria_key(levy_charges.cargo_type)
 		corridor_item = self.find_service_item(settings_doc, "Levy", key)
 		if not corridor_item:
 			throw_missing_criteria("Corridor Levy", key)
