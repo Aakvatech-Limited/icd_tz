@@ -12,8 +12,10 @@ from icd_tz.icd_tz.api.sales_order import (
 	is_empty_container_order,
 	make_empty_container_sales_order,
 	validate_empty_containers_are_billed_apart,
+	validate_no_draft_sales_order,
 )
 from icd_tz.icd_tz.api.utils import get_cargo_container_ids
+from icd_tz.tests.test_draft_sales_order_guard import make_container, make_draft_order
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
 
 test_ignore = ["Company", "Cost Center"]
@@ -177,30 +179,13 @@ class TestEmptyContainerOrderGuards(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_a_draft_order_already_billing_the_box_blocks_another(self):
-		from icd_tz.icd_tz.api.sales_order import validate_no_draft_empty_container_order
-
-		container = frappe.new_doc("Container")
-		container.update(
-			{
-				"container_reception": self.reception.name,
-				"container_no": CONTAINER_NO,
-				"m_bl_no": M_BL_NO,
-				"status": "In Yard",
-				"is_empty_container": 1,
-			}
-		)
-		container.append("container_dates", {"date": nowdate()})
-		container.flags.ignore_mandatory = True
-		container.insert(ignore_permissions=True)
+		container_id = make_container(self.reception.name, is_empty_container=1)
 
 		# nothing drafted yet, so the guard lets it through
-		validate_no_draft_empty_container_order({container.name})
+		validate_no_draft_sales_order({container_id}, m_bl_no=M_BL_NO)
 
-		order = frappe.new_doc("Sales Order")
-		order.update({"customer": "_Test Customer", "transaction_date": nowdate()})
-		order.append("items", {"item_code": "_Test Item", "qty": 1, "container_id": container.name})
-		order.flags.ignore_mandatory = True
-		order.flags.ignore_validate = True
-		order.insert(ignore_permissions=True)
+		make_draft_order(container_id)
 
-		self.assertRaises(frappe.ValidationError, validate_no_draft_empty_container_order, {container.name})
+		self.assertRaises(
+			frappe.ValidationError, validate_no_draft_sales_order, {container_id}, m_bl_no=M_BL_NO
+		)

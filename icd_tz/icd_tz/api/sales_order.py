@@ -2,7 +2,7 @@ from time import sleep
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, nowdate
+from frappe.utils import cint, flt, get_link_to_form, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
@@ -225,6 +225,10 @@ def make_sales_order(
 	if len(items) == 0:
 		return
 
+	validate_no_draft_sales_order(
+		{row["container_id"] for row in items if row.get("container_id")}, m_bl_no=m_bl_no, h_bl_no=h_bl_no
+	)
+
 	if len(service_docs) > 0:
 		source_doc = service_docs[0]
 
@@ -285,7 +289,7 @@ def make_empty_container_sales_order(m_bl_no: str | None = None, customer: str |
 			)
 		)
 
-	validate_no_draft_empty_container_order({row["container_id"] for row in items})
+	validate_no_draft_sales_order({row["container_id"] for row in items}, m_bl_no=m_bl_no)
 
 	sales_order = build_sales_order(
 		items,
@@ -297,15 +301,21 @@ def make_empty_container_sales_order(m_bl_no: str | None = None, customer: str |
 	return sales_order.name
 
 
-def validate_no_draft_empty_container_order(container_ids: set):
-	"""A draft already billing these boxes must be finished or deleted first
+def validate_no_draft_sales_order(container_ids: set, m_bl_no: str | None = None, h_bl_no: str | None = None):
+	"""A draft for the same BL already billing one of these containers must be reviewed first
 
 	Storage days only carry an invoice once one is submitted, so without this a second
-	run of the dialog would bill the shipping line for the same days again.
+	order would bill the same days again.
 	"""
+
+	if not container_ids or not (m_bl_no or h_bl_no):
+		return
 
 	order = frappe.qb.DocType("Sales Order")
 	item = frappe.qb.DocType("Sales Order Item")
+	bl_field, bl_label, bl_no = (
+		("h_bl_no", _("H BL No"), h_bl_no) if h_bl_no else ("m_bl_no", _("M BL No"), m_bl_no)
+	)
 
 	drafts = (
 		frappe.qb.from_(item)
@@ -313,17 +323,24 @@ def validate_no_draft_empty_container_order(container_ids: set):
 		.on(item.parent == order.name)
 		.select(order.name)
 		.distinct()
-		.where((order.docstatus == 0) & (item.container_id.isin(list(container_ids))))
+		.where(
+			(order.docstatus == 0) & (order[bl_field] == bl_no) & item.container_id.isin(list(container_ids))
+		)
 	).run(pluck=True)
 
 	if not drafts:
 		return
 
 	frappe.throw(
-		_("Draft Sales Order {0} already bills these empty containers. Submit or delete it first.").format(
-			frappe.bold(", ".join(sorted(drafts)))
+		_(
+			"Draft Sales Order {0} already bills some of these containers for {1}: {2}. "
+			"Review it first and, if needed, click 'Update Items' on it to pull the new storage charges."
+		).format(
+			", ".join(get_link_to_form("Sales Order", draft) for draft in sorted(drafts)),
+			bl_label,
+			frappe.bold(bl_no),
 		),
-		title=_("Empty Containers Already On A Draft Order"),
+		title=_("Draft Sales Order Exists"),
 	)
 
 
