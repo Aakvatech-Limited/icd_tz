@@ -66,11 +66,11 @@ def receive_lcl_box(**values) -> str:
 	return make_reception(freight_indicator="LCL", **values).create_mbl_container()
 
 
-def make_unpacking(container_id: str, consolidator_gross_volume: float = 2.5):
+def make_unpacking(container_id: str, consolidator_gross_volume: float = 2.5, **values):
 	"""Draft unpacking, the consolidator's CBM filled in where the manifest gives none"""
 
 	unpacking = frappe.new_doc("Container Unpacking")
-	unpacking.container_id = container_id
+	unpacking.update({"container_id": container_id, **values})
 	unpacking.set_hbls()
 	for row in unpacking.hbls:
 		if not row.manifest_gross_volume:
