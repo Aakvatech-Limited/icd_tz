@@ -4,6 +4,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import unpack_container
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
 
@@ -78,9 +79,13 @@ class TestEmptyContainerFlag(FrappeTestCase):
 
 		self.manifest.save(ignore_permissions=True)
 
-	def receive(self, **values):
-		reception = make_reception(**values)
-		reception.create_hbl_container(reception.create_mbl_container())
+	def receive(self, freight_indicator):
+		self.manifest.containers[0].freight_indicator = freight_indicator
+		self.manifest.save(ignore_permissions=True)
+		reception = make_reception(freight_indicator=freight_indicator)
+		box = reception.create_mbl_container()
+		if freight_indicator == "LCL":
+			unpack_container(box)
 
 		return [
 			frappe.get_doc("Container", name)
