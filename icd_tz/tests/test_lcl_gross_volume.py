@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.sales_order import validate_lcl_gross_volume
+from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import unpack_container
 from icd_tz.tests.test_edi_movement import make_manifest, make_reception
 from icd_tz.tests.test_empty_container_billing import make_order_for
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
@@ -43,7 +44,9 @@ class TestSalesOrderGrossVolume(FrappeTestCase):
 		self.manifest.containers[0].freight_indicator = freight_indicator
 		self.manifest.save(ignore_permissions=True)
 		reception = make_reception(freight_indicator=freight_indicator)
-		reception.create_hbl_container(reception.create_mbl_container())
+		box = reception.create_mbl_container()
+		if freight_indicator == "LCL":
+			unpack_container(box)
 
 		return frappe.get_all(
 			"Container", {"container_reception": reception.name}, pluck="name", order_by="creation"
@@ -51,6 +54,8 @@ class TestSalesOrderGrossVolume(FrappeTestCase):
 
 	def test_lcl_cargo_with_no_gross_volume_is_refused(self):
 		cargo = self.receive("LCL")[1]
+		# unpacking needs a CBM, so only an edited or older record can have none
+		frappe.db.set_value("Container", cargo, "gross_volume", 0)
 
 		self.assertRaises(frappe.ValidationError, validate_lcl_gross_volume, make_order_for(cargo))
 
