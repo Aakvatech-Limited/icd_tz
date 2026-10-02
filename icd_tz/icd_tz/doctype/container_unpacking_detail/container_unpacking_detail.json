@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-10-01 10:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "h_bl_no",
+  "m_bl_no",
+  "is_internal_hbl",
+  "consignee",
+  "cargo_description",
+  "column_break_packages",
+  "manifest_packages",
+  "counted_packages",
+  "package_difference",
+  "package_unit",
+  "column_break_volume",
+  "manifest_gross_volume",
+  "consolidator_gross_volume",
+  "gross_volume_unit",
+  "column_break_condition",
+  "cargo_condition",
+  "location",
+  "container_id",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "h_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "H B/L No",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "M B/L No",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_internal_hbl",
+   "fieldtype": "Check",
+   "label": "Is Internal HBL",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "consignee",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Consignee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo_description",
+   "fieldtype": "Small Text",
+   "label": "Cargo Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_packages",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "manifest_packages",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "M Packages",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "counted_packages",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "C Packages"
+  },
+  {
+   "fieldname": "package_difference",
+   "fieldtype": "Int",
+   "label": "Shortage / Excess",
+   "read_only": 1
+  },
+  {
+   "fieldname": "package_unit",
+   "fieldtype": "Data",
+   "label": "Package Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_volume",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "manifest_gross_volume",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "M CBM",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "consolidator_gross_volume",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "New CBM",
+   "mandatory_depends_on": "eval:!doc.manifest_gross_volume",
+   "read_only_depends_on": "eval:doc.manifest_gross_volume"
+  },
+  {
+   "fieldname": "gross_volume_unit",
+   "fieldtype": "Data",
+   "label": "Gross Volume Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_condition",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "default": "Good",
+   "fieldname": "cargo_condition",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Condition",
+   "options": "Good\nDamaged",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Location",
+   "options": "Container Location"
+  },
+  {
+   "fieldname": "container_id",
+   "fieldtype": "Link",
+   "label": "HBL Container",
+   "no_copy": 1,
+   "options": "Container",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-02 10:06:53.548370",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "Container Unpacking Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
