@@ -81,6 +81,29 @@ class ContainerInspection(Document):
 
 	def on_submit(self):
 		self.update_container_doc()
+		if service := self.lcl_service:
+			self.unpack_container(service)
+
+	@property
+	def lcl_service(self):
+		"""Service row on which the consignee changed the box from FCL to LCL"""
+
+		return next((row for row in self.services if row.status_changed_to == "LCL"), None)
+
+	def unpack_container(self, service):
+		"""Split the box into the consignee's HBL record and the empty box left for the shipping line"""
+
+		unpacking = frappe.new_doc("Container Unpacking")
+		unpacking.update(
+			{
+				"container_id": self.container_id,
+				"container_inspection": self.name,
+				"clerk": service.icd_official,
+				"unpacking_location": self.new_container_location,
+			}
+		)
+		unpacking.insert(ignore_permissions=True)
+		unpacking.submit()
 
 	def on_trash(self):
 		self.update_in_yard_booking()
@@ -110,11 +133,6 @@ class ContainerInspection(Document):
 
 		if self.c_and_f_company and not container_doc.c_and_f_company:
 			container_doc.c_and_f_company = self.c_and_f_company
-
-		for row in self.services:
-			if row.status_changed_to and row.status_changed_to != container_doc.freight_indicator:
-				container_doc.freight_indicator = row.status_changed_to
-				container_doc.gross_volume = row.volume
 
 		container_doc.last_inspection_date = nowdate()
 		container_doc.save(ignore_permissions=True)
