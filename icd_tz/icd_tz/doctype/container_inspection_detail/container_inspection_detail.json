@@ -16,6 +16,7 @@
   "new_seal_no",
   "status_changed_to",
   "volume",
+  "counted_packages",
   "column_break_zkfjn",
   "remarks",
   "sales_invoice"
@@ -83,6 +84,13 @@
    "search_index": 1
   },
   {
+   "depends_on": "eval: doc.status_changed_to == \"LCL\"",
+   "fieldname": "counted_packages",
+   "fieldtype": "Int",
+   "label": "Counted Packages",
+   "mandatory_depends_on": "eval: doc.status_changed_to == \"LCL\""
+  },
+  {
    "fieldname": "column_break_zkfjn",
    "fieldtype": "Column Break"
   },
@@ -102,7 +110,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-21 11:32:19.000720",
+ "modified": "2026-10-02 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Inspection Detail",
