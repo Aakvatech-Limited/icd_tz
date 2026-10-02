@@ -104,6 +104,31 @@ class TestRemovalAndLevyFlags(FrappeTestCase):
 
 		self.assertEqual(container.has_corridor_levy_charges, 1)
 
+	def test_an_empty_container_owes_no_removal_or_levy(self):
+		container = new_container(is_empty_container=1, has_single_charge=1, country_of_destination="Zambia")
+
+		with patch("frappe.get_cached_doc", return_value=levy_settings("Zambia")):
+			container.check_corridor_levy_eligibility()
+		container.check_removal_charges_elibility()
+
+		self.assertEqual(container.has_removal_charges, 0)
+		self.assertEqual(container.has_corridor_levy_charges, 0)
+
+	def test_an_empty_container_keeps_an_invoiced_removal_and_levy(self):
+		container = new_container(
+			is_empty_container=1,
+			country_of_destination="Zambia",
+			r_sales_invoice="_T-SINV-R",
+			c_sales_invoice="_T-SINV-C",
+		)
+
+		with patch("frappe.get_cached_doc", return_value=levy_settings("Zambia")):
+			container.check_corridor_levy_eligibility()
+		container.check_removal_charges_elibility()
+
+		self.assertEqual(container.has_removal_charges, 1)
+		self.assertEqual(container.has_corridor_levy_charges, 1)
+
 
 class TestRemovalAndLevyBilling(FrappeTestCase):
 	"""Orders bill a pending removal or levy once, whatever the storage days owe"""

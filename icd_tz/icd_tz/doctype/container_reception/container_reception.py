@@ -4,22 +4,17 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.model.naming import getseries
 from frappe.query_builder import DocType
 from frappe.utils import get_link_to_form, getdate, nowdate, time_diff_in_hours
 from frappe.utils.background_jobs import enqueue
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
-from icd_tz.icd_tz.api.port_expenses import get_cargo_type
 from icd_tz.icd_tz.api.transport_charges import validate_reception_transport_unpaid
 from icd_tz.icd_tz.api.utils import validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
 
 cr = DocType("Container Reception")
-
-# house bill number the ICD gives cargo the manifest lists under no house bill
-INTERNAL_HBL_PREFIX = "ICD-HBL-"
 
 
 class ContainerReception(Document):
@@ -75,8 +70,14 @@ class ContainerReception(Document):
 		attach_gate_in(self)
 
 	def on_submit(self):
-		mbl_container = self.create_mbl_container()
-		self.create_hbl_container(mbl_container)
+		self.create_mbl_container()
+		if self.freight_indicator == "LCL":
+			frappe.msgprint(
+				_("Unpack container {0} on a Container Unpacking to create its HBL records").format(
+					frappe.bold(self.container_no)
+				),
+				alert=True,
+			)
 		self.update_container_storage_days()
 		self.update_cmo_status("Received")
 		self.set_icd_container_status(RECEIVED_STATUS, self.posting_date, self.transporter)
@@ -166,125 +167,9 @@ class ContainerReception(Document):
 		container.movement_order = self.movement_order
 		container.m_bl_no = self.m_bl_no
 		container.status = "In Yard"
-
-		container.append(
-			"container_dates",
-			{
-				"date": self.received_date,
-			},
-		)
+		container.reset_container_dates()
 
 		return container
-
-	def create_hbl_container(self, mbl_container: str | None = None):
-		"""Container record per house bill, the luggage taken out of the M BL container"""
-
-		if self.freight_indicator != "LCL":
-			return
-
-		# Find all records from 'HBL Container' doctypes using filters of container_no, m_bl_no and manifest
-		hbl_containers = frappe.db.get_all(
-			"HBL Container",
-			filters={"container_no": self.container_no, "m_bl_no": self.m_bl_no, "parent": self.manifest},
-			fields=["*"],
-		)
-
-		if len(hbl_containers) == 0:
-			if mbl_container:
-				self.create_internal_hbl_containers(mbl_container)
-
-			return
-
-		# Create containers based on the information found
-		count = 0
-		for hbl_container in hbl_containers:
-			container = frappe.new_doc("Container")
-			container.container_reception = self.name
-			container.container_no = hbl_container.container_no
-			container.size = hbl_container.container_size
-			container.volume = hbl_container.volume
-			container.volume_unit = hbl_container.volume_unit
-			container.weight = hbl_container.weight
-			container.weight_unit = hbl_container.weight_unit
-			container.seal_no_1 = hbl_container.seal_no1
-			container.seal_no_2 = hbl_container.seal_no2
-			container.seal_no_3 = hbl_container.seal_no3
-			container.port_of_destination = self.port
-			container.arrival_date = frappe.db.get_value("Manifest", self.manifest, "arrival_date")
-			container.ship_dc_date = self.ship_dc_date
-			container.received_date = self.received_date
-			container.original_location = self.container_location
-			container.current_location = self.container_location
-			# container.place_of_destination = self.place_of_destination
-			# container.country_of_destination = self.country_of_destination
-			container.manifest = self.manifest
-			container.movement_order = self.movement_order
-			container.m_bl_no = hbl_container.m_bl_no
-			container.h_bl_no = hbl_container.h_bl_no
-			container.status = "In Yard"
-			container.has_hbl = 1
-			container.type_of_container = hbl_container.type_of_container
-			container.plug_type_of_reefer = hbl_container.plug_type_of_reefer
-			container.minimum_temperature = hbl_container.minimum_temperature
-			container.maximum_temperature = hbl_container.maximum_temperature
-			container.container_count = 1
-
-			container.append(
-				"container_dates",
-				{
-					"date": self.received_date,
-				},
-			)
-
-			container.save(ignore_permissions=True)
-			container.reload()
-			count += 1
-
-			enqueue(method=daily_update_date_container_stay, container_id=container.name)
-
-		if count > 0:
-			# what is left in the yard is the box the luggage came out of, and it is
-			# owed by the shipping line, so it is only empty once that has happened
-			if mbl_container:
-				frappe.db.set_value("Container", mbl_container, "is_empty_container", 1)
-
-			frappe.msgprint(
-				f"HBL records: {count} were created for container {self.container_no}", alert=True
-			)
-
-	def create_internal_hbl_containers(self, mbl_container: str):
-		"""Cargo record per bill for an LCL box the manifest gives no house bills
-
-		The box can be listed under several bills, one Containers Detail row each. Every
-		row becomes its own cargo record under an ICD house bill number, so each consignee
-		is billed on its own bill while the empty box stays on the shipping line account.
-		"""
-
-		rows = {}
-		for row in frappe.db.get_all(
-			"Containers Detail",
-			filters={"parent": self.manifest, "container_no": self.container_no},
-			fields=["*"],
-			order_by="idx",
-		):
-			# a box repeated under the same bill is still one consignee's cargo
-			rows.setdefault(row.m_bl_no, row)
-
-		for row in rows.values():
-			container = self.new_container()
-			container.update(get_internal_hbl_details(self.manifest, row))
-			container.save(ignore_permissions=True)
-
-			enqueue(method=daily_update_date_container_stay, container_id=container.name)
-
-		frappe.db.set_value("Container", mbl_container, "is_empty_container", 1)
-
-		frappe.msgprint(
-			_("Internal HBL records: {0} were created for container {1}").format(
-				len(rows), frappe.bold(self.container_no)
-			),
-			alert=True,
-		)
 
 	def update_container_storage_days(self):
 		"""Update the storage days of the containers based on the current received date and m_bl_no"""
@@ -314,15 +199,9 @@ class ContainerReception(Document):
 
 			for container_id in container_ids:
 				container_doc = frappe.get_doc("Container", container_id)
-				container_doc.container_dates = []
 				container_doc.arrival_date = self.ship_dc_date
 				container_doc.received_date = self.received_date
-				container_doc.append(
-					"container_dates",
-					{
-						"date": self.received_date,
-					},
-				)
+				container_doc.reset_container_dates()
 				container_doc.save(ignore_permissions=True)
 
 				enqueue(method=daily_update_date_container_stay, container_id=container_doc.name)
@@ -539,13 +418,7 @@ class ContainerReception(Document):
 			container_doc = frappe.get_doc("Container", container_id.name)
 			container_doc.ship_dc_date = new_ship_dc_date
 			container_doc.received_date = new_received_date
-			container_doc.container_dates = []
-			container_doc.append(
-				"container_dates",
-				{
-					"date": new_received_date,
-				},
-			)
+			container_doc.reset_container_dates()
 			container_doc.save(ignore_permissions=True)
 
 			enqueue(method=daily_update_date_container_stay, container_id=container_doc.name)
@@ -599,49 +472,4 @@ def get_destination_details(abbr_for_destination: str | None) -> dict:
 		"abbr_for_destination": abbr_for_destination,
 		"country_of_destination": frappe.get_cached_value("Country", {"code": country_code.lower()}, "name"),
 		"place_of_destination": place_of_destination,
-	}
-
-
-def get_internal_hbl_details(manifest: str, row: dict) -> dict:
-	"""Container fields of one bill's cargo in a box the manifest gives no house bills
-
-	The consignee and gross volume come from the bill's Master BL on insert.
-	"""
-
-	master_bl = frappe.db.get_value(
-		"Master BL",
-		{"parent": manifest, "m_bl_no": row.m_bl_no},
-		["cargo_classification", "place_of_destination"],
-		as_dict=True,
-	)
-	if not master_bl:
-		frappe.throw(
-			_("Bill {0} of container {1} is not on the Master BL sheet of manifest {2}").format(
-				frappe.bold(row.m_bl_no), frappe.bold(row.container_no), frappe.bold(manifest)
-			),
-			title=_("Master BL Missing"),
-		)
-
-	return {
-		"has_hbl": 1,
-		"h_bl_no": INTERNAL_HBL_PREFIX + getseries(INTERNAL_HBL_PREFIX, 4),
-		"m_bl_no": row.m_bl_no,
-		"container_count": 1,
-		"size": row.container_size,
-		"type_of_container": row.type_of_container,
-		"freight_indicator": row.freight_indicator,
-		"seal_no_1": row.seal_no1,
-		"seal_no_2": row.seal_no2,
-		"seal_no_3": row.seal_no3,
-		"no_of_packages": row.no_of_packages,
-		"package_unit": row.package_unit,
-		"volume": row.volume,
-		"volume_unit": row.volume_unit,
-		"weight": row.weight,
-		"weight_unit": row.weight_unit,
-		"plug_type_of_reefer": row.plug_type_of_reefer,
-		"minimum_temperature": row.minimum_temperature,
-		"maximum_temperature": row.maximum_temperature,
-		"cargo_type": get_cargo_type(master_bl.cargo_classification),
-		**get_destination_details(master_bl.place_of_destination),
 	}

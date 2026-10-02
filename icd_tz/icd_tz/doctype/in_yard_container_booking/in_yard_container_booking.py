@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form, now_datetime, nowdate
 
@@ -16,7 +17,30 @@ from icd_tz.icd_tz.api.utils import (
 class InYardContainerBooking(Document):
 	def before_insert(self):
 		validate_delivered_container(self.container_id, self.container_no)
+		self.validate_container_is_unpacked()
 		self.posting_datetime = now_datetime()
+
+	def validate_container_is_unpacked(self):
+		"""An LCL container is booked per HBL, so its cargo must be unpacked first"""
+
+		container = frappe.db.get_value(
+			"Container",
+			self.container_id,
+			["container_no", "freight_indicator", "has_hbl", "is_empty_container"],
+			as_dict=True,
+		)
+		if (
+			container
+			and container.freight_indicator == "LCL"
+			and not container.has_hbl
+			and not container.is_empty_container
+		):
+			frappe.throw(
+				_(
+					"Container {0} is an LCL container, it should pass through Container Unpacking first"
+				).format(frappe.bold(container.container_no)),
+				title=_("Container Not Unpacked"),
+			)
 
 	def before_cancel(self):
 		validate_delivered_container(self.container_id, self.container_no, action="cancelled")

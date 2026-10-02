@@ -14,8 +14,7 @@ from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_delivered_contain
 
 class Container(Document):
 	def before_insert(self):
-		for service in get_scope_services(RECEPTION):
-			self.set(service.flag_field, 1)
+		self.set_reception_charge_flags()
 
 		if self.container_no and self.container_reception:
 			self.update_m_bl_based_container_details()
@@ -32,6 +31,13 @@ class Container(Document):
 		self.update_billed_details()
 		self.check_corridor_levy_eligibility()
 		self.check_removal_charges_elibility()
+
+	def set_reception_charge_flags(self):
+		if self.is_empty_container:
+			return
+
+		for service in get_scope_services(RECEPTION):
+			self.set(service.flag_field, 1)
 
 	def on_trash(self):
 		validate_delivered_container(self.name, self.container_no, action="deleted")
@@ -358,22 +364,33 @@ class Container(Document):
 			self.days_to_be_billed = no_of_billable_days - no_of_billed_days
 
 	def check_removal_charges_elibility(self):
-		"""A container with storage charges pays removal; an invoiced removal stays charged"""
+		"""A container with storage charges pays removal, an empty one only storage; an invoiced removal stays charged"""
 
+		has_storage_charges = (
+			self.days_to_be_billed > 0 or self.has_single_charge == 1 or self.has_double_charge == 1
+		)
 		self.has_removal_charges = int(
-			bool(self.r_sales_invoice)
-			or self.days_to_be_billed > 0
-			or self.has_single_charge == 1
-			or self.has_double_charge == 1
+			bool(self.r_sales_invoice) or (has_storage_charges and not self.is_empty_container)
 		)
 
 	def check_corridor_levy_eligibility(self):
-		"""A container bound for a Corridor Levy country pays the levy; an invoiced levy stays charged"""
+		"""A container bound for a Corridor Levy country pays the levy, an empty one only storage; an invoiced levy stays charged"""
 
 		levy_countries = {row.country for row in frappe.get_cached_doc("ICD TZ Settings").countries}
+		is_levy_country = self.country_of_destination in levy_countries
 		self.has_corridor_levy_charges = int(
-			bool(self.c_sales_invoice) or self.country_of_destination in levy_countries
+			bool(self.c_sales_invoice) or (is_levy_country and not self.is_empty_container)
 		)
+
+	@property
+	def storage_start_date(self):
+		"""An unpacked container counts storage again from its unpack date"""
+
+		return self.unpack_date or self.received_date
+
+	def reset_container_dates(self):
+		self.container_dates = []
+		self.append("container_dates", {"date": self.storage_start_date})
 
 	@property
 	def booking_count(self) -> int:
@@ -450,7 +467,7 @@ class Container(Document):
 				new_row.date = last_date
 
 		elif container_dates_len == 0:
-			start_date = self.received_date
+			start_date = self.storage_start_date
 			if start_date:
 				while getdate(start_date) <= current_date:
 					new_row = self.append("container_dates", {})

@@ -63,6 +63,7 @@
   "received_date",
   "posting_date",
   "column_break_ztec",
+  "unpack_date",
   "booking_date",
   "last_inspection_date",
   "gate_out_date",
@@ -808,12 +809,19 @@
   {
    "fieldname": "section_break_xzkv",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "unpack_date",
+   "fieldtype": "Date",
+   "label": "Unpack Date",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-30 20:31:42.200210",
+ "modified": "2026-10-01 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",
