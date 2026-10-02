@@ -7,6 +7,7 @@ from frappe.utils import nowdate
 
 from icd_tz.icd_tz.api.expense_release import get_wip_balance, release_expenses
 from icd_tz.icd_tz.api.port_expenses import get_expense_rows
+from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import unpack_container
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
 from icd_tz.tests.test_port_expenses import (
 	BOX_20,
@@ -81,7 +82,7 @@ def make_shared_box_manifest():
 
 def receive_shared_box():
 	reception = make_reception(freight_indicator="LCL")
-	reception.create_hbl_container(reception.create_mbl_container())
+	unpack_container(reception.create_mbl_container())
 
 	return [
 		frappe.get_doc("Container", name)
