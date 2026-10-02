@@ -1,0 +1,281 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-10-01 10:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "container_section",
+  "container_id",
+  "container_no",
+  "size",
+  "column_break_bills",
+  "m_bl_no",
+  "manifest",
+  "container_reception",
+  "column_break_parties",
+  "consolidator",
+  "sline",
+  "sline_code",
+  "column_break_date",
+  "posting_date",
+  "company",
+  "unpacking_section",
+  "unpacking_location",
+  "column_break_seal",
+  "seal_no",
+  "seal_condition",
+  "column_break_times",
+  "start_time",
+  "end_time",
+  "hbls_section",
+  "hbls",
+  "sign_off_section",
+  "clerk",
+  "naming_series",
+  "column_break_sign_off",
+  "consolidator_representative",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "ICD-CU-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Naming Series",
+   "options": "ICD-CU-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "container_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Container ID",
+   "options": "Container",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "container_id.container_no",
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Container No",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "container_id.size",
+   "fieldname": "size",
+   "fieldtype": "Data",
+   "label": "Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bills",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "container_id.m_bl_no",
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "M B/L No",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "container_id.manifest",
+   "fieldname": "manifest",
+   "fieldtype": "Link",
+   "label": "Manifest",
+   "options": "Manifest",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "container_id.container_reception",
+   "fieldname": "container_reception",
+   "fieldtype": "Link",
+   "label": "Container Reception",
+   "options": "Container Reception",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_parties",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "container_id.consignee",
+   "fieldname": "consolidator",
+   "fieldtype": "Data",
+   "label": "Consolidator",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "container_id.sline",
+   "fieldname": "sline",
+   "fieldtype": "Data",
+   "label": "Shipping Line",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "container_id.company",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_date",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "description": "Set to the submission date, the empty container counts storage from this date",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unpacking_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "unpacking_location",
+   "fieldtype": "Link",
+   "label": "Unpacking Area",
+   "options": "Container Location"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "column_break_times",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_seal",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "container_id.seal_no_1",
+   "fieldname": "seal_no",
+   "fieldtype": "Data",
+   "label": "Seal No",
+   "read_only": 1
+  },
+  {
+   "default": "Intact",
+   "fieldname": "seal_condition",
+   "fieldtype": "Select",
+   "label": "Seal Condition",
+   "options": "Intact\nBroken\nDifferent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hbls_section",
+   "fieldtype": "Section Break",
+   "label": "House Bills"
+  },
+  {
+   "fieldname": "hbls",
+   "fieldtype": "Table",
+   "label": "HBLs",
+   "options": "Container Unpacking Detail",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sign_off_section",
+   "fieldtype": "Section Break",
+   "label": "Sign Off"
+  },
+  {
+   "fieldname": "clerk",
+   "fieldtype": "Link",
+   "label": "Clerk",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_sign_off",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "consolidator_representative",
+   "fieldtype": "Data",
+   "label": "Consolidator Representative"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Container Unpacking",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "End Time"
+  },
+  {
+   "fetch_from": "container_id.sline_code",
+   "fieldname": "sline_code",
+   "fieldtype": "Data",
+   "label": "Shipping Line Code",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-02 10:08:13.528470",
+ "modified_by": "Administrator",
+ "module": "Icd Tz",
+ "name": "Container Unpacking",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "container_id, container_no, m_bl_no",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
