@@ -1,6 +1,8 @@
 # Copyright (c) 2026, elius mgani and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -47,7 +49,11 @@ CARGO_FIELDS = {
 
 
 class ContainerUnpacking(Document):
-	"""Cargo of an LCL container counted per house bill, leaving the container empty"""
+	"""Cargo of an LCL container counted per house bill, leaving the container empty
+
+	A box the manifest lists as LCL becomes the empty record and its cargo new HBL records.
+	A box changed to LCL at its inspection becomes the HBL record and its empty box a new record.
+	"""
 
 	def before_validate(self):
 		if self.container_id and not self.hbls:
@@ -63,18 +69,24 @@ class ContainerUnpacking(Document):
 	def before_submit(self):
 		self.validate_gross_volumes()
 		self.posting_date = nowdate()
-		validate_no_linked_records([self.container_id], action="unpacked")
+		# the inspected box keeps its booking and inspection, it is the cargo record
+		if not self.container_inspection:
+			validate_no_linked_records([self.container_id], action="unpacked")
 
 		for row in self.hbls:
 			if row.is_internal_hbl and not row.h_bl_no:
 				row.h_bl_no = INTERNAL_HBL_PREFIX + getseries(INTERNAL_HBL_PREFIX, 4)
 
 	def on_submit(self):
+		if self.container_inspection:
+			self.split_inspected_container()
+			return
+
 		reception = frappe.get_doc("Container Reception", self.container_reception)
 		for row in self.hbls:
 			row.db_set("container_id", self.make_hbl_container(reception, row))
 
-		self.set_container_empty()
+		self.set_container_empty(frappe.get_doc("Container", self.container_id))
 
 		frappe.msgprint(
 			_("HBL records: {0} were created for container {1}").format(
@@ -84,6 +96,14 @@ class ContainerUnpacking(Document):
 		)
 
 	def before_cancel(self):
+		if self.container_inspection:
+			frappe.throw(
+				_("An unpacking made by Container Inspection {0} cannot be cancelled").format(
+					get_link_to_form("Container Inspection", self.container_inspection)
+				),
+				title=_("Cancel Not Allowed"),
+			)
+
 		validate_delivered_containers(self.hbl_container_ids)
 		validate_no_linked_records(self.hbl_container_ids, action="cancelled")
 
@@ -99,6 +119,10 @@ class ContainerUnpacking(Document):
 
 		self.restore_container()
 
+	@cached_property
+	def inspection(self):
+		return frappe.get_doc("Container Inspection", self.container_inspection)
+
 	@property
 	def hbl_container_ids(self) -> list:
 		return [row.container_id for row in self.hbls if row.container_id]
@@ -107,10 +131,54 @@ class ContainerUnpacking(Document):
 	def set_hbls(self):
 		"""HBL rows from the manifest, one per house bill, or one per bill of a box with no house bills"""
 
+		if self.container_inspection:
+			self.set("hbls", [self.get_inspection_hbl_row()])
+			return
+
 		container = frappe.db.get_value(
 			"Container", self.container_id, ["manifest", "container_no", "m_bl_no"], as_dict=True
 		)
 		self.set("hbls", get_hbl_rows(container))
+
+	def get_inspection_hbl_row(self) -> dict:
+		"""The whole box is one consignee's cargo, counted and measured at its inspection"""
+
+		service = self.inspection.lcl_service
+		if not service:
+			frappe.throw(
+				_("Container Inspection {0} does not change the container to LCL").format(
+					frappe.bold(self.container_inspection)
+				),
+				title=_("No LCL Change"),
+			)
+
+		container = frappe.db.get_value(
+			"Container",
+			self.container_id,
+			[
+				"m_bl_no",
+				"consignee",
+				"cargo_description",
+				"no_of_packages",
+				"package_unit",
+				"gross_volume_unit",
+			],
+			as_dict=True,
+		)
+
+		return {
+			"m_bl_no": container.m_bl_no,
+			"is_internal_hbl": 1,
+			"consignee": container.consignee,
+			"cargo_description": container.cargo_description,
+			"manifest_packages": cint(container.no_of_packages),
+			"counted_packages": service.counted_packages,
+			"package_unit": container.package_unit,
+			"consolidator_gross_volume": flt(service.volume),
+			"gross_volume_unit": container.gross_volume_unit or "CBM",
+			"cargo_condition": "Good",
+			"location": self.inspection.new_container_location,
+		}
 
 	def validate_container(self):
 		# locked on submit, so two unpackings of one box cannot both find it full
@@ -121,7 +189,9 @@ class ContainerUnpacking(Document):
 			as_dict=True,
 			for_update=self.docstatus == 1,
 		)
-		if container.has_hbl or container.freight_indicator != "LCL":
+		if self.container_inspection:
+			self.validate_inspected_container(container)
+		elif container.has_hbl or container.freight_indicator != "LCL":
 			frappe.throw(
 				_("Only an LCL container received under its M BL can be unpacked, {0} is not one").format(
 					frappe.bold(self.container_id)
@@ -136,6 +206,26 @@ class ContainerUnpacking(Document):
 			)
 
 		validate_delivered_container(self.container_id, self.container_no, action="unpacked")
+
+	def validate_inspected_container(self, container):
+		inspected_container = self.inspection.container_id
+		if inspected_container != self.container_id:
+			frappe.throw(
+				_("Container Inspection {0} is for container {1}, not {2}").format(
+					frappe.bold(self.container_inspection),
+					frappe.bold(inspected_container),
+					frappe.bold(self.container_id),
+				),
+				title=_("Wrong Container Inspection"),
+			)
+
+		if container.freight_indicator == "LCL":
+			frappe.throw(
+				_("Container {0} is already LCL, it cannot be changed to LCL again").format(
+					frappe.bold(self.container_no)
+				),
+				title=_("Already LCL"),
+			)
 
 	def validate_duplicate_unpacking(self):
 		duplicate = frappe.db.get_value(
@@ -185,13 +275,51 @@ class ContainerUnpacking(Document):
 
 		return {**details, "has_hbl": 1, "h_bl_no": row.h_bl_no, "m_bl_no": row.m_bl_no, "container_count": 1}
 
-	def set_container_empty(self):
+	def split_inspected_container(self):
+		"""The inspected box becomes the cargo's HBL record, a new record is its empty box"""
+
+		row = self.hbls[0]
+		container = frappe.get_doc("Container", self.container_id)
+		container.update(
+			{
+				"has_hbl": 1,
+				"h_bl_no": row.h_bl_no,
+				"freight_indicator": "LCL",
+				"gross_volume": row.gross_volume,
+			}
+		)
+		container.save(ignore_permissions=True)
+		row.db_set("container_id", self.container_id)
+
+		# service orders and invoices of the cargo then go by its house bill
+		for doctype in ("In Yard Container Booking", "Container Inspection"):
+			frappe.db.set_value(
+				doctype, {"container_id": self.container_id}, "h_bl_no", row.h_bl_no, update_modified=False
+			)
+
+		self.db_set("empty_container_id", self.make_empty_container(container))
+
+	def make_empty_container(self, cargo) -> str:
+		"""Empty box left for the shipping line where the cargo was unpacked"""
+
+		container = frappe.get_doc("Container Reception", self.container_reception).new_container()
+		container.update(
+			{
+				"freight_indicator": "LCL",
+				"container_count": cargo.container_count,
+				"current_location": cargo.current_location,
+			}
+		)
+		self.set_container_empty(container)
+
+		return container.name
+
+	def set_container_empty(self, container):
 		"""The box restarts storage on the posting date and owes nothing else
 
 		Removal and corridor levy follow is_empty_container on save, the rest is cleared here.
 		"""
 
-		container = frappe.get_doc("Container", self.container_id)
 		container.update({"is_empty_container": 1, "unpack_date": self.posting_date})
 		for scope in (RECEPTION, BOOKING):
 			for service in get_scope_services(scope):

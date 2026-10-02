@@ -15,6 +15,8 @@
   "m_bl_no",
   "manifest",
   "container_reception",
+  "container_inspection",
+  "empty_container_id",
   "column_break_parties",
   "consolidator",
   "sline",
@@ -106,6 +108,23 @@
    "fieldtype": "Link",
    "label": "Container Reception",
    "options": "Container Reception",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.container_inspection",
+   "fieldname": "container_inspection",
+   "fieldtype": "Link",
+   "label": "Container Inspection",
+   "options": "Container Inspection",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.empty_container_id",
+   "fieldname": "empty_container_id",
+   "fieldtype": "Link",
+   "label": "Empty Container ID",
+   "no_copy": 1,
+   "options": "Container",
    "read_only": 1
   },
   {
@@ -207,7 +226,7 @@
    "fieldtype": "Link",
    "label": "Clerk",
    "options": "Employee",
-   "reqd": 1
+   "mandatory_depends_on": "eval:!doc.container_inspection"
   },
   {
    "fieldname": "column_break_sign_off",
@@ -249,7 +268,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-02 10:08:13.528470",
+ "modified": "2026-10-02 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Unpacking",
