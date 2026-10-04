@@ -75,6 +75,7 @@
   "naming_series",
   "amended_from",
   "edi_file",
+  "edi_sent",
   "receiver_email",
   "receiver_cc_email"
  ],
@@ -519,6 +520,17 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
+   "default": "0",
+   "depends_on": "edi_file",
+   "description": "Ticked once the EDI file is uploaded to the shipping line's SFTP server",
+   "fieldname": "edi_sent",
+   "fieldtype": "Check",
+   "label": "EDI Sent",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
    "fieldname": "receiver_email",
    "fieldtype": "Data",
    "hidden": 1,
@@ -550,7 +562,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-30 19:51:56.061498",
+ "modified": "2026-10-04 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Reception",
