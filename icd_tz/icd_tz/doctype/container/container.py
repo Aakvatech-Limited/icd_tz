@@ -9,13 +9,15 @@ from frappe.utils import add_days, create_batch, getdate, nowdate
 
 from icd_tz.icd_tz.api.contract import get_storage_day_counts
 from icd_tz.icd_tz.api.icd_services import RECEPTION, get_scope_services
-from icd_tz.icd_tz.api.utils import get_invoice_refs, validate_delivered_container
+from icd_tz.icd_tz.api.utils import (
+	DELIVERED_CONTAINER_STATUSES,
+	get_invoice_refs,
+	validate_delivered_container,
+)
 
 
 class Container(Document):
 	def before_insert(self):
-		self.set_reception_charge_flags()
-
 		if self.container_no and self.container_reception:
 			self.update_m_bl_based_container_details()
 			self.update_hbl_based_container_details()
@@ -29,11 +31,14 @@ class Container(Document):
 		self.update_container_reception()
 		self.update_billed_days()
 		self.update_billed_details()
+		self.set_reception_charge_flags()
 		self.check_corridor_levy_eligibility()
 		self.check_removal_charges_elibility()
 
 	def set_reception_charge_flags(self):
-		if self.is_empty_container:
+		"""Every loaded container still in the yard owes the reception services"""
+
+		if self.is_empty_container or self.status in DELIVERED_CONTAINER_STATUSES:
 			return
 
 		for service in get_scope_services(RECEPTION):
@@ -45,7 +50,7 @@ class Container(Document):
 	def update_m_bl_based_container_details(self):
 		"""Update the container details from the Container Reception, Containers Detail and Container Movement Order"""
 
-		if self.status in ["At Gate Confirmation", "Delivered"]:
+		if self.status in DELIVERED_CONTAINER_STATUSES:
 			return
 
 		container_reception = frappe.get_cached_doc("Container Reception", self.container_reception)
@@ -164,7 +169,7 @@ class Container(Document):
 		if self.has_hbl == 0:
 			return
 
-		if self.status in ["At Gate Confirmation", "Delivered"]:
+		if self.status in DELIVERED_CONTAINER_STATUSES:
 			return
 
 		if not self.status:
@@ -334,7 +339,7 @@ class Container(Document):
 	def update_billed_details(self):
 		"""Update the billed days of the container"""
 
-		if self.status in ["At Gate Confirmation", "Delivered"]:
+		if self.status in DELIVERED_CONTAINER_STATUSES:
 			return
 
 		if len(self.container_dates) > 0:
@@ -496,7 +501,7 @@ def daily_update_date_container_stay(container_id=None):
 		containers.append(container_id)
 	else:
 		containers = frappe.get_all(
-			"Container", filters={"status": ["not in", ["At Gate Confirmation", "Delivered"]]}, pluck="name"
+			"Container", filters={"status": ["not in", DELIVERED_CONTAINER_STATUSES]}, pluck="name"
 		)
 
 	for batch in create_batch(containers, 100):
