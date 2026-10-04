@@ -4,7 +4,8 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from icd_tz.icd_tz.api.edi.codeco import preview
+from icd_tz.icd_tz.api.edi.codeco import CODECOGenerator
+from icd_tz.icd_tz.api.edi.interchange import preview
 from icd_tz.icd_tz.api.edi.movement import ContainerMovement
 from icd_tz.tests.test_edi_codeco import GATE_IN_DEFAULTS, make_partner
 
@@ -24,18 +25,18 @@ class TestEDIPreview(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_a_named_partner_is_previewed_while_its_edi_is_off(self):
-		message = preview(self.movement, "original", edi_partner=self.partner.name)
+		message = preview(self.movement, CODECOGenerator, "original", edi_partner=self.partner.name)
 
 		self.assertTrue(message["edi_content"].startswith("UNB+"))
 
 	def test_the_file_takes_the_partner_name_format_and_extension(self):
-		message = preview(self.movement, "original", edi_partner=self.partner.name)
+		message = preview(self.movement, CODECOGenerator, "original", edi_partner=self.partner.name)
 
 		self.assertTrue(message["filename"].endswith(".txt"))
 		self.assertIn("CODECO", message["filename"])
 
 	def test_without_a_named_partner_only_an_enabled_one_is_used(self):
-		self.assertIsNone(preview(self.movement, "original"))
+		self.assertIsNone(preview(self.movement, CODECOGenerator, "original"))
 
 	def test_a_unit_owing_no_message_previews_nothing(self):
-		self.assertIsNone(preview(None, "original", edi_partner=self.partner.name))
+		self.assertIsNone(preview(None, CODECOGenerator, "original", edi_partner=self.partner.name))

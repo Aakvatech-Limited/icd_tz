@@ -12,7 +12,7 @@ from frappe.utils import comma_or, escape_html
 
 from icd_tz.icd_tz.api.edi.templates import (
 	RULES,
-	SEEDED_EDI_TYPE,
+	SEEDED_EDI_TYPES,
 	get_default_template,
 	validate_template,
 )
@@ -53,7 +53,7 @@ class EDIPartner(Document):
 		directory: DF.Data | None
 		enable_edi: DF.Check
 		file_extension: DF.Literal["edi", "txt"]
-		file_name_format: DF.Data
+		file_name_format: DF.Data | None
 		ip_behind_dns: DF.Data | None
 		password: DF.Password | None
 		port: DF.Int
@@ -73,15 +73,7 @@ class EDIPartner(Document):
 		self.normalise_code()
 
 	def before_insert(self):
-		if not self.file_name_format:
-			self.file_name_format = DEFAULT_FILE_NAME_FORMAT
-
-		# a new partner starts from the shipped template, one it brought is left alone
-		if not self.get_template_row(SEEDED_EDI_TYPE):
-			self.append(
-				"templates",
-				{"edi_type": SEEDED_EDI_TYPE, "template": get_default_template(SEEDED_EDI_TYPE)},
-			)
+		self.seed_templates()
 
 	def validate(self):
 		self.normalise_code()
@@ -89,8 +81,20 @@ class EDIPartner(Document):
 		self.validate_file_name_text()
 		self.validate_templates()
 
+	def seed_templates(self) -> list:
+		"""Add the shipped template of each type the partner lacks, one it brought is left alone"""
+
+		rows = []
+		for edi_type in SEEDED_EDI_TYPES:
+			if not self.get_template_row(edi_type):
+				template = get_default_template(edi_type)
+				rows.append(self.append("templates", {"edi_type": edi_type, "template": template}))
+
+		return rows
+
 	def validate_file_name_format(self):
-		self.file_name_format = (self.file_name_format or "").strip()
+		# the form fills the default when EDI is ticked, a record saved another way gets it here
+		self.file_name_format = (self.file_name_format or "").strip() or DEFAULT_FILE_NAME_FORMAT
 
 		allowed = FILE_NAME_PLACEHOLDERS + MESSAGE_PLACEHOLDERS
 		unknown = sorted(set(PLACEHOLDER_PATTERN.findall(self.file_name_format)) - set(allowed))
@@ -289,6 +293,13 @@ class EDIPartner(Document):
 		bound_socket.connect((host, port))
 
 		return bound_socket
+
+
+@frappe.whitelist()
+def get_default_file_name_format() -> str:
+	"""Read by the form when EDI is ticked, so the user starts from it and changes it there"""
+
+	return DEFAULT_FILE_NAME_FORMAT
 
 
 def get_partner(shipping_line_code: str | None) -> EDIPartner | None:

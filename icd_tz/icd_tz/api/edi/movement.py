@@ -1,4 +1,4 @@
-"""One container crossing the ICD gate, read from a Container Reception or a Gate Pass."""
+"""One container event: crossing the ICD gate on a Container Reception or a Gate Pass, or being stripped on a Container Unpacking."""
 
 from dataclasses import dataclass
 
@@ -16,7 +16,7 @@ KILOGRAM_UNITS = ("KG", "KGM", "KGS")
 
 @dataclass(frozen=True)
 class ContainerMovement:
-	"""Everything a CODECO message needs about one gate movement."""
+	"""Everything a CODECO or COSTCO message needs about one container event."""
 
 	document: str
 	is_gate_in: bool
@@ -111,6 +111,31 @@ def from_gate_pass(gate_pass) -> ContainerMovement | None:
 		truck=gate_pass.truck,
 		voyage_no=gate_pass.voyage_no or voyage.get("voyage_no"),
 		vessel_name=gate_pass.vessel_name or voyage.get("vessel_name"),
+		call_sign=voyage.get("call_sign"),
+	)
+
+
+def from_container_unpacking(unpacking) -> ContainerMovement:
+	"""Stripping of the physical box, which is empty once its cargo is counted out.
+
+	The box keeps its number, size and line whichever record ends up empty: the
+	unpacked one for an LCL box, or a new one for a box changed to LCL at its inspection.
+	"""
+
+	voyage = get_voyage(unpacking.manifest)
+
+	return ContainerMovement(
+		document=unpacking.name,
+		is_gate_in=False,
+		shipping_line_code=unpacking.sline_code,
+		container_no=unpacking.container_no,
+		iso_size_type=unpacking.size,
+		is_empty=True,
+		m_bl_no=unpacking.m_bl_no,
+		seal_no=unpacking.seal_no,
+		event_datetime=get_event_datetime(unpacking.posting_date, unpacking.end_time),
+		voyage_no=voyage.get("voyage_no"),
+		vessel_name=voyage.get("vessel_name"),
 		call_sign=voyage.get("call_sign"),
 	)
 
