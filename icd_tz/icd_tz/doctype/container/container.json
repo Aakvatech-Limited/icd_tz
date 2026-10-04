@@ -82,6 +82,35 @@
   "company",
   "c_and_f_company",
   "tab_break_edoll",
+  "income_services_section",
+  "has_transport_charges",
+  "t_sales_invoice",
+  "column_break_shore",
+  "has_shore_handling_charges",
+  "sh_sales_invoice",
+  "column_break_iv6ai",
+  "has_corridor_levy_charges",
+  "c_sales_invoice",
+  "section_break_twu7u",
+  "column_break_hrqx",
+  "has_icd_handling_charge",
+  "ih_sales_invoice",
+  "column_break_stripping",
+  "has_stripping_charges",
+  "st_sales_invoice",
+  "column_break_verification",
+  "has_custom_verification_charges",
+  "cv_sales_invoice",
+  "section_break_dxjt",
+  "column_break_anfr",
+  "has_removal_charges",
+  "r_sales_invoice",
+  "column_break_gpcnl",
+  "has_cancellation_charge",
+  "g_sales_invoice",
+  "column_break_qjlyx",
+  "has_single_charge",
+  "has_double_charge",
   "section_break_xzkv",
   "total_days",
   "column_break_dlhui",
@@ -94,30 +123,6 @@
   "days_to_be_billed",
   "column_break_rs2fh",
   "no_of_billed_days",
-  "income_services_section",
-  "has_transport_charges",
-  "t_sales_invoice",
-  "column_break_shore",
-  "has_shore_handling_charges",
-  "sh_sales_invoice",
-  "column_break_stripping",
-  "has_stripping_charges",
-  "st_sales_invoice",
-  "column_break_verification",
-  "has_custom_verification_charges",
-  "cv_sales_invoice",
-  "section_break_twu7u",
-  "has_removal_charges",
-  "r_sales_invoice",
-  "column_break_iv6ai",
-  "has_corridor_levy_charges",
-  "c_sales_invoice",
-  "column_break_gpcnl",
-  "has_cancellation_charge",
-  "g_sales_invoice",
-  "column_break_qjlyx",
-  "has_single_charge",
-  "has_double_charge",
   "section_break_517wd",
   "container_dates"
  ],
@@ -359,9 +364,10 @@
    "read_only": 1
   },
   {
+   "description": "Invoice for Transport Charge",
    "fieldname": "t_sales_invoice",
    "fieldtype": "Data",
-   "label": "Transport Sales Invoice",
+   "label": "Sales Invoice",
    "read_only": 1
   },
   {
@@ -376,9 +382,10 @@
    "read_only": 1
   },
   {
+   "description": "Invoice for shore handling charge",
    "fieldname": "sh_sales_invoice",
    "fieldtype": "Data",
-   "label": "Shore Handling Sales Invoice",
+   "label": "Sales Invoice",
    "read_only": 1
   },
   {
@@ -393,9 +400,10 @@
    "read_only": 1
   },
   {
+   "description": "Invoice for stripping destuffing charge",
    "fieldname": "st_sales_invoice",
    "fieldtype": "Data",
-   "label": "Stripping Sales Invoice",
+   "label": "Sales Invoice",
    "read_only": 1
   },
   {
@@ -410,9 +418,10 @@
    "read_only": 1
   },
   {
+   "description": "Invoice for Custom Verification charge",
    "fieldname": "cv_sales_invoice",
    "fieldtype": "Data",
-   "label": "Custom Verification Sales Invoice",
+   "label": "Sales Invoice",
    "read_only": 1
   },
   {
@@ -511,7 +520,7 @@
    "read_only": 1
   },
   {
-   "description": "Invoice for Removal Charges",
+   "description": "Invoice for Removal Charge",
    "fieldname": "r_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
@@ -529,7 +538,7 @@
    "read_only": 1
   },
   {
-   "description": "Invoice for corridor levy charges",
+   "description": "Invoice for corridor levy charge",
    "fieldname": "c_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
@@ -547,7 +556,7 @@
    "read_only": 1
   },
   {
-   "description": "Invoice for gatepass cancellation charges",
+   "description": "Invoice for gatepass cancellation charge",
    "fieldname": "g_sales_invoice",
    "fieldtype": "Data",
    "label": "Sales Invoice",
@@ -816,12 +825,38 @@
    "label": "Unpack Date",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hrqx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_icd_handling_charge",
+   "fieldtype": "Check",
+   "label": "Has ICD Handling Charge",
+   "read_only": 1
+  },
+  {
+   "description": "Invoice for ICD Handling Charge",
+   "fieldname": "ih_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_anfr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dxjt",
+   "fieldtype": "Section Break"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-01 10:00:00.000000",
+ "modified": "2026-10-04 11:13:05.221860",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",

@@ -42,6 +42,7 @@ def income_settings():
 	service_rows = [
 		criteria("Transport", "_T Transport"),
 		criteria("Shore", "_T Shore"),
+		criteria("ICD Handling", "_T ICD Handling"),
 		criteria("Stripping", "_T Stripping"),
 		criteria("Verification", "_T Verification"),
 	]

@@ -22,6 +22,7 @@ H_BL_NOS = ("HBL-0001", "HBL-0002")
 CARGO_CHARGE_FLAGS = (
 	"has_transport_charges",
 	"has_shore_handling_charges",
+	"has_icd_handling_charge",
 	"has_stripping_charges",
 	"has_custom_verification_charges",
 	"has_removal_charges",
@@ -247,6 +248,7 @@ class TestContainerUnpacking(FrappeTestCase):
 		self.assertIsNone(container.unpack_date)
 		self.assertEqual(container.has_transport_charges, 1)
 		self.assertEqual(container.has_shore_handling_charges, 1)
+		self.assertEqual(container.has_icd_handling_charge, 1)
 		self.assertEqual([row.date for row in container.container_dates], [received_date])
 
 	def test_cancel_is_refused_while_an_hbl_record_has_a_linked_document(self):

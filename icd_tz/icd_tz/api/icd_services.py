@@ -123,6 +123,14 @@ SHORE_HANDLING = ContainerService(
 	RECEPTION,
 	show_criteria=True,
 )
+ICD_HANDLING = ContainerService(
+	"ICD Handling",
+	"ICD Handling",
+	"has_icd_handling_charge",
+	"ih_sales_invoice",
+	RECEPTION,
+	show_criteria=True,
+)
 STRIPPING = ContainerService("Stripping", "Stripping", "has_stripping_charges", "st_sales_invoice", BOOKING)
 CUSTOM_VERIFICATION = ContainerService(
 	"Custom Verification", "Verification", "has_custom_verification_charges", "cv_sales_invoice", BOOKING
@@ -147,6 +155,7 @@ GATE_PASS_CANCELLATION = ContainerService(
 SERVICES = (
 	TRANSPORT,
 	SHORE_HANDLING,
+	ICD_HANDLING,
 	STRIPPING,
 	CUSTOM_VERIFICATION,
 	REMOVAL,

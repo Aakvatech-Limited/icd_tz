@@ -183,7 +183,7 @@ class GatePass(Document):
 		return self.get_pending_services(BOOKING)
 
 	def validate_reception_charges(self):
-		"""Validate the transport and shore handling payments and return their linked invoices"""
+		"""Validate the transport, shore handling and ICD handling payments and return their linked invoices"""
 
 		return self.get_pending_services(RECEPTION, self.container_charges.cargo_type)
 
