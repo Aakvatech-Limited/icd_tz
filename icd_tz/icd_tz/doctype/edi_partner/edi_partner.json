@@ -23,15 +23,13 @@
   "test_connection",
   "sftp_section",
   "url",
-  "port",
   "directory",
   "column_break_sftp",
-  "ip_behind_dns",
   "source_ip",
-  "authentication_section",
+  "port",
+  "column_break_dqme",
   "user",
   "authentication_method",
-  "column_break_auth",
   "password",
   "authentication_key",
   "smtp_section",
@@ -160,22 +158,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "IP address behind the DNS, if applicable",
-   "fieldname": "ip_behind_dns",
-   "fieldtype": "Data",
-   "label": "IP Behind DNS"
-  },
-  {
    "description": "Source IP the connection is bound to",
    "fieldname": "source_ip",
    "fieldtype": "Data",
    "label": "Source IP"
-  },
-  {
-   "depends_on": "eval:doc.connection_type=='SFTP'",
-   "fieldname": "authentication_section",
-   "fieldtype": "Section Break",
-   "label": "Authentication"
   },
   {
    "fieldname": "user",
@@ -192,10 +178,6 @@
    "options": "Password\nKey"
   },
   {
-   "fieldname": "column_break_auth",
-   "fieldtype": "Column Break"
-  },
-  {
    "depends_on": "eval:doc.authentication_method=='Password'",
    "fieldname": "password",
    "fieldtype": "Password",
@@ -207,6 +189,7 @@
    "description": "Private key used for SSH/SFTP authentication",
    "fieldname": "authentication_key",
    "fieldtype": "Password",
+   "length": 5000,
    "label": "Authentication Key",
    "mandatory_depends_on": "eval:doc.authentication_method=='Key' && doc.connection_type=='SFTP'"
   },
@@ -249,12 +232,16 @@
    "fieldname": "edi_template_tab",
    "fieldtype": "Tab Break",
    "label": "EDI Template"
+  },
+  {
+   "fieldname": "column_break_dqme",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-04 12:30:00.000000",
+ "modified": "2026-10-04 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Partner",

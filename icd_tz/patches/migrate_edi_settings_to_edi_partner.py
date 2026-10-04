@@ -8,7 +8,6 @@ CHANNEL_FIELDS = {
 	"connection_type": "connection_type",
 	"url": "url",
 	"port": "port",
-	"ip_behind_dns": "ip_behind_dns",
 	"source_ip": "source_ip",
 	"user": "user",
 	"authentication_method": "authentication_method",

@@ -10,6 +10,7 @@ from frappe.model.naming import getseries
 from frappe.utils import cint, flt, get_link_to_form, now_datetime
 
 from icd_tz.icd_tz.api.edi.costco import attach_unpacking
+from icd_tz.icd_tz.api.edi.delivery import queue_delivery
 from icd_tz.icd_tz.api.icd_services import BOOKING, RECEPTION, get_scope_services
 from icd_tz.icd_tz.api.port_expenses import get_cargo_type
 from icd_tz.icd_tz.api.utils import validate_delivered_container, validate_delivered_containers
@@ -84,6 +85,8 @@ class ContainerUnpacking(Document):
 		attach_unpacking(self)
 
 	def on_submit(self):
+		queue_delivery(self)
+
 		if self.container_inspection:
 			self.split_inspected_container()
 			return

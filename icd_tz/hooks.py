@@ -211,6 +211,9 @@ scheduler_events = {
 		"40 */4 * * *": [
 			"icd_tz.icd_tz.doctype.icd_container.icd_container.update_port_storage_days",
 		],
+		"*/30 * * * *": [
+			"icd_tz.icd_tz.api.edi.delivery.retry_failed_deliveries",
+		],
 	},
 }
 
