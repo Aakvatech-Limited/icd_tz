@@ -8,6 +8,7 @@ from icd_tz.icd_tz.api.edi.codeco import CODECOGenerator
 from icd_tz.icd_tz.api.edi.movement import ContainerMovement
 from icd_tz.icd_tz.api.edi.templates import (
 	CODECO_VARIABLES,
+	COSTCO_VARIABLES,
 	get_default_template,
 	get_shipped_template,
 	validate_template,
@@ -37,9 +38,34 @@ class TestEDIPartnerTemplates(FrappeTestCase):
 
 	# --- seeding ----------------------------------------------------------
 
-	def test_a_new_partner_starts_with_the_shipped_codeco_template(self):
-		self.assertEqual([row.edi_type for row in self.partner.templates], ["CODECO"])
-		self.assertEqual(self.partner.templates[0].template, get_default_template("CODECO"))
+	def test_a_new_partner_starts_with_the_shipped_codeco_and_costco_templates(self):
+		self.assertEqual([row.edi_type for row in self.partner.templates], ["CODECO", "COSTCO"])
+		for row in self.partner.templates:
+			self.assertEqual(row.template, get_default_template(row.edi_type))
+
+	def test_the_shipped_costco_template_passes_its_own_rules(self):
+		validate_template("COSTCO", get_default_template("COSTCO"))
+
+	def test_the_shipped_templates_say_which_document_sends_them(self):
+		self.assertIn("Container Unpacking", get_default_template("COSTCO"))
+		self.assertIn("Gate Pass", get_default_template("CODECO"))
+
+	def test_a_costco_template_cannot_use_a_gate_value(self):
+		self.partner.get_template_row("COSTCO").template = get_default_template("COSTCO") + "{{ truck }}"
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self.partner.save()
+
+		self.assertIn("truck", str(caught.exception))
+
+	def test_a_costco_template_that_drops_the_consignment_is_refused(self):
+		row = self.partner.get_template_row("COSTCO")
+		row.template = get_default_template("COSTCO").replace("CNI+1+{{ m_bl_no }}'\n", "")
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self.partner.save()
+
+		self.assertIn("CNI", str(caught.exception))
 
 	def test_a_tuned_template_survives_a_re_save(self):
 		self.partner.templates[0].template = MINIMAL_TEMPLATE
@@ -59,8 +85,8 @@ class TestEDIPartnerTemplates(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 
-		self.assertEqual(len(partner.templates), 1)
-		self.assertEqual(partner.templates[0].template, MINIMAL_TEMPLATE)
+		self.assertEqual(partner.get_template_row("CODECO").template, MINIMAL_TEMPLATE)
+		self.assertEqual(partner.get_template_row("COSTCO").template, get_default_template("COSTCO"))
 
 	def test_the_reset_button_reads_the_template_shipped_with_the_app(self):
 		self.assertEqual(get_shipped_template("CODECO"), get_default_template("CODECO"))
@@ -202,10 +228,19 @@ class TestEDIPartnerTemplates(FrappeTestCase):
 
 	def test_the_help_on_the_form_lists_every_value_the_template_may_use(self):
 		# the help is the only place a user configuring a partner reads the vocabulary
-		help_text = frappe.get_meta("EDI Partner Template").get_field("template_help").options
+		meta = frappe.get_meta("EDI Partner Template")
 
-		for name in CODECO_VARIABLES:
-			self.assertIn(f"{{{{ {name} }}}}", help_text, name)
+		for fieldname, variables in (("codeco_help", CODECO_VARIABLES), ("costco_help", COSTCO_VARIABLES)):
+			help_text = meta.get_field(fieldname).options
+			for name in variables:
+				self.assertIn(f"{{{{ {name} }}}}", help_text, (fieldname, name))
+
+	def test_each_help_shows_only_with_its_own_type(self):
+		meta = frappe.get_meta("EDI Partner Template")
+
+		self.assertEqual(meta.get_field("codeco_help").depends_on, "eval:doc.edi_type=='CODECO'")
+		self.assertEqual(meta.get_field("costco_help").depends_on, "eval:doc.edi_type=='COSTCO'")
+		self.assertFalse(meta.get_field("template_help").depends_on)
 
 	def test_every_documented_value_is_handed_to_the_template(self):
 		generator = CODECOGenerator(ContainerMovement(**GATE_IN_DEFAULTS), self.partner)
