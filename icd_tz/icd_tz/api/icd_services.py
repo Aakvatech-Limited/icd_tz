@@ -124,12 +124,7 @@ SHORE_HANDLING = ContainerService(
 	show_criteria=True,
 )
 ICD_HANDLING = ContainerService(
-	"ICD Handling",
-	"ICD Handling",
-	"has_icd_handling_charge",
-	"ih_sales_invoice",
-	RECEPTION,
-	show_criteria=True,
+	"ICD Handling", "ICD Handling", "has_icd_handling_charge", "ih_sales_invoice", RECEPTION
 )
 STRIPPING = ContainerService("Stripping", "Stripping", "has_stripping_charges", "st_sales_invoice", BOOKING)
 CUSTOM_VERIFICATION = ContainerService(
