@@ -1,5 +1,7 @@
 {#-
   CODECO D95B gate-in / gate-out body, UNH through CNT.
+  Sent when a Container Reception (gate-in) or a Gate Pass (gate-out) is submitted.
+  This is not the stripping report. Unpacking goes in the COSTCO template.
 
   UNB, UNT and UNZ are added around this body, so do not write them here.
   Name values on their own, as {{ container_no }}, never as {{ doc.container_no }}.
