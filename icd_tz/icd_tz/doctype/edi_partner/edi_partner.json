@@ -89,7 +89,7 @@
    "fieldtype": "Data",
    "ignore_xss_filter": 1,
    "label": "File Name Format",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.enable_edi==1"
   },
   {
    "fieldname": "column_break_file",
@@ -239,7 +239,7 @@
    "label": "Message Templates"
   },
   {
-   "description": "The body of each message this partner is sent. A CODECO template is added when the partner is created; open a row to change it.",
+   "description": "The body of each message this partner is sent. CODECO and COSTCO templates are added when the partner is created; open a row to change it.",
    "fieldname": "templates",
    "fieldtype": "Table",
    "label": "Templates",
@@ -254,7 +254,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-24 19:32:08.637162",
+ "modified": "2026-10-04 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Partner",
