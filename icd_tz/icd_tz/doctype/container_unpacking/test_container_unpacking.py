@@ -185,6 +185,34 @@ class TestContainerUnpacking(FrappeTestCase):
 
 		self.assertRaises(frappe.ValidationError, unpacking.submit)
 
+	def test_a_draft_is_saved_with_no_clerk(self):
+		unpacking = frappe.new_doc("Container Unpacking")
+		unpacking.update({"container_id": receive_lcl_box(), "seal_condition": "Intact"})
+		unpacking.set_hbls()
+
+		unpacking.insert(ignore_permissions=True)
+
+		self.assertFalse(unpacking.clerk)
+		self.assertEqual(unpacking.docstatus, 0)
+
+	def test_submit_needs_the_clerk(self):
+		unpacking = make_unpacking(receive_lcl_box())
+		unpacking.flags.ignore_mandatory = False
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Clerk"):
+			unpacking.submit()
+
+	def test_submit_needs_the_cargo_condition_of_every_row(self):
+		unpacking = make_unpacking(receive_lcl_box())
+		unpacking.flags.ignore_mandatory = False
+		# the clerk is an Employee, which this bench cannot make in a test
+		unpacking.clerk = "EMP-TEST"
+		unpacking.flags.ignore_links = True
+		unpacking.hbls[1].cargo_condition = None
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Condition in HBLs row 2"):
+			unpacking.submit()
+
 	def test_booking_an_lcl_box_before_unpacking_is_refused(self):
 		booking = frappe.get_doc({"doctype": "In Yard Container Booking", "container_id": receive_lcl_box()})
 
