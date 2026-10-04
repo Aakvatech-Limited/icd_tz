@@ -69,6 +69,7 @@ class ContainerUnpacking(Document):
 			row.set_package_difference()
 
 	def before_submit(self):
+		self.validate_sign_off()
 		self.validate_gross_volumes()
 		# stripping ends as the unpacking is submitted, and its COSTCO reports this moment
 		submitted = now_datetime()
@@ -247,6 +248,25 @@ class ContainerUnpacking(Document):
 					frappe.bold(self.container_no), get_link_to_form("Container Unpacking", duplicate)
 				),
 				title=_("Duplicate Unpacking"),
+			)
+
+	def validate_sign_off(self):
+		"""A draft is saved while the count goes on, its clerk and cargo conditions are needed to submit"""
+
+		if self.flags.ignore_mandatory:
+			return
+
+		missing = []
+		# the inspection's official signs off the unpacking it makes
+		if not self.clerk and not self.container_inspection:
+			missing.append(_("Clerk"))
+		missing += [
+			_("Condition in HBLs row {0}").format(row.idx) for row in self.hbls if not row.cargo_condition
+		]
+		if missing:
+			frappe.throw(
+				_("Set these fields to submit: {0}").format(frappe.bold(", ".join(missing))),
+				title=_("Missing Fields"),
 			)
 
 	def validate_gross_volumes(self):
