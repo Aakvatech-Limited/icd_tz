@@ -91,11 +91,11 @@ class TestICDHandlingBilling(FrappeTestCase):
 			service_order.add_container_services(frappe.get_cached_doc("ICD TZ Settings"))
 		return service_order.services
 
-	def test_an_fcl_order_charges_one_icd_handling_with_its_criteria(self):
+	def test_an_fcl_order_charges_one_icd_handling_without_criteria_remarks(self):
 		services = self.get_order_services(self.charged_container())
 
 		self.assertEqual([(row.service, row.qty) for row in services], [("_T ICD Handling", 1)])
-		self.assertIn("Size: <b>22G1</b>", services[0].remarks)
+		self.assertFalse(services[0].remarks)
 
 	def test_an_lcl_order_charges_icd_handling_per_cbm(self):
 		loose_settings = services_settings(loose_rows=[criteria("ICD Handling", "_T Loose ICD Handling")])
