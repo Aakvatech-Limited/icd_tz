@@ -9,6 +9,7 @@ from frappe.utils import get_link_to_form, getdate, nowdate, time_diff_in_hours
 from frappe.utils.background_jobs import enqueue
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
+from icd_tz.icd_tz.api.edi.delivery import queue_delivery
 from icd_tz.icd_tz.api.transport_charges import validate_reception_transport_unpaid
 from icd_tz.icd_tz.api.utils import validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
@@ -81,6 +82,7 @@ class ContainerReception(Document):
 		self.update_container_storage_days()
 		self.update_cmo_status("Received")
 		self.set_icd_container_status(RECEIVED_STATUS, self.posting_date, self.transporter)
+		queue_delivery(self)
 
 	def set_icd_container_status(self, status, received_date=None, transporter=None):
 		"""Whether the port storage job still counts this container, and who is paid for bringing it
