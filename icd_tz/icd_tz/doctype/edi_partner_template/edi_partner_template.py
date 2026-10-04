@@ -15,7 +15,7 @@ class EDIPartnerTemplate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		edi_type: DF.Literal["CODECO", "COREOR", "COARRI", "COPARN", "COPRAR"]
+		edi_type: DF.Literal["CODECO", "COSTCO", "COREOR", "COARRI", "COPARN", "COPRAR"]
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
