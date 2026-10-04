@@ -4,7 +4,11 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from icd_tz.icd_tz.doctype.edi_partner.edi_partner import DEFAULT_FILE_NAME_FORMAT, get_partner
+from icd_tz.icd_tz.doctype.edi_partner.edi_partner import (
+	DEFAULT_FILE_NAME_FORMAT,
+	get_default_file_name_format,
+	get_partner,
+)
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -60,6 +64,20 @@ class TestEDIPartner(FrappeTestCase):
 	def test_new_partner_gets_the_default_file_name_format(self):
 		self.assertEqual(self.partner.file_name_format, DEFAULT_FILE_NAME_FORMAT)
 		self.assertEqual(self.partner.file_extension, "edi")
+
+	def test_the_form_offers_the_default_file_name_format(self):
+		# the form fills it in when EDI is ticked, and asks for it only then
+		field = frappe.get_meta("EDI Partner").get_field("file_name_format")
+
+		self.assertEqual(get_default_file_name_format(), DEFAULT_FILE_NAME_FORMAT)
+		self.assertFalse(field.reqd)
+		self.assertEqual(field.mandatory_depends_on, "eval:doc.enable_edi==1")
+
+	def test_a_cleared_file_name_format_falls_back_to_the_default(self):
+		self.partner.file_name_format = "  "
+		self.partner.save()
+
+		self.assertEqual(self.partner.file_name_format, DEFAULT_FILE_NAME_FORMAT)
 
 	def test_own_file_name_format_is_kept(self):
 		partner = make_partner("TOW", file_name_format="<receiver ID>_<message type>_<control #>")
