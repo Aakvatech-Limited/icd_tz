@@ -11,16 +11,16 @@ from jinja2 import Environment, TemplateSyntaxError, meta
 
 from icd_tz.icd_tz.api.edi.syntax import ELEMENT_SEPARATOR, SEGMENT_TERMINATOR, split_segments
 
-EDI_TYPES = ("CODECO", "COREOR", "COARRI", "COPARN", "COPRAR")
+EDI_TYPES = ("CODECO", "COSTCO", "COREOR", "COARRI", "COPARN", "COPRAR")
 
-# The type every new partner starts with, the only one the ICD sends today.
-SEEDED_EDI_TYPE = "CODECO"
+# The types every partner starts with, the ones the ICD sends today.
+SEEDED_EDI_TYPES = ("CODECO", "COSTCO")
 
 TEMPLATE_DIRECTORY = ("icd_tz", "templates", "edi")
 
-# The values a CODECO template may name. Anything else is a typo or a reach for
+# The values every template may name. Anything else is a typo or a reach for
 # something the renderer does not hand out.
-CODECO_VARIABLES = (
+COMMON_VARIABLES = (
 	"reference",
 	"message_code",
 	"message_function",
@@ -31,19 +31,27 @@ CODECO_VARIABLES = (
 	"size",
 	"equipment_status",
 	"full_empty_indicator",
-	"is_empty",
-	"is_gate_in",
 	"m_bl_no",
 	"event_datetime",
-	"weight",
 	"seal_no",
-	"transporter",
-	"transporter_code",
-	"truck",
 	"voyage_no",
 	"vessel_name",
 	"call_sign",
 )
+
+# a gate movement also knows its load, its weight and its haulier
+CODECO_VARIABLES = (
+	*COMMON_VARIABLES,
+	"is_empty",
+	"is_gate_in",
+	"weight",
+	"transporter",
+	"transporter_code",
+	"truck",
+)
+
+# a stripped box is always empty and never at the gate
+COSTCO_VARIABLES = COMMON_VARIABLES
 
 # The envelope is built in code, so a template that writes it would double it.
 ENVELOPE_SEGMENTS = ("UNB", "UNT", "UNZ")
@@ -54,7 +62,12 @@ RULES = {
 		"variables": CODECO_VARIABLES,
 		"mandatory_segments": ("UNH", "BGM", "NAD", "EQD", "CNT"),
 		"mandatory_variables": ("reference", "container_no"),
-	}
+	},
+	"COSTCO": {
+		"variables": COSTCO_VARIABLES,
+		"mandatory_segments": ("UNH", "BGM", "TDT", "NAD", "EQD", "CNI", "CNT"),
+		"mandatory_variables": ("reference", "container_no"),
+	},
 }
 
 
