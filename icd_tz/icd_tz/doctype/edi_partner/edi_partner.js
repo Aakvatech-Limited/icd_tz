@@ -1,17 +1,25 @@
 // Copyright (c) 2026, elius mgani and contributors
 // For license information, please see license.txt
 
-// what a gate movement is previewed from, and the method that builds its CODECO
+// what a container event is previewed from, its shipping line field, and the method that builds its message
 const EDI_PREVIEWS = {
   "Gate In": {
     doctype: "Container Reception",
     fieldname: "container_reception",
+    code_field: "shipping_line_code",
     method: "icd_tz.icd_tz.api.edi.codeco.generate_codeco_gate_in",
   },
   "Gate Out": {
     doctype: "Gate Pass",
     fieldname: "gate_pass",
+    code_field: "shipping_line_code",
     method: "icd_tz.icd_tz.api.edi.codeco.generate_codeco_gate_out",
+  },
+  Unpacking: {
+    doctype: "Container Unpacking",
+    fieldname: "container_unpacking",
+    code_field: "sline_code",
+    method: "icd_tz.icd_tz.api.edi.costco.generate_costco_unpacking",
   },
 };
 
@@ -20,6 +28,17 @@ frappe.ui.form.on("EDI Partner", {
     if (frm.is_new()) return;
 
     frm.add_custom_button(__("Preview EDI"), () => pick_edi_preview(frm));
+  },
+
+  enable_edi(frm) {
+    // the default is shown when EDI is ticked, so it can be changed to the partner's convention
+    if (!frm.doc.enable_edi || frm.doc.file_name_format) return;
+
+    frappe.call({
+      method:
+        "icd_tz.icd_tz.doctype.edi_partner.edi_partner.get_default_file_name_format",
+      callback: (r) => frm.set_value("file_name_format", r.message),
+    });
   },
 
   test_connection(frm) {
@@ -98,7 +117,7 @@ function pick_edi_preview(frm) {
       mandatory_depends_on: `eval: doc.edi_type == "${edi_type}"`,
       // only the movements this partner's shipping line is sent messages for
       get_query: () => ({
-        filters: { shipping_line_code: frm.doc.name, docstatus: ["!=", 2] },
+        filters: { [preview.code_field]: frm.doc.name, docstatus: ["!=", 2] },
       }),
     })
   );
@@ -132,11 +151,11 @@ function show_edi_preview(frm, edi_type, values) {
     method,
     args: { [fieldname]: values[fieldname], edi_partner: frm.doc.name },
     freeze: true,
-    freeze_message: __("Building the CODECO message..."),
+    freeze_message: __("Building the EDI message..."),
     callback(r) {
       if (!r.message) {
         frappe.msgprint({
-          title: __("No CODECO for this record"),
+          title: __("No EDI message for this record"),
           indicator: "orange",
           message: __(
             "No message is owed. Either the unit is not a container, or it is cargo on a house bill."
@@ -145,10 +164,14 @@ function show_edi_preview(frm, edi_type, values) {
         return;
       }
 
-      const { edi_content: content, filename } = r.message;
+      const {
+        edi_type: message_type,
+        edi_content: content,
+        filename,
+      } = r.message;
 
       const dialog = new frappe.ui.Dialog({
-        title: __("CODECO {0}", [__(edi_type)]),
+        title: __("{0} {1}", [message_type, __(edi_type)]),
         size: "large",
         fields: [{ fieldtype: "HTML", fieldname: "edi" }],
         primary_action_label: __("Download"),
