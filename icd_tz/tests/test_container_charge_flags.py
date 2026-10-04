@@ -24,12 +24,12 @@ def new_container(**values):
 
 
 class TestCreationAndInspectionFlags(FrappeTestCase):
-	"""Reception charges are set on creation, booking charges on booking submit"""
+	"""Reception charges are set on save, booking charges on booking submit"""
 
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_a_received_container_has_transport_and_shore_handling_charges(self):
+	def test_a_received_container_has_every_reception_charge(self):
 		make_reception_containers()
 		container = new_container(
 			container_no="RECU1234567",
@@ -37,10 +37,11 @@ class TestCreationAndInspectionFlags(FrappeTestCase):
 			container_dates=[{"date": frappe.utils.nowdate()}],
 		)
 
-		container.run_method("before_insert")
+		container.run_method("before_save")
 
 		self.assertEqual(container.has_transport_charges, 1)
 		self.assertEqual(container.has_shore_handling_charges, 1)
+		self.assertEqual(container.has_icd_handling_charge, 1)
 
 	def test_a_submitted_booking_charges_stripping_and_verification(self):
 		mbl, _ = make_reception_containers()
