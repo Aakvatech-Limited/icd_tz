@@ -24,7 +24,6 @@ OLD_SETTINGS = {
 	"password": "s3cret",
 	"authentication_key": "-----BEGIN KEY-----",
 	"directory": "/in",
-	"ip_behind_dns": "10.0.0.9",
 	"source_ip": "10.0.0.1",
 	"receiver_email": "edi@example.com",
 	"receiver_cc_email": "ops@example.com",
@@ -56,7 +55,6 @@ class TestEDISettingsMigration(FrappeTestCase):
 		self.assertEqual(partner.port, 22)
 		self.assertEqual(partner.user, "icduser")
 		self.assertEqual(partner.directory, "/in")
-		self.assertEqual(partner.ip_behind_dns, "10.0.0.9")
 		self.assertEqual(partner.source_ip, "10.0.0.1")
 		self.assertEqual(partner.receiver_email, "edi@example.com")
 		self.assertEqual(partner.receiver_cc_email, "ops@example.com")
