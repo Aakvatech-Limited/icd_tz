@@ -18,6 +18,7 @@ from frappe.utils import (
 )
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_out
+from icd_tz.icd_tz.api.edi.delivery import queue_delivery
 from icd_tz.icd_tz.api.icd_services import (
 	BOOKING,
 	CONTAINER,
@@ -43,6 +44,8 @@ class GatePass(Document):
 
 	def on_submit(self):
 		self.update_container_status("At Gate Confirmation")
+		if not self.meta.has_field("workflow_state"):
+			queue_delivery(self)
 
 	def on_update_after_submit(self):
 		self.validate_pending_payments()
@@ -50,6 +53,7 @@ class GatePass(Document):
 		if self.get("workflow_state") == "Gate Out Confirmed":
 			self.set_gate_out_date()
 			self.update_container_status("Delivered")
+			queue_delivery(self)
 
 	def on_cancel(self):
 		self.update_container_status("At Gatepass")
