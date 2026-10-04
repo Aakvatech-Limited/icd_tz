@@ -333,7 +333,6 @@ class ContainerUnpacking(Document):
 
 		container = frappe.get_doc("Container", self.container_id)
 		container.update({"is_empty_container": 0, "unpack_date": None})
-		container.set_reception_charge_flags()
 		container.reset_container_dates()
 		container.update_container_stay()
 
