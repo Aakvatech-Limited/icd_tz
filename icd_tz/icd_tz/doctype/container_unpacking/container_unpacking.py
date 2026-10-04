@@ -7,8 +7,9 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import getseries
-from frappe.utils import cint, flt, get_link_to_form, nowdate
+from frappe.utils import cint, flt, get_link_to_form, now_datetime
 
+from icd_tz.icd_tz.api.edi.costco import attach_unpacking
 from icd_tz.icd_tz.api.icd_services import BOOKING, RECEPTION, get_scope_services
 from icd_tz.icd_tz.api.port_expenses import get_cargo_type
 from icd_tz.icd_tz.api.utils import validate_delivered_container, validate_delivered_containers
@@ -68,7 +69,10 @@ class ContainerUnpacking(Document):
 
 	def before_submit(self):
 		self.validate_gross_volumes()
-		self.posting_date = nowdate()
+		# stripping ends as the unpacking is submitted, and its COSTCO reports this moment
+		submitted = now_datetime()
+		self.posting_date = submitted.date()
+		self.end_time = submitted.strftime("%H:%M:%S")
 		# the inspected box keeps its booking and inspection, it is the cargo record
 		if not self.container_inspection:
 			validate_no_linked_records([self.container_id], action="unpacked")
@@ -76,6 +80,8 @@ class ContainerUnpacking(Document):
 		for row in self.hbls:
 			if row.is_internal_hbl and not row.h_bl_no:
 				row.h_bl_no = INTERNAL_HBL_PREFIX + getseries(INTERNAL_HBL_PREFIX, 4)
+
+		attach_unpacking(self)
 
 	def on_submit(self):
 		if self.container_inspection:
