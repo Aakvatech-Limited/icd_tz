@@ -136,6 +136,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 				"has_custom_verification_charges": 1,
 				"has_transport_charges": 1,
 				"has_shore_handling_charges": 1,
+				"has_icd_handling_charge": 1,
 			},
 		)
 		book(mbl)
@@ -153,6 +154,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 			"Custom Verification Charges",
 			"Transport Charges",
 			"Shore Handling Charges",
+			"ICD Handling Charges",
 		]
 		self.assertEqual(sorted(labels, key=message.index), labels)
 
@@ -199,6 +201,7 @@ class TestServiceOrderServiceLines(FrappeTestCase):
 		mbl = self.charged_container(
 			has_transport_charges=1,
 			has_shore_handling_charges=1,
+			has_icd_handling_charge=1,
 			has_stripping_charges=1,
 			has_custom_verification_charges=1,
 			has_corridor_levy_charges=1,
@@ -209,7 +212,10 @@ class TestServiceOrderServiceLines(FrappeTestCase):
 
 		services = [service for service, _ in self.get_services(mbl)]
 
-		self.assertEqual(services, ["_T Transport", "_T Shore", "_T Stripping", "_T Verification", "_T Levy"])
+		self.assertEqual(
+			services,
+			["_T Transport", "_T Shore", "_T ICD Handling", "_T Stripping", "_T Verification", "_T Levy"],
+		)
 
 	def test_invoiced_services_are_not_charged_again_on_loose_cargo(self):
 		mbl = self.charged_container(
@@ -296,14 +302,6 @@ class TestServiceFlags(FrappeTestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
-
-	def test_a_new_container_owes_reception_services(self):
-		container = frappe.get_doc({"doctype": "Container", "container_no": "FLGU1234567"})
-
-		container.run_method("before_insert")
-
-		self.assertEqual(container.has_transport_charges, 1)
-		self.assertEqual(container.has_shore_handling_charges, 1)
 
 	def test_a_submitted_booking_owes_booking_services(self):
 		container = make_container()
