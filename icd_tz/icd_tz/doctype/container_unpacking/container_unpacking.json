@@ -11,40 +11,41 @@
   "container_id",
   "container_no",
   "size",
+  "empty_container_id",
   "column_break_bills",
   "m_bl_no",
   "manifest",
   "container_reception",
   "container_inspection",
-  "empty_container_id",
   "column_break_parties",
   "consolidator",
   "sline",
   "sline_code",
   "column_break_date",
   "posting_date",
-  "edi_file",
-  "edi_sent",
-  "receiver_email",
-  "receiver_cc_email",
   "company",
   "unpacking_section",
   "unpacking_location",
-  "column_break_seal",
   "seal_no",
   "seal_condition",
-  "column_break_times",
+  "column_break_seal",
   "start_time",
   "end_time",
+  "naming_series",
+  "column_break_times",
+  "clerk",
+  "consolidator_representative",
+  "amended_from",
+  "column_break_cuxw",
+  "remarks",
   "hbls_section",
   "hbls",
-  "sign_off_section",
-  "clerk",
-  "naming_series",
-  "column_break_sign_off",
-  "consolidator_representative",
-  "remarks",
-  "amended_from"
+  "edi_tab",
+  "edi_file",
+  "receiver_email",
+  "column_break_thzt",
+  "edi_sent",
+  "receiver_cc_email"
  ],
  "fields": [
   {
@@ -252,20 +253,10 @@
    "reqd": 1
   },
   {
-   "fieldname": "sign_off_section",
-   "fieldtype": "Section Break",
-   "label": "Sign Off"
-  },
-  {
    "fieldname": "clerk",
    "fieldtype": "Link",
    "label": "Clerk",
-   "options": "Employee",
-   "mandatory_depends_on": "eval:!doc.container_inspection"
-  },
-  {
-   "fieldname": "column_break_sign_off",
-   "fieldtype": "Column Break"
+   "options": "Employee"
   },
   {
    "fieldname": "consolidator_representative",
@@ -298,12 +289,25 @@
    "fieldtype": "Data",
    "label": "Shipping Line Code",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cuxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "edi_tab",
+   "fieldtype": "Tab Break",
+   "label": "EDI"
+  },
+  {
+   "fieldname": "column_break_thzt",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-04 15:00:00.000000",
+ "modified": "2026-10-04 19:07:43.882591",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Unpacking",
