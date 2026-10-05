@@ -1,6 +1,8 @@
 # Copyright (c) 2026, elius mgani and Contributors
 # See license.txt
 
+from unittest.mock import MagicMock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import getdate, nowdate
@@ -12,11 +14,14 @@ from icd_tz.icd_tz.api.accounting_dimensions import (
 	GUARDED_DOCTYPES,
 	add_accounting_dimension,
 	build_dimension_name,
+	ensure_dimension_field,
 	get_container_dimensions,
 	get_dimension_names,
+	get_or_create_dimension,
 	get_referencing_orders,
 	get_referencing_vouchers,
 )
+from icd_tz.patches.index_icd_dimension_fields import WIP_BALANCE_INDEX, get_guarded_fields
 
 CONTAINER_NO = "MSKU1234567"
 LOOSE_CARGO_NO = "LOOSE0000001"
@@ -304,6 +309,76 @@ class TestAccountingDimensions(FrappeTestCase):
 
 		self.assertEqual(created_for, ["Sales Order Item"])
 
+	def test_a_new_dimension_leaves_no_field_job_queued(self):
+		"""erpnext's queued field job would race the patch on the same Custom Fields"""
+
+		calls = []
+		dimension = MagicMock()
+		dimension.insert.side_effect = lambda: calls.append("insert") or frappe.db.after_commit.add(
+			lambda: calls.append("field job")
+		)
+
+		with (
+			patch.object(frappe.db, "get_value", return_value=None),
+			patch.object(frappe.db, "commit", side_effect=lambda: calls.append("commit")),
+			patch.object(frappe, "new_doc", return_value=dimension),
+		):
+			result, created = get_or_create_dimension("ICD Master BL")
+
+		frappe.db.after_commit.run()
+		self.assertEqual(calls, ["commit", "insert"])
+		self.assertIs(result, dimension)
+		self.assertTrue(created)
+
+	def test_a_missing_custom_field_is_created_for_that_doctype_only(self):
+		dimension = frappe._dict(fieldname="icd_master_bl")
+
+		with (
+			patch.object(frappe.db, "exists", return_value=None),
+			patch(
+				"erpnext.accounts.doctype.accounting_dimension.accounting_dimension"
+				".make_dimension_in_accounting_doctypes"
+			) as make,
+		):
+			self.assertTrue(ensure_dimension_field(dimension, "POS Invoice Item"))
+
+		make.assert_called_once_with(doc=dimension, doclist=["POS Invoice Item"])
+
+	def test_a_custom_field_without_its_column_gets_the_column(self):
+		dimension = frappe._dict(fieldname="icd_master_bl")
+
+		with (
+			patch.object(frappe.db, "exists", return_value="POS Invoice Item-icd_master_bl"),
+			patch.object(frappe.db, "has_column", return_value=False),
+			patch.object(frappe.db, "updatedb") as updatedb,
+		):
+			self.assertTrue(ensure_dimension_field(dimension, "POS Invoice Item"))
+
+		updatedb.assert_called_once_with("POS Invoice Item")
+
+	def test_a_complete_field_is_left_alone(self):
+		dimension = frappe._dict(fieldname="icd_master_bl")
+
+		with (
+			patch.object(frappe.db, "exists", return_value="POS Invoice Item-icd_master_bl"),
+			patch.object(frappe.db, "has_column", return_value=True),
+			patch.object(frappe.db, "updatedb") as updatedb,
+			patch(
+				"erpnext.accounts.doctype.accounting_dimension.accounting_dimension"
+				".make_dimension_in_accounting_doctypes"
+			) as make,
+		):
+			self.assertFalse(ensure_dimension_field(dimension, "POS Invoice Item"))
+
+		updatedb.assert_not_called()
+		make.assert_not_called()
+
+	def test_the_manifest_dimension_is_registered(self):
+		self.assertEqual(
+			frappe.db.get_value("Accounting Dimension", {"document_type": "Manifest"}, "fieldname"),
+			"manifest",
+		)
+
 	def test_both_dimensions_are_registered(self):
 		for doctype, fieldname in DIMENSIONS.items():
 			dimension = frappe.db.get_value(
@@ -323,10 +398,26 @@ class TestAccountingDimensions(FrappeTestCase):
 
 		for doctype in GUARDED_DOCTYPES:
 			table = f"tab{doctype}"
-			for fieldname in DIMENSIONS.values():
+			for fieldname in get_guarded_fields(doctype):
 				self.assertTrue(
 					frappe.db.has_index(table, f"{fieldname}_index"), f"{doctype}.{fieldname} is unindexed"
 				)
+
+	def test_the_dimension_indexes_survive_a_schema_sync(self):
+		"""Schema sync drops an index whose field does not declare search_index"""
+
+		for doctype in GUARDED_DOCTYPES:
+			for fieldname in get_guarded_fields(doctype):
+				self.assertEqual(
+					frappe.db.get_value(
+						"Custom Field", {"dt": doctype, "fieldname": fieldname}, "search_index"
+					),
+					1,
+					f"{doctype}.{fieldname} does not declare search_index",
+				)
+
+	def test_the_wip_balance_lookup_is_indexed(self):
+		self.assertTrue(frappe.db.has_index("tabGL Entry", frappe.db.get_index_name(WIP_BALANCE_INDEX)))
 
 	def test_the_dimension_fields_sit_in_the_accounting_dimensions_section(self):
 		"""erpnext anchors one of them to a field some doctypes lack, which scattered them"""
