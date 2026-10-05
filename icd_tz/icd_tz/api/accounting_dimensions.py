@@ -336,47 +336,67 @@ def revoke_dimension_records(manifest: str):
 
 
 def add_accounting_dimension(document_type: str):
-	"""Ensure one dimension and all of its Custom Fields exist.
+	"""Ensure one dimension and a working field for it on every dimension doctype
 
-	Accounting Dimension creation is not atomic because adding a dimension alters several
-	tables. A failed migrate can therefore leave the Accounting Dimension itself and only
-	some of its Custom Fields behind. Re-running this helper must repair that partial state
-	instead of returning merely because the parent Accounting Dimension already exists.
+	Safe to re-run after a migrate that stopped halfway, each doctype is checked on its own.
 	"""
 
 	from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
 		get_doctypes_with_dimensions,
-		make_dimension_in_accounting_doctypes,
 	)
 
-	dimension_name = frappe.db.get_value("Accounting Dimension", {"document_type": document_type}, "name")
-
-	if dimension_name:
-		dimension = frappe.get_doc("Accounting Dimension", dimension_name)
-		created = False
-	else:
-		dimension = frappe.new_doc("Accounting Dimension")
-		dimension.document_type = document_type
-		dimension.flags.ignore_permissions = True
-		dimension.insert()
-		created = True
-
-	missing_doctypes = [
-		doctype
-		for doctype in get_doctypes_with_dimensions()
-		if not frappe.db.exists(
-			"Custom Field",
-			{"dt": doctype, "fieldname": dimension.fieldname},
-		)
+	dimension, created = get_or_create_dimension(document_type)
+	fixed = [
+		doctype for doctype in get_doctypes_with_dimensions() if ensure_dimension_field(dimension, doctype)
 	]
-
-	# on_update only queues field creation. Create only what is missing so this stays safe
-	# after a previous migrate stopped halfway through the schema changes.
-	if missing_doctypes:
-		make_dimension_in_accounting_doctypes(doc=dimension, doclist=missing_doctypes)
 
 	action = "Added" if created else "Reconciled"
 	print(
 		f"{action} the {document_type} accounting dimension, field: {dimension.fieldname}; "
-		f"created {len(missing_doctypes)} missing field(s)"
+		f"created or repaired {len(fixed)} field(s)"
 	)
+
+
+def get_or_create_dimension(document_type: str) -> tuple:
+	"""The Accounting Dimension for document_type, and whether it was created now
+
+	Inserting one makes erpnext queue a job that creates the same Custom Fields. Once a
+	DDL commit releases it, a worker races ensure_dimension_field and one side hits a
+	duplicate Custom Field. The job is dropped, so this code is the only writer.
+	"""
+
+	dimension_name = frappe.db.get_value("Accounting Dimension", {"document_type": document_type}, "name")
+	if dimension_name:
+		return frappe.get_doc("Accounting Dimension", dimension_name), False
+
+	# Commit first so the reset drops only what this insert queued
+	frappe.db.commit()
+	dimension = frappe.new_doc("Accounting Dimension")
+	dimension.document_type = document_type
+	dimension.flags.ignore_permissions = True
+	dimension.insert()
+	frappe.db.after_commit.reset()
+
+	return dimension, True
+
+
+def ensure_dimension_field(dimension, doctype: str) -> bool:
+	"""Create the dimension field on doctype, or the column a stopped run left out
+
+	Returns whether anything was written.
+	"""
+
+	from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
+		make_dimension_in_accounting_doctypes,
+	)
+
+	if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": dimension.fieldname}):
+		make_dimension_in_accounting_doctypes(doc=dimension, doclist=[doctype])
+		return True
+
+	meta = frappe.get_meta(doctype)
+	if meta.issingle or meta.is_virtual or frappe.db.has_column(doctype, dimension.fieldname):
+		return False
+
+	frappe.db.updatedb(doctype)
+	return True
