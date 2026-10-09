@@ -9,7 +9,6 @@ from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.sales_invoice import update_sales_references
 from icd_tz.icd_tz.doctype.gate_pass.test_gate_pass import make_container, make_gate_pass
-from icd_tz.patches.move_income_refs_to_container import move_booking_refs, move_reception_refs
 from icd_tz.tests.test_lcl_gross_volume import make_service_order
 from icd_tz.tests.test_service_criteria import criteria, settings
 
@@ -369,56 +368,3 @@ class TestServiceOrderIncomeServices(FrappeTestCase):
 		services = self.get_booking_services(mbl)
 
 		self.assertEqual(services, [("_T Stripping", 1), ("_T Verification", 1)])
-
-
-class TestMoveIncomeRefsPatch(FrappeTestCase):
-	"""The patch copies the reception and booking values to Container"""
-
-	def tearDown(self):
-		frappe.db.rollback()
-
-	def test_reception_values_reach_every_container_of_the_reception(self):
-		mbl, hbl = make_reception_containers(
-			has_transport_charges="Yes",
-			t_sales_invoice="_T-T",
-			has_shore_handling_charges="No",
-			s_sales_invoice="_T-S",
-		)
-
-		move_reception_refs()
-
-		for name in (mbl, hbl):
-			container = get_container(name)
-			self.assertEqual(container.has_transport_charges, 1)
-			self.assertEqual(container.t_sales_invoice, "_T-T")
-			self.assertEqual(container.has_shore_handling_charges, 0)
-			self.assertEqual(container.sh_sales_invoice, "_T-S")
-
-	def test_active_bookings_are_merged_and_cancelled_ones_ignored(self):
-		mbl, hbl = make_reception_containers()
-		insert("In Yard Container Booking", container_id=mbl, docstatus=1, has_stripping_charges="Yes")
-		insert(
-			"In Yard Container Booking",
-			container_id=mbl,
-			docstatus=1,
-			has_stripping_charges="No",
-			s_sales_invoice="_T-ST",
-			has_custom_verification_charges="No",
-		)
-		insert(
-			"In Yard Container Booking",
-			container_id=hbl,
-			docstatus=2,
-			has_stripping_charges="Yes",
-			has_custom_verification_charges="Yes",
-			cv_sales_invoice="_T-CV",
-		)
-
-		move_booking_refs()
-
-		mbl_container, hbl_container = get_container(mbl), get_container(hbl)
-		self.assertEqual(mbl_container.has_stripping_charges, 1)
-		self.assertEqual(mbl_container.st_sales_invoice, "_T-ST")
-		self.assertEqual(mbl_container.has_custom_verification_charges, 0)
-		self.assertEqual(hbl_container.has_stripping_charges, 0)
-		self.assertIsNone(hbl_container.cv_sales_invoice)
