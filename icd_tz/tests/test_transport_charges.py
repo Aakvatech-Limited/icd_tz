@@ -203,12 +203,14 @@ class TestGetTransportServices(TransportTestCase):
 			line["icd_master_bl"], frappe.db.get_value("ICD Container", self.container, "master_bl")
 		)
 
-	def test_an_unpriced_item_comes_with_a_zero_rate(self):
-		# the user fills it in, and submit refuses a zero rate
+	def test_an_unpriced_item_comes_with_a_zero_rate_that_blocks_submit(self):
 		services = self.get_services()
 
 		self.assertEqual(services["items"][0]["rate"], 0)
 		self.assertEqual(services["unpriced_items"], [self.item])
+
+		invoice = self.make_invoice(rate=services["items"][0]["rate"])
+		self.assertRaisesRegex(frappe.ValidationError, "Set a rate on row 1", invoice.submit)
 
 	def test_the_price_list_comes_from_the_supplier_contract_on_the_posting_date(self):
 		make_buying_price_list(CONTRACT_PRICE_LIST)
