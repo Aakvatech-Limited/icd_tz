@@ -120,8 +120,13 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 	header = get_manifest_header(manifest)
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
 
-	# a row naming another port must never show, a blank port matches any
-	criteria_rows = [row for row in settings_doc.expense_types if not row.port or row.port == header.port]
+	# a row naming another port must never show, a blank port matches any, and
+	# transport is billed by the transporter, not the port
+	criteria_rows = [
+		row
+		for row in settings_doc.expense_types
+		if row.expense_type != TRANSPORT_EXPENSE_TYPE and (not row.port or row.port == header.port)
+	]
 	if not criteria_rows:
 		frappe.throw(
 			_("No Port Expense Pricing Criteria is set in ICD TZ Settings, Please set it to continue"),
