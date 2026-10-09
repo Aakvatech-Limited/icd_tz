@@ -3,6 +3,7 @@ from frappe import _
 from frappe.utils import cint, nowdate
 
 CF_PARTY_TYPE = "Clearing and Forwarding Company"
+SUPPLIER_PARTY_TYPE = "Supplier"
 STORAGE_CHARGES = ("Free", "Single", "Double")
 
 
@@ -22,10 +23,15 @@ def before_validate(doc, method):
 def validate(doc, method):
 	clear_unused_billing_basis(doc)
 
-	if doc.party_type != CF_PARTY_TYPE or not doc.party_name:
+	if doc.party_type not in (CF_PARTY_TYPE, SUPPLIER_PARTY_TYPE) or not doc.party_name:
 		return
 
 	validate_contract_period(doc)
+
+	if doc.party_type == SUPPLIER_PARTY_TYPE:
+		validate_buying_price_list(doc)
+		return
+
 	validate_storage_days(doc)
 
 	if doc.is_rate_based and not doc.price_list:
@@ -33,6 +39,10 @@ def validate(doc, method):
 
 
 def before_submit(doc, method):
+	if doc.party_type == SUPPLIER_PARTY_TYPE:
+		validate_transporter_contract(doc)
+		return
+
 	if doc.party_type != CF_PARTY_TYPE:
 		return
 
@@ -51,19 +61,43 @@ def get_storage_destinations() -> list:
 	return sorted(get_settings_destinations())
 
 
-def get_active_contract(c_and_f_company: str) -> dict:
-	"""Submitted contract of a C&F company that covers today"""
+def validate_buying_price_list(doc):
+	if doc.price_list and not frappe.db.get_value("Price List", doc.price_list, "buying"):
+		frappe.throw(
+			_("Price List {0} is not a buying price list").format(frappe.bold(doc.price_list)),
+			title=_("Invalid Price List"),
+		)
 
-	if not c_and_f_company:
+
+def validate_transporter_contract(doc):
+	"""A transporter is billed from its contract price list, so it must have one"""
+
+	if not frappe.db.get_value("Supplier", doc.party_name, "is_transporter"):
+		return
+
+	if not doc.is_rate_based or not doc.price_list:
+		frappe.throw(
+			_("Tick Rate Based and set a Price List before submitting a contract of transporter {0}").format(
+				frappe.bold(doc.party_name)
+			),
+			title=_("Transporter Contract Needs a Price List"),
+		)
+
+
+def get_active_contract(party_type: str, party: str, on_date: str | None = None) -> dict:
+	"""Submitted contract of a party that covers the date, today by default"""
+
+	if not party:
 		return {}
 
+	on_date = on_date or nowdate()
 	contract = frappe.db.get_value(
 		"Contract",
 		{
-			"party_type": CF_PARTY_TYPE,
-			"party_name": c_and_f_company,
-			"start_date": ("<=", nowdate()),
-			"end_date": (">=", nowdate()),
+			"party_type": party_type,
+			"party_name": party,
+			"start_date": ("<=", on_date),
+			"end_date": (">=", on_date),
 			"docstatus": 1,
 		},
 		["name", "is_rate_based", "is_storage_days_based", "price_list"],
@@ -75,7 +109,7 @@ def get_active_contract(c_and_f_company: str) -> dict:
 def get_selling_price_list(c_and_f_company: str) -> str:
 	"""Price list of a rate based contract, else the ICD TZ Settings default"""
 
-	contract = get_active_contract(c_and_f_company)
+	contract = get_active_contract(CF_PARTY_TYPE, c_and_f_company)
 	if contract.get("is_rate_based") and contract.get("price_list"):
 		return contract["price_list"]
 
@@ -88,7 +122,7 @@ def get_storage_day_counts(container_doc) -> dict:
 	An active storage days based contract of the container C&F company wins over ICD TZ Settings.
 	"""
 
-	contract = get_active_contract(container_doc.get("c_and_f_company"))
+	contract = get_active_contract(CF_PARTY_TYPE, container_doc.get("c_and_f_company"))
 	if contract.get("is_storage_days_based"):
 		source = frappe.get_cached_doc("Contract", contract["name"])
 	else:
@@ -104,14 +138,14 @@ def get_storage_day_counts(container_doc) -> dict:
 
 def validate_contract_period(doc):
 	if not doc.start_date or not doc.end_date:
-		frappe.throw(_("Start Date and End Date are mandatory for {0} Contracts").format(CF_PARTY_TYPE))
+		frappe.throw(_("Start Date and End Date are mandatory for {0} Contracts").format(doc.party_type))
 
 	contract = frappe.qb.DocType("Contract")
 	query = (
 		frappe.qb.from_(contract)
 		.select(contract.name)
 		.where(
-			(contract.party_type == CF_PARTY_TYPE)
+			(contract.party_type == doc.party_type)
 			& (contract.party_name == doc.party_name)
 			& (contract.name != (doc.name or ""))
 			& (contract.docstatus != 2)
@@ -123,7 +157,7 @@ def validate_contract_period(doc):
 
 	if overlapping_contracts:
 		frappe.throw(
-			_("There is already a contract for this company overlapping with this period: <b>{0}</b>").format(
+			_("There is already a contract for this party overlapping with this period: <b>{0}</b>").format(
 				overlapping_contracts[0][0]
 			)
 		)
@@ -132,12 +166,14 @@ def validate_contract_period(doc):
 def clear_unused_billing_basis(doc):
 	"""Drop the inputs of a billing basis that is not ticked so they cannot drift
 
-	Only a C&F contract has a billing basis, so switching the party type away
-	from it must also clear the two checkboxes.
+	A C&F contract can be rate or storage days based, a Supplier contract only rate
+	based, so switching the party type must also clear the checkboxes it cannot use.
 	"""
 
-	if doc.party_type != CF_PARTY_TYPE:
+	if doc.party_type not in (CF_PARTY_TYPE, SUPPLIER_PARTY_TYPE):
 		doc.is_rate_based = 0
+
+	if doc.party_type != CF_PARTY_TYPE:
 		doc.is_storage_days_based = 0
 
 	if not doc.is_rate_based:

@@ -43,6 +43,13 @@ frappe.ui.form.on("Contract", {
 frappe.ui.form.on("Contract", {
   refresh: function (frm) {
     set_destination_options(frm);
+
+    // a Supplier contract prices what the ICD buys
+    frm.set_query("price_list", () =>
+      frm.doc.party_type === "Supplier"
+        ? { filters: { buying: 1 } }
+        : { filters: { selling: 1 } }
+    );
   },
 
   is_storage_days_based: function (frm) {

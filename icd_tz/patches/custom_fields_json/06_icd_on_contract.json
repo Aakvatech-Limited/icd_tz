@@ -5,8 +5,8 @@
     "fieldtype": "Check",
     "label": "Rate Based",
     "insert_after": "party_type",
-    "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company'",
-    "description": "Bill services using the item prices of the contract price list"
+    "depends_on": "eval:['Clearing and Forwarding Company', 'Supplier'].includes(doc.party_type)",
+    "description": "Price services with the item prices of the contract price list"
   },
   {
     "dt": "Contract",
@@ -15,7 +15,7 @@
     "options": "Price List",
     "label": "Price List",
     "insert_after": "is_rate_based",
-    "depends_on": "eval:doc.party_type=='Clearing and Forwarding Company' && doc.is_rate_based",
+    "depends_on": "eval:['Clearing and Forwarding Company', 'Supplier'].includes(doc.party_type) && doc.is_rate_based",
     "mandatory_depends_on": "eval:doc.party_type=='Clearing and Forwarding Company' && doc.is_rate_based"
   },
   {

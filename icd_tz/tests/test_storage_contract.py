@@ -6,6 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
 from icd_tz.icd_tz.api.contract import (
+	CF_PARTY_TYPE,
 	STORAGE_CHARGES,
 	get_active_contract,
 	get_selling_price_list,
@@ -112,7 +113,7 @@ class TestStorageContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		active_contract = get_active_contract(self.company)
+		active_contract = get_active_contract(CF_PARTY_TYPE, self.company)
 		self.assertEqual(active_contract["name"], contract.name)
 		self.assertEqual(active_contract["is_rate_based"], 1)
 		self.assertEqual(active_contract["price_list"], price_list)
@@ -125,7 +126,7 @@ class TestStorageContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		self.assertEqual(get_active_contract(self.company), {})
+		self.assertEqual(get_active_contract(CF_PARTY_TYPE, self.company), {})
 
 	def test_storage_day_counts_fall_back_to_settings(self):
 		container = frappe._dict({"place_of_destination": "Local", "c_and_f_company": self.company})

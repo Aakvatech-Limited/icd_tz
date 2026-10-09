@@ -8,3 +8,4 @@ icd_tz.patches.create_icd_accounting_dimensions
 icd_tz.patches.group_icd_accounting_dimensions
 icd_tz.patches.index_icd_dimension_fields
 icd_tz.patches.create_port_expense_defaults
+icd_tz.patches.show_contract_rate_fields_for_suppliers

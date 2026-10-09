@@ -26,6 +26,7 @@ LOCAL_40FT_ITEM = "_Test Local 40ft Transport Item"
 TRANSPORTER = "_Test Transport Supplier"
 OTHER_TRANSPORTER = "_Test Other Transport Supplier"
 PRICE_LIST = "_Test Transport Buying"
+CONTRACT_PRICE_LIST = "_Test Transport Contract Buying"
 
 
 def make_record(doctype: str, name: str, values: dict) -> str:
@@ -208,6 +209,33 @@ class TestGetTransportServices(TransportTestCase):
 
 		self.assertEqual(services["items"][0]["rate"], 0)
 		self.assertEqual(services["unpriced_items"], [self.item])
+
+	def test_the_price_list_comes_from_the_supplier_contract_on_the_posting_date(self):
+		make_buying_price_list(CONTRACT_PRICE_LIST)
+		make_item_price(self.item, CONTRACT_PRICE_LIST, 70000)
+		contract = frappe.get_doc(
+			{
+				"doctype": "Contract",
+				"party_type": "Supplier",
+				"party_name": self.supplier,
+				"start_date": add_days(nowdate(), -3),
+				"end_date": add_days(nowdate(), 30),
+				"contract_terms": "Transport rates",
+				"is_rate_based": 1,
+				"price_list": CONTRACT_PRICE_LIST,
+			}
+		).insert()
+		contract.submit()
+
+		services = self.get_services()
+		self.assertEqual(services["buying_price_list"], CONTRACT_PRICE_LIST)
+		self.assertEqual(services["contract"], contract.name)
+		self.assertEqual(services["items"][0]["rate"], 70000)
+
+		# posted before the contract starts, the settings default applies
+		services = self.get_services(posting_date=add_days(nowdate(), -10))
+		self.assertEqual(services["buying_price_list"], PRICE_LIST)
+		self.assertIsNone(services["contract"])
 
 	def test_the_line_is_priced_on_the_posting_date(self):
 		make_item_price(self.item, PRICE_LIST, 150000)
