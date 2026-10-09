@@ -19,8 +19,9 @@ ONE_OFF_BILLED_FIELDS = {
 # the flags each document ticks, its storage day column is its scrubbed name
 CHARGE_FLAGS = {"Purchase Order": ONE_OFF_EXPENSE_TYPES, "Purchase Invoice": ONE_OFF_BILLED_FIELDS}
 STORAGE_EXPENSE_TYPES = {"Storage-Single": "Single", "Storage-Double": "Double"}
+TRANSPORT_EXPENSE_TYPE = "Transport"
 # the contract against the ICD TZ Expense Detail select options, asserted by a test
-EXPENSE_TYPES = (*ONE_OFF_EXPENSE_TYPES, *STORAGE_EXPENSE_TYPES)
+EXPENSE_TYPES = (*ONE_OFF_EXPENSE_TYPES, *STORAGE_EXPENSE_TYPES, TRANSPORT_EXPENSE_TYPE)
 
 # the terminal grants free days, which are recorded on the container so the stay is
 # auditable but are never billed, so they carry no expense type
