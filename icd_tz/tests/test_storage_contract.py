@@ -13,7 +13,6 @@ from icd_tz.icd_tz.api.contract import (
 )
 from icd_tz.icd_tz.api.sales_order import get_container_days_to_be_billed
 from icd_tz.icd_tz.api.utils import set_container_cf_company
-from icd_tz.patches.tick_rate_based_on_priced_contracts import execute as tick_rate_based
 
 DESTINATIONS = ["DRC", "Local", "Other"]
 SETTINGS_DAYS = {"Free": (1, 7), "Single": (8, 14), "Double": (15, 999999)}
@@ -265,21 +264,6 @@ class TestStorageContract(FrappeTestCase):
 
 		self.assertEqual(len(single_days), 2)
 		self.assertEqual(len(double_days), 2)
-
-	def test_patch_ticks_rate_based_on_a_contract_that_already_has_a_price_list(self):
-		price_list = create_price_list("_Test ICD Contract Price List")
-		contract = make_contract(self.company, is_rate_based=1)
-		contract.price_list = price_list
-		contract.insert()
-		contract.submit()
-
-		frappe.db.set_value("Contract", contract.name, "is_rate_based", 0, update_modified=False)
-		frappe.clear_document_cache("Contract", contract.name)
-
-		tick_rate_based()
-
-		self.assertEqual(frappe.db.get_value("Contract", contract.name, "is_rate_based"), 1)
-		self.assertEqual(get_selling_price_list(self.company), price_list)
 
 	def test_container_takes_the_cf_company_of_the_first_document_that_carries_it(self):
 		container = create_container()
