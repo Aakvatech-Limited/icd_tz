@@ -31,7 +31,6 @@
   "default_buying_price_list",
   "column_break_blvn",
   "movement_order_requires",
-  "transport_charge_item",
   "column_break_wip",
   "enable_wip_for_expenses",
   "wip_account",
@@ -235,13 +234,6 @@
    "options": "Purchase Order\nPurchase Invoice"
   },
   {
-   "description": "Purchase item billed by the transporter for each container brought from the port to the ICD",
-   "fieldname": "transport_charge_item",
-   "fieldtype": "Link",
-   "label": "Transport Charge Item",
-   "options": "Item"
-  },
-  {
    "fieldname": "expense_pricing_criteria_section",
    "fieldtype": "Section Break",
    "label": "Port Expense Pricing Criteria"
@@ -281,7 +273,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-30 16:59:05.594163",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Settings",
