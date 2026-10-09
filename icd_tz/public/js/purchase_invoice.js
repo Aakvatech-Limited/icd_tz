@@ -11,6 +11,11 @@ frappe.ui.form.on("Purchase Invoice", {
 });
 
 var show_transport_services_dialog = (frm) => {
+  // without Edit Posting Date, save moves the invoice to today
+  const posting_date = frm.doc.set_posting_time
+    ? frm.doc.posting_date
+    : frappe.datetime.get_today();
+
   let d = new frappe.ui.Dialog({
     title: __("Get Transport Services"),
     fields: [
@@ -50,12 +55,18 @@ var show_transport_services_dialog = (frm) => {
         args: {
           company: frm.doc.company,
           purchase_invoice: frm.is_new() ? null : frm.doc.name,
+          posting_date: posting_date,
           ...values,
         },
         freeze: true,
         callback: async (r) => {
           d.hide();
-          await set_transport_services(frm, values.supplier, r.message);
+          await set_transport_services(
+            frm,
+            values.supplier,
+            posting_date,
+            r.message
+          );
         },
       });
     },
@@ -64,7 +75,7 @@ var show_transport_services_dialog = (frm) => {
   d.show();
 };
 
-var set_transport_services = async (frm, supplier, services) => {
+var set_transport_services = async (frm, supplier, posting_date, services) => {
   if (frm.doc.supplier !== supplier) {
     await frm.set_value("supplier", supplier);
   }
@@ -76,5 +87,21 @@ var set_transport_services = async (frm, supplier, services) => {
     services.items.forEach((item) => frm.add_child("items", item));
     frm.refresh_field("items");
     frm.cscript.calculate_taxes_and_totals();
+
+    if (services.unpriced_items.length) {
+      frappe.msgprint({
+        title: __("Transport Items Without a Price"),
+        indicator: "orange",
+        message: __(
+          "These items have no buying price on {0}, so their lines have a zero rate. Set the rate before you submit: {1}",
+          [
+            frappe.datetime.str_to_user(posting_date),
+            services.unpriced_items
+              .map((item) => frappe.utils.escape_html(item))
+              .join(", "),
+          ]
+        ),
+      });
+    }
   });
 };
