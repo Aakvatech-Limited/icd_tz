@@ -135,13 +135,16 @@ class TransportTestCase(FrappeTestCase):
 
 		return container.name
 
-	def get_services(self, supplier=None, from_date=None, to_date=None, purchase_invoice=None) -> dict:
+	def get_services(
+		self, supplier=None, from_date=None, to_date=None, purchase_invoice=None, posting_date=None
+	) -> dict:
 		return get_transport_services(
 			self.company,
 			supplier or self.supplier,
 			from_date or add_days(nowdate(), -1),
 			to_date or nowdate(),
 			purchase_invoice,
+			posting_date,
 		)
 
 	def make_invoice_doc(self, name="PI-TEST-1", supplier=None, item_code=None) -> SimpleNamespace:
@@ -201,7 +204,25 @@ class TestGetTransportServices(TransportTestCase):
 
 	def test_an_unpriced_item_comes_with_a_zero_rate(self):
 		# the user fills it in, and submit refuses a zero rate
-		self.assertEqual(self.get_services()["items"][0]["rate"], 0)
+		services = self.get_services()
+
+		self.assertEqual(services["items"][0]["rate"], 0)
+		self.assertEqual(services["unpriced_items"], [self.item])
+
+	def test_the_line_is_priced_on_the_posting_date(self):
+		make_item_price(self.item, PRICE_LIST, 150000)
+		frappe.db.set_value(
+			"Item Price",
+			{"item_code": self.item, "price_list": PRICE_LIST},
+			{"valid_from": add_days(nowdate(), -30), "valid_upto": add_days(nowdate(), -5)},
+		)
+
+		on_posting_date = self.get_services(posting_date=add_days(nowdate(), -10))
+		self.assertEqual(on_posting_date["items"][0]["rate"], 150000)
+		self.assertEqual(on_posting_date["unpriced_items"], [])
+
+		# the price expired before today, the default date
+		self.assertEqual(self.get_services()["unpriced_items"], [self.item])
 
 	def test_another_transporter_gets_nothing(self):
 		self.assertRaises(frappe.ValidationError, self.get_services, make_supplier(OTHER_TRANSPORTER))
