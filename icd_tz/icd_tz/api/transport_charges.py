@@ -15,11 +15,17 @@ from icd_tz.icd_tz.api.utils import get_best_criteria
 
 @frappe.whitelist()
 def get_transport_services(
-	company: str, supplier: str, from_date: str, to_date: str, purchase_invoice: str | None = None
+	company: str,
+	supplier: str,
+	from_date: str,
+	to_date: str,
+	purchase_invoice: str | None = None,
+	posting_date: str | None = None,
 ) -> dict:
 	"""Invoice lines for every container the supplier brought to the ICD in the period and is still unpaid
 
 	One line per container, so each carries its own manifest, bill of lading and container dimensions.
+	Each item is priced once, on the invoice posting date.
 	"""
 
 	frappe.has_permission("Purchase Invoice", "create", throw=True)
@@ -40,7 +46,7 @@ def get_transport_services(
 
 	price_list = get_default_buying_price_list()
 	item_codes = set(container_items.values())
-	rates = get_buying_rates(item_codes, price_list)
+	rates = get_buying_rates(item_codes, price_list, posting_date)
 	items = {}
 	for item_code in item_codes:
 		items[item_code] = frappe.get_cached_value(
@@ -52,6 +58,7 @@ def get_transport_services(
 
 	return {
 		"buying_price_list": price_list,
+		"unpriced_items": sorted(item_codes - set(rates)),
 		"items": [
 			get_transport_line(container, items[container_items[container.icd_container]], wip_account)
 			for container in containers
