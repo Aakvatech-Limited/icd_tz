@@ -3,6 +3,7 @@ from frappe import _
 from frappe.query_builder.functions import IfNull
 from frappe.utils import get_link_to_form, getdate
 
+from icd_tz.icd_tz.api.contract import SUPPLIER_PARTY_TYPE, get_active_contract
 from icd_tz.icd_tz.api.port_expenses import (
 	TRANSPORT_EXPENSE_TYPE,
 	get_buying_rates,
@@ -25,7 +26,8 @@ def get_transport_services(
 	"""Invoice lines for every container the supplier brought to the ICD in the period and is still unpaid
 
 	One line per container, so each carries its own manifest, bill of lading and container dimensions.
-	Each item is priced once, on the invoice posting date.
+	Each item is priced once, on the invoice posting date, from the price list of the rate based
+	contract of the supplier active on that date, else the ICD TZ Settings default.
 	"""
 
 	frappe.has_permission("Purchase Invoice", "create", throw=True)
@@ -44,7 +46,9 @@ def get_transport_services(
 	container_items = get_container_transport_items(containers)
 	validate_no_draft_transport_invoice(get_transport_items(), list(container_items), purchase_invoice)
 
-	price_list = get_default_buying_price_list()
+	# an unticked Rate Based clears the price list, so a contract price list is always rate based
+	contract = get_active_contract(SUPPLIER_PARTY_TYPE, supplier, posting_date)
+	price_list = contract.get("price_list") or get_default_buying_price_list()
 	item_codes = set(container_items.values())
 	rates = get_buying_rates(item_codes, price_list, posting_date)
 	items = {}
@@ -58,6 +62,7 @@ def get_transport_services(
 
 	return {
 		"buying_price_list": price_list,
+		"contract": contract.get("name"),
 		"unpriced_items": sorted(item_codes - set(rates)),
 		"items": [
 			get_transport_line(container, items[container_items[container.icd_container]], wip_account)
