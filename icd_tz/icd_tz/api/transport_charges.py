@@ -46,9 +46,7 @@ def get_transport_services(
 	container_items = get_container_transport_items(containers)
 	validate_no_draft_transport_invoice(get_transport_items(), list(container_items), purchase_invoice)
 
-	# an unticked Rate Based clears the price list, so a contract price list is always rate based
-	contract = get_active_contract(SUPPLIER_PARTY_TYPE, supplier, posting_date)
-	price_list = contract.get("price_list") or get_default_buying_price_list()
+	price_list, contract = get_transport_price_list(supplier, posting_date)
 	item_codes = set(container_items.values())
 	rates = get_buying_rates(item_codes, price_list, posting_date)
 	items = {}
@@ -62,7 +60,7 @@ def get_transport_services(
 
 	return {
 		"buying_price_list": price_list,
-		"contract": contract.get("name"),
+		"contract": contract,
 		"unpriced_items": sorted(item_codes - set(rates)),
 		"items": [
 			get_transport_line(container, items[container_items[container.icd_container]], wip_account)
@@ -94,8 +92,11 @@ def get_transport_line(container, item, wip_account: str | None) -> dict:
 	}
 
 
-def get_unpaid_transport_containers(company: str, supplier: str, from_date: str, to_date: str) -> list:
-	"""Containers this transporter brought to the ICD in the period, with no transport invoice yet
+def get_unpaid_transport_containers(
+	company: str, supplier: str | None, from_date: str, to_date: str, manifest_name: str | None = None
+) -> list:
+	"""Containers received at the ICD in the period with no transport invoice yet, of one
+	transporter, or of every transporter and none when no supplier is given, optionally of one manifest
 
 	A manifest older than the accounting dimensions has no ICD Container, so it never shows.
 	"""
@@ -104,7 +105,7 @@ def get_unpaid_transport_containers(company: str, supplier: str, from_date: str,
 	master_bl = frappe.qb.DocType("ICD Master BL")
 	manifest = frappe.qb.DocType("Manifest")
 
-	return (
+	query = (
 		frappe.qb.from_(container)
 		.left_join(master_bl)
 		.on(master_bl.name == container.master_bl)
@@ -117,19 +118,25 @@ def get_unpaid_transport_containers(company: str, supplier: str, from_date: str,
 			container.manifest,
 			container.m_bl_no,
 			container.received_date,
+			container.transporter,
 			container.size,
 			master_bl.cargo_classification,
 			manifest.port,
 		)
 		.where(
 			(container.company == company)
-			& (container.transporter == supplier)
 			& (container.status == "Received")
 			& (container.received_date.between(from_date, to_date))
 			& (IfNull(container.transport_purchase_invoice, "") == "")
 		)
 		.orderby(container.received_date, container.container_no)
-	).run(as_dict=True)
+	)
+	if supplier:
+		query = query.where(container.transporter == supplier)
+	if manifest_name:
+		query = query.where(container.manifest == manifest_name)
+
+	return query.run(as_dict=True)
 
 
 def get_container_transport_items(containers: list) -> dict:
@@ -139,11 +146,11 @@ def get_container_transport_items(containers: list) -> dict:
 	container_items = {}
 	unmatched = []
 	for container in containers:
-		key = get_container_key(container, container, container.port)
-		row = get_best_criteria(criteria_rows, key)
+		row = get_transport_row(container, criteria_rows)
 		if row:
 			container_items[container.icd_container] = row.expense_item
 		else:
+			key = get_container_key(container, container, container.port)
 			unmatched.append(f"{container.container_no} ({key['size'] or '-'}, {key['port'] or '-'})")
 
 	if unmatched:
@@ -155,6 +162,23 @@ def get_container_transport_items(containers: list) -> dict:
 		)
 
 	return container_items
+
+
+def get_transport_row(container, criteria_rows: list):
+	"""Most specific Transport row matching the container, or None"""
+
+	return get_best_criteria(criteria_rows, get_container_key(container, container, container.port))
+
+
+def get_transport_price_list(supplier: str, on_date: str | None = None) -> tuple[str, str | None]:
+	"""Price list of the rate based supplier contract active on the date, else the settings default,
+	and that contract
+	"""
+
+	# an unticked Rate Based clears the price list, so a contract price list is always rate based
+	contract = get_active_contract(SUPPLIER_PARTY_TYPE, supplier, on_date)
+
+	return contract.get("price_list") or get_default_buying_price_list(), contract.get("name")
 
 
 def validate_no_draft_transport_invoice(item_codes: set, icd_containers: list, purchase_invoice: str | None):
