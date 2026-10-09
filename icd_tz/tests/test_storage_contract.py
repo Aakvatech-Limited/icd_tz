@@ -14,6 +14,7 @@ from icd_tz.icd_tz.api.contract import (
 )
 from icd_tz.icd_tz.api.sales_order import get_container_days_to_be_billed
 from icd_tz.icd_tz.api.utils import set_container_cf_company
+from icd_tz.tests.test_transport_charges import make_supplier
 
 DESTINATIONS = ["DRC", "Local", "Other"]
 SETTINGS_DAYS = {"Free": (1, 7), "Single": (8, 14), "Double": (15, 999999)}
@@ -161,6 +162,20 @@ class TestStorageContract(FrappeTestCase):
 
 	def test_selling_price_list_falls_back_without_a_contract(self):
 		self.assertEqual(get_selling_price_list(self.company), DEFAULT_PRICE_LIST)
+
+	def test_a_supplier_contract_of_the_same_name_leaves_the_cf_contract_alone(self):
+		price_list = create_price_list("_Test ICD Contract Price List")
+		cf_contract = make_contract(self.company, is_rate_based=1, price_list=price_list)
+		cf_contract.insert()
+		cf_contract.submit()
+
+		# overlap is checked per party type, so the same period is allowed
+		supplier_contract = make_contract(make_supplier(self.company), party_type="Supplier")
+		supplier_contract.insert()
+		supplier_contract.submit()
+
+		self.assertEqual(get_active_contract(CF_PARTY_TYPE, self.company)["name"], cf_contract.name)
+		self.assertEqual(get_selling_price_list(self.company), price_list)
 
 	def test_free_window_marks_exactly_the_free_days(self):
 		container = container_with_dates(14)
