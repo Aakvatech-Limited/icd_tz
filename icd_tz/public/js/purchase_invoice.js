@@ -88,6 +88,15 @@ var set_transport_services = async (frm, supplier, posting_date, services) => {
     frm.refresh_field("items");
     frm.cscript.calculate_taxes_and_totals();
 
+    if (services.contract) {
+      frappe.show_alert({
+        message: __("Priced from Contract {0}", [
+          frappe.utils.escape_html(services.contract),
+        ]),
+        indicator: "blue",
+      });
+    }
+
     if (services.unpriced_items.length) {
       frappe.msgprint({
         title: __("Transport Items Without a Price"),
