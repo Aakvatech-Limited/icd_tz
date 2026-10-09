@@ -54,15 +54,6 @@ frappe.ui.form.on("ICD TZ Settings", {
       };
     });
 
-    frm.set_query("transport_charge_item", () => {
-      return {
-        filters: {
-          item_group: "ICD Services",
-          is_purchase_item: 1,
-        },
-      };
-    });
-
     frm.set_query("default_buying_price_list", () => {
       return {
         filters: {
