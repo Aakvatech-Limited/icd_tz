@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Count
-from frappe.utils import date_diff, flt, getdate, nowdate
+from frappe.utils import date_diff, flt, getdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import build_dimension_name
 from icd_tz.icd_tz.api.utils import get_best_criteria, get_size_bucket
@@ -365,8 +365,8 @@ def get_unbilled_storage_days(manifest: str, with_day_rows: bool = False) -> dic
 	return unbilled
 
 
-def get_buying_rates(item_codes: set, price_list: str) -> dict:
-	"""Current buying rate of each item, the newest price that is valid today winning"""
+def get_buying_rates(item_codes: set, price_list: str, on_date: str | None = None) -> dict:
+	"""Buying rate of each item, the newest price valid on the date (default today) winning"""
 
 	if not item_codes or not price_list:
 		return {}
@@ -378,16 +378,18 @@ def get_buying_rates(item_codes: set, price_list: str) -> dict:
 		order_by="valid_from asc",
 	)
 
-	return {price.item_code: flt(price.price_list_rate) for price in prices if is_price_current(price)}
+	return {
+		price.item_code: flt(price.price_list_rate) for price in prices if is_price_current(price, on_date)
+	}
 
 
-def is_price_current(price) -> bool:
-	today = getdate(nowdate())
+def is_price_current(price, on_date: str | None = None) -> bool:
+	day = getdate(on_date)
 
-	if price.valid_from and getdate(price.valid_from) > today:
+	if price.valid_from and getdate(price.valid_from) > day:
 		return False
 
-	return not (price.valid_upto and getdate(price.valid_upto) < today)
+	return not (price.valid_upto and getdate(price.valid_upto) < day)
 
 
 def get_default_buying_price_list() -> str:
