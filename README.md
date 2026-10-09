@@ -298,7 +298,8 @@ After installation, configure these areas before production use:
 | Configuration area | What to set |
 |---|---|
 | ICD TZ Settings | Default price list, storage day rules, service pricing criteria, LCL criteria, corridor levy countries, signature validation, gate pass expiry hours |
-| ICD TZ Settings, Expenses tab | Default buying price list, port expense pricing criteria (charge to item, by size, cargo type, destination and port), and the port storage day bands |
+| ICD TZ Settings, Expenses tab | Default buying price list, port expense pricing criteria (charge to item, by size, cargo type, destination and port), Transport rows (transport item by size, cargo type and port), and the port storage day bands |
+| Contract | C&F company contracts (Rate Based selling price list, Storage Days) and transporter Supplier contracts (Rate Based buying price list) |
 | EDI Partner | Shipping line code and name, sender ID, enable EDI, connection type, URL, port, source IP, IP behind DNS, authentication method, password or key, directory, receiver email and CC |
 | Item Prices | Prices for the ICD service items created by patches |
 | Master data | Consignees, C&F companies, clearing agents, transporters, vehicles, drivers, security officers, locations, document types |
@@ -334,7 +335,8 @@ tracked against `ICD Container`, the accounting dimension record created when a 
 1. Configure the Expenses tab of ICD TZ Settings: the buying price list, one criteria row per
    charge, and the port storage day bands. A blank criteria field matches any value, and the most
    specific matching row wins. The price list has no default, so the view refuses to price until one
-   is chosen deliberately.
+   is chosen deliberately. Rows with the Expense Type `Transport` are for transport charges, so the
+   view and the order never show them.
 2. A background job fills `ship_dc_date` from the TANeSW tracking API, grouped by bill of
    lading so the bill search is issued once per bill rather than once per container. The cargo
    reference number is cached on the bill, so later runs skip the search entirely.
@@ -379,6 +381,49 @@ cd frontend && yarn install && yarn build
 
 The build writes `icd_tz/public/frontend/` and regenerates `icd_tz/www/port_expenses.html`.
 
+
+## Transport Charges
+
+A transporter bills the ICD for each container it brings from the port. These charges are billed on
+a Purchase Invoice, one line per container, and paid once per container.
+
+### Setup
+
+1. On the Expenses tab of ICD TZ Settings, add one or more rows with the Expense Type `Transport`
+   to Port Expense Pricing Criteria. Each row sets the transport item. Size, Cargo Type and Port are
+   optional. A blank field matches any value, and the most specific matching row wins. A row with
+   all three fields blank matches every container.
+2. Optional: give a transporter a Supplier Contract. Tick Rate Based and select a buying price list.
+   A contract needs a start date and an end date, and contracts of one supplier cannot overlap. A
+   supplier with Is Transporter ticked cannot submit a contract without Rate Based and a Price List.
+3. Set the Default Buying Price List on the Expenses tab. It prices transporters that have no active
+   contract.
+
+### Billing a transporter
+
+1. Create a Purchase Invoice and click `Get Items From` > `Transport Services`.
+2. Select the transporter and the period of the received date. The dialog replaces the invoice lines
+   with one line per container that the transporter brought in that period and that is not paid.
+3. Each line gets the item of the matching Transport row. If no row matches a container, the dialog
+   stops and lists the containers with their size and port.
+4. Each item is priced once, on the invoice posting date. If Edit Posting Date and Time is not ticked,
+   today is used. The price list comes from the rate based Supplier Contract that is active on that
+   date. If there is no such contract, the Default Buying Price List is used. The invoice shows which
+   contract priced the lines.
+5. An item with no buying price on that date gets a zero rate, and a warning lists it. Submit stays
+   blocked until every line has a rate.
+
+A draft invoice that carries the same containers blocks a second fetch. On submit, the invoice is
+recorded on each container, and a container of another transporter is refused. On cancel, the
+containers are released. With WIP enabled on the Expenses tab, transport lines are held on the WIP
+account until the container is invoiced.
+
+### Pending Transporter Invoices
+
+This script report lists the received containers whose transport is not invoiced yet, with the
+transport item, rate and price list that the dialog would use today. Filters are company, period,
+transporter and manifest. Without the transporter filter, the report also lists containers that
+have no transporter. An empty item, rate or price list shows what to set before you bill.
 
 ## Modules and DocTypes
 
@@ -451,6 +496,7 @@ Most parent DocTypes in the repository grant System Manager permissions by defau
 | Loose Cargo Tracking | Gate Pass |
 | Container Booking | In Yard Container Booking |
 | Revenue Summary | Sales Invoice |
+| Pending Transporter Invoices | Purchase Invoice |
 
 ### Dashboards and Cards
 
