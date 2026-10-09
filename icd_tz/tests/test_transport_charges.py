@@ -7,6 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
+from icd_tz.icd_tz.api.port_expenses import TRANSPORT_EXPENSE_TYPE
 from icd_tz.icd_tz.api.purchase_invoice import set_wip_account, validate_no_zero_rate
 from icd_tz.icd_tz.api.transport_charges import (
 	clear_transport_invoice,
@@ -21,6 +22,7 @@ from icd_tz.tests.test_port_expenses import get_expense_account, make_buying_pri
 test_ignore = ["Company", "Cost Center"]
 
 TRANSPORT_ITEM = "_Test Transport Charge Item"
+LOCAL_40FT_ITEM = "_Test Local 40ft Transport Item"
 TRANSPORTER = "_Test Transport Supplier"
 OTHER_TRANSPORTER = "_Test Other Transport Supplier"
 PRICE_LIST = "_Test Transport Buying"
@@ -33,7 +35,7 @@ def make_record(doctype: str, name: str, values: dict) -> str:
 	return name
 
 
-def make_transport_item() -> str:
+def make_transport_item(item_code: str = TRANSPORT_ITEM) -> str:
 	make_record(
 		"Item Group",
 		"ICD Services",
@@ -42,10 +44,10 @@ def make_transport_item() -> str:
 
 	return make_record(
 		"Item",
-		TRANSPORT_ITEM,
+		item_code,
 		{
-			"item_code": TRANSPORT_ITEM,
-			"item_name": TRANSPORT_ITEM,
+			"item_code": item_code,
+			"item_name": item_code,
 			"item_group": "ICD Services",
 			"is_stock_item": 0,
 			"is_purchase_item": 1,
@@ -64,6 +66,21 @@ def make_supplier(name: str) -> str:
 	)
 
 
+def set_transport_rows(*rows: dict):
+	"""Replace the Transport rows of the expense criteria"""
+
+	settings_doc = frappe.get_doc("ICD TZ Settings")
+	settings_doc.expense_types = [
+		row for row in settings_doc.expense_types if row.expense_type != TRANSPORT_EXPENSE_TYPE
+	]
+	for row in rows:
+		settings_doc.append("expense_types", {"expense_type": TRANSPORT_EXPENSE_TYPE, **row})
+
+	settings_doc.flags.ignore_mandatory = True
+	settings_doc.save()
+	frappe.clear_cache(doctype="ICD TZ Settings")
+
+
 class TransportTestCase(FrappeTestCase):
 	def setUp(self):
 		self.company = frappe.db.get_value("Company", {}, "name")
@@ -73,12 +90,12 @@ class TransportTestCase(FrappeTestCase):
 		frappe.db.set_single_value(
 			"ICD TZ Settings",
 			{
-				"transport_charge_item": self.item,
 				"default_buying_price_list": PRICE_LIST,
 				"enable_wip_for_expenses": 0,
 				"received_date_threshold_hours": 48,
 			},
 		)
+		set_transport_rows({"expense_item": self.item})
 		self.manifest = make_manifest()
 		self.manifest.db_set("company", self.company)
 		self.container = self.make_icd_container()
@@ -219,15 +236,37 @@ class TestGetTransportServices(TransportTestCase):
 
 		self.assertRaises(frappe.ValidationError, self.get_services)
 
+	def test_a_container_freed_by_a_cancelled_invoice_shows_again(self):
+		# cancel clears the invoice to an empty string, not to NULL
+		frappe.db.set_value("ICD Container", self.container, "transport_purchase_invoice", "")
+
+		self.assertEqual(self.get_services()["items"][0]["icd_container"], self.container)
+
 	def test_from_date_after_to_date_is_refused(self):
 		self.assertRaises(
 			frappe.ValidationError, self.get_services, from_date=nowdate(), to_date=add_days(nowdate(), -1)
 		)
 
-	def test_the_item_must_be_configured(self):
-		frappe.db.set_single_value("ICD TZ Settings", "transport_charge_item", None)
+	def test_a_container_no_transport_row_matches_is_refused(self):
+		set_transport_rows({"expense_item": self.item, "size": "40ft"})
 
-		self.assertRaises(frappe.ValidationError, self.get_services)
+		self.assertRaisesRegex(frappe.ValidationError, f"{CONTAINER_NO} \\(-, DP WORLD\\)", self.get_services)
+
+	def test_the_most_specific_transport_row_picks_the_item(self):
+		specific_item = make_transport_item(LOCAL_40FT_ITEM)
+		make_item_price(specific_item, PRICE_LIST, 90000)
+		set_transport_rows(
+			{"expense_item": self.item},
+			{"expense_item": specific_item, "size": "40ft", "cargo_type": "Local", "port": "DP WORLD"},
+		)
+		frappe.db.set_value("ICD Container", self.container, "size", "40")
+		master_bl = frappe.db.get_value("ICD Container", self.container, "master_bl")
+		frappe.db.set_value("ICD Master BL", master_bl, "cargo_classification", "IM")
+
+		line = self.get_services()["items"][0]
+
+		self.assertEqual(line["item_code"], specific_item)
+		self.assertEqual(line["rate"], 90000)
 
 	def test_another_draft_carrying_the_container_blocks_the_fetch(self):
 		draft = self.make_invoice(rate=100).name
@@ -272,6 +311,14 @@ class TestTransportInvoiceStamp(TransportTestCase):
 
 		self.assertRaises(frappe.ValidationError, stamp_transport_invoice, doc)
 		self.assertFalse(self.get_paid_invoice())
+
+	def test_a_line_on_any_transport_item_marks_the_container(self):
+		other_item = make_transport_item(LOCAL_40FT_ITEM)
+		set_transport_rows({"expense_item": self.item}, {"expense_item": other_item, "size": "40ft"})
+
+		stamp_transport_invoice(self.make_invoice_doc(item_code=other_item))
+
+		self.assertEqual(self.get_paid_invoice(), "PI-TEST-1")
 
 	def test_a_line_of_another_item_marks_nothing(self):
 		stamp_transport_invoice(self.make_invoice_doc(item_code="Some Other Item"))

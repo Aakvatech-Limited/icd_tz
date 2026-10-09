@@ -12,7 +12,7 @@ from icd_tz.icd_tz.api.purchase_order import (
 )
 from icd_tz.icd_tz.api.transport_charges import (
 	clear_transport_invoice,
-	get_transport_charge_item,
+	get_transport_items,
 	stamp_transport_invoice,
 )
 
@@ -34,7 +34,7 @@ def set_wip_account(doc, method=None):
 	if not wip_account:
 		return
 
-	held_items = {*get_expense_items_by_type(), get_transport_charge_item()}
+	held_items = {*get_expense_items_by_type(), *get_transport_items()}
 	for item in doc.items:
 		if item.get("icd_container") and item.item_code in held_items:
 			item.expense_account = wip_account
