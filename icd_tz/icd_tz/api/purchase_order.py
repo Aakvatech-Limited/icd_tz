@@ -7,6 +7,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 	CRITERIA_FIELDS,
 	ONE_OFF_EXPENSE_TYPES,
 	STORAGE_EXPENSE_TYPES,
+	TRANSPORT_EXPENSE_TYPE,
 	get_default_buying_price_list,
 	get_draft_expense_orders,
 	get_expense_rows,
@@ -302,11 +303,15 @@ def get_expense_coverage(doc) -> tuple[dict, set]:
 
 
 def get_expense_items_by_type() -> dict:
-	"""Item code to expense type, read from the configured criteria"""
+	"""Item code to port expense type, read from the configured criteria"""
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
 
-	return {row.expense_item: row.expense_type for row in settings_doc.expense_types}
+	return {
+		row.expense_item: row.expense_type
+		for row in settings_doc.expense_types
+		if row.expense_type != TRANSPORT_EXPENSE_TYPE
+	}
 
 
 def set_rows(doctype: str, names, values: dict, purchase_order: str | None = None):

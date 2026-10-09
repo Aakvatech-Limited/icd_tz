@@ -7,6 +7,7 @@ from frappe.utils import add_days, getdate, nowdate
 
 from icd_tz.icd_tz.api.port_expenses import (
 	EXPENSE_TYPES,
+	TRANSPORT_EXPENSE_TYPE,
 	get_cargo_type,
 	get_charge_of_day,
 	get_expense_row_containers,
@@ -43,6 +44,7 @@ ITEMS = {
 	"Storage-Single": "_Test ICD Storage Single Expense",
 	"Storage-Double": "_Test ICD Storage Double Expense",
 	"Removal": "_Test ICD Removal Expense",
+	"Transport": "_Test ICD Transport Expense",
 }
 RATES = {
 	"Shore": 120000,
@@ -50,6 +52,7 @@ RATES = {
 	"Storage-Single": 8000,
 	"Storage-Double": 16000,
 	"Removal": 30000,
+	"Transport": 50000,
 }
 
 
@@ -104,6 +107,24 @@ class TestPortExpenses(FrappeTestCase):
 		self.assertEqual(levy["container_count"], 0)
 		self.assertEqual(levy["qty"], 0)
 		self.assertEqual(levy["amount"], 0)
+
+	def test_a_transport_row_never_reaches_the_page(self):
+		"""The transporter bills transport, the port does not"""
+
+		add_transport_row(ITEMS[TRANSPORT_EXPENSE_TYPE])
+
+		rows = get_expense_rows(self.manifest.name, PRICE_LIST)
+
+		self.assertNotIn(TRANSPORT_EXPENSE_TYPE, {row["expense_type"] for row in rows})
+
+	def test_transport_rows_alone_are_not_a_port_expense_setup(self):
+		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc.expense_types = []
+		settings_doc.flags.ignore_mandatory = True
+		settings_doc.save()
+		add_transport_row(ITEMS[TRANSPORT_EXPENSE_TYPE])
+
+		self.assertRaises(frappe.ValidationError, get_expense_rows, self.manifest.name, PRICE_LIST)
 
 	def test_a_one_off_charge_counts_one_unit_per_container(self):
 		rows = get_expense_rows(self.manifest.name, PRICE_LIST)
@@ -381,6 +402,15 @@ class TestPortExpenses(FrappeTestCase):
 		self.assertEqual(container.is_removal_booked, 0)
 		self.assertEqual(container.purchase_order, name)
 
+	def test_a_transport_row_on_the_same_item_does_not_hide_the_charge(self):
+		"""The item to expense type map must keep the port charge, not the transport row"""
+
+		add_transport_row(ITEMS["Shore"])
+		name = create_purchase_order(self.manifest.name, PRICE_LIST, get_supplier(), get_shore_rows())
+		frappe.get_doc("Purchase Order", name).submit()
+
+		self.assertEqual(get_charge_flag(self.manifest.name, BOX_20, "is_shore_booked"), 1)
+
 	def test_cancel_releases_what_the_order_claimed(self):
 		name = create_purchase_order(self.manifest.name, PRICE_LIST, get_supplier(), get_shore_rows())
 		order = frappe.get_doc("Purchase Order", name)
@@ -551,6 +581,18 @@ class TestPortExpenses(FrappeTestCase):
 	# what the port is still owed for a container
 
 	def test_every_configured_charge_is_owed_until_it_is_booked(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+
+		self.assertEqual(
+			get_unpaid_port_charges(self.manifest.name, BOX_20),
+			["Shore", "Levy", "Removal", "Storage"],
+		)
+
+	def test_transport_is_never_owed_to_the_port(self):
+		"""Transport has no charge flag, so it never blocks a movement order"""
+
+		add_transport_row(ITEMS[TRANSPORT_EXPENSE_TYPE])
 		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
 		update_port_storage_days(self.manifest.name)
 
@@ -924,6 +966,14 @@ def set_expense_settings():
 	for charge, from_day, to_day in BANDS:
 		settings_doc.append("port_storage_days", {"charge": charge, "from": from_day, "to": to_day})
 
+	settings_doc.flags.ignore_mandatory = True
+	settings_doc.save()
+	frappe.clear_cache(doctype="ICD TZ Settings")
+
+
+def add_transport_row(item_code):
+	settings_doc = frappe.get_doc("ICD TZ Settings")
+	settings_doc.append("expense_types", {"expense_type": TRANSPORT_EXPENSE_TYPE, "expense_item": item_code})
 	settings_doc.flags.ignore_mandatory = True
 	settings_doc.save()
 	frappe.clear_cache(doctype="ICD TZ Settings")
