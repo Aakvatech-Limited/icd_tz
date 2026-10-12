@@ -180,7 +180,7 @@ def get_transport_price_list(
 	"""
 
 	# an unticked Rate Based clears the price list, so a contract price list is always rate based
-	contract = get_active_contract(SUPPLIER_PARTY_TYPE, supplier, on_date)
+	contract = get_active_contract(SUPPLIER_PARTY_TYPE, supplier, on_date, company=company)
 
 	return contract.get("price_list") or get_default_buying_price_list(company), contract.get("name")
 
