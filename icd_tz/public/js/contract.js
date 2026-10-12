@@ -58,7 +58,7 @@ frappe.ui.form.on("Contract", {
 });
 
 function set_destination_options(frm) {
-  // The Storage Days destinations are the ones defined in ICD TZ Settings
+  // The Storage Days destinations are the ones defined in the ICD Setting of the company
   const grid =
     frm.fields_dict.storage_days && frm.fields_dict.storage_days.grid;
   if (!grid || !frm.doc.is_storage_days_based) {
@@ -66,7 +66,10 @@ function set_destination_options(frm) {
   }
 
   frappe
-    .call({ method: "icd_tz.icd_tz.api.contract.get_storage_destinations" })
+    .call({
+      method: "icd_tz.icd_tz.api.contract.get_storage_destinations",
+      args: { company: frm.doc.company },
+    })
     .then((r) => {
       grid.update_docfield_property("destination", "options", [
         "",
