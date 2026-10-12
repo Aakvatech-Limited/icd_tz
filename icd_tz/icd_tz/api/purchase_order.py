@@ -24,6 +24,7 @@ def create_purchase_order(
 	buying_price_list: str | None = None,
 	supplier: str | None = None,
 	criteria_rows: str | list | None = None,
+	company: str | None = None,
 ) -> str:
 	"""Draft Purchase Order for the selected port expense rows of one manifest
 
@@ -35,7 +36,8 @@ def create_purchase_order(
 	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
 
 	selected = set(frappe.parse_json(criteria_rows) or [])
-	price_list = buying_price_list or get_default_buying_price_list(get_manifest_header(manifest).company)
+	header = get_manifest_header(manifest, company)
+	price_list = buying_price_list or get_default_buying_price_list(header.company)
 	# the day row names are needed here, they go onto the order line
 	rows = [
 		row
