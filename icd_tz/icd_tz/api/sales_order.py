@@ -8,6 +8,7 @@ from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
 from icd_tz.icd_tz.api.icd_services import GATE_PASS_CANCELLATION, REMOVAL
 from icd_tz.icd_tz.api.utils import (
+	get_icd_setting,
 	get_service_item,
 	get_service_key,
 	throw_missing_criteria,
@@ -356,10 +357,13 @@ def get_empty_container_services(m_bl_no: str) -> list:
 	containers = frappe.db.get_all(
 		"Container",
 		filters={"m_bl_no": m_bl_no, "is_empty_container": 1},
-		fields=["name", "days_to_be_billed"],
+		fields=["name", "company", "days_to_be_billed"],
 	)
+	if not containers:
+		return []
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	# the containers of one bill of lading arrive on one manifest, so they share a company
+	settings_doc = get_icd_setting(containers[0].company)
 	services = []
 
 	for container in containers:
@@ -458,11 +462,13 @@ def get_storage_services(m_bl_no=None, h_bl_no=None):
 		filters["has_hbl"] = 0
 		filters["is_empty_container"] = 0
 
-	containers = frappe.db.get_all("Container", filters=filters, fields=["name", "days_to_be_billed"])
+	containers = frappe.db.get_all(
+		"Container", filters=filters, fields=["name", "company", "days_to_be_billed"]
+	)
 	if len(containers) == 0:
 		return []
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(containers[0].company)
 
 	for container in containers:
 		container_doc = frappe.get_doc("Container", container.name)
