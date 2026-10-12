@@ -124,7 +124,7 @@ frappe.ui.form.on("Container Reception", {
     frappe.call({
       method:
         "icd_tz.icd_tz.doctype.container.container.get_place_of_destination",
-      args: {},
+      args: { company: frm.doc.company },
       callback: (r) => {
         if (r.message) {
           frm.set_df_property("place_of_destination", "options", r.message);
