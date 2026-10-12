@@ -23,12 +23,14 @@
       </div>
 
       <ExpenseFilters
+        :company="company"
         :manifest="manifest"
         :buyingPriceList="buyingPriceList"
         :supplier="supplier"
         :port="view.data?.port"
         :vesselName="view.data?.vessel_name"
         :currency="view.data?.currency"
+        @update:company="onCompanyChange"
         @update:manifest="onManifestChange"
         @update:buyingPriceList="onPriceListChange"
         @update:supplier="(value) => (supplier = value)"
@@ -98,6 +100,8 @@ import {
 
 const route = useRoute();
 
+// a manifest opened from its form sets the company from the manifest itself
+const company = ref(route.params.manifest ? "" : window.default_company || "");
 const manifest = ref(route.params.manifest || "");
 const buyingPriceList = ref("");
 const supplier = ref("");
@@ -142,10 +146,12 @@ function reload() {
   view.submit(
     {
       manifest: manifest.value,
+      company: company.value || undefined,
       buying_price_list: buyingPriceList.value || undefined,
     },
     {
       onSuccess: (data) => {
+        company.value = data.company;
         buyingPriceList.value = data.buying_price_list;
       },
       onError: (error) => {
@@ -153,6 +159,17 @@ function reload() {
       },
     }
   );
+}
+
+// another company has other manifests and another default price list
+function onCompanyChange(value) {
+  company.value = value;
+  manifest.value = "";
+  buyingPriceList.value = "";
+  errorMessage.value = "";
+  openRow.value = "";
+  view.reset();
+  rowContainers.reset();
 }
 
 function onManifestChange(value) {
@@ -175,6 +192,7 @@ function toggleOpenRow(row) {
   openRow.value = row.row_key;
   rowContainers.submit({
     manifest: manifest.value,
+    company: company.value || undefined,
     criteria_row: row.criteria_row,
     display_qty: row.display_qty,
     buying_price_list: buyingPriceList.value || undefined,
@@ -187,6 +205,7 @@ function createOrder() {
   purchaseOrder.submit(
     {
       manifest: manifest.value,
+      company: company.value || undefined,
       buying_price_list: buyingPriceList.value,
       supplier: supplier.value,
       criteria_rows: JSON.stringify(
