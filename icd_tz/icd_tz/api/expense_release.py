@@ -142,7 +142,7 @@ def get_release_accounts(company: str, sales_invoice: str | None = None) -> dict
 	"""
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-	if not settings_doc.enable_wip_for_expenses:
+	if not settings_doc.enable_wip_and_cogs_for_expenses:
 		return {}
 
 	accounts = {"wip_account": settings_doc.wip_account, "cogs_account": settings_doc.cogs_account}
