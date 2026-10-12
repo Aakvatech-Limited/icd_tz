@@ -4,7 +4,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import date_diff, flt, getdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import build_dimension_name
-from icd_tz.icd_tz.api.utils import get_best_criteria, get_size_bucket
+from icd_tz.icd_tz.api.utils import get_best_criteria, get_icd_setting, get_size_bucket
 
 ONE_OFF_EXPENSE_TYPES = {
 	"Shore": "is_shore_booked",
@@ -118,7 +118,7 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 	"""Every configured expense of a manifest, including the ones no container matches"""
 
 	header = get_manifest_header(manifest)
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(header.company)
 
 	# a row naming another port must never show, a blank port matches any, and
 	# transport is billed by the transporter, not the port
@@ -392,10 +392,10 @@ def is_price_current(price, on_date: str | None = None) -> bool:
 	return not (price.valid_upto and getdate(price.valid_upto) < day)
 
 
-def get_default_buying_price_list() -> str:
+def get_default_buying_price_list(company: str) -> str:
 	"""The configured buying price list, which has no safe default to fall back on"""
 
-	price_list = frappe.get_cached_value("ICD TZ Settings", "ICD TZ Settings", "default_buying_price_list")
+	price_list = get_icd_setting(company).default_buying_price_list
 	if not price_list:
 		frappe.throw(
 			_("Default Buying Price List is not set on the Expenses tab of ICD TZ Settings"),
@@ -443,7 +443,7 @@ def get_unpaid_port_charges(manifest: str, container_no: str) -> list:
 	no criteria row asks for.
 	"""
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(frappe.db.get_value("Manifest", manifest, "company"))
 	required = settings_doc.movement_order_requires or "Purchase Order"
 	charge_fields = CHARGE_FLAGS[required]
 
@@ -503,7 +503,7 @@ def get_expense_view(manifest: str, buying_price_list: str | None = None) -> dic
 	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
 
 	header = get_manifest_header(manifest)
-	price_list = buying_price_list or get_default_buying_price_list()
+	price_list = buying_price_list or get_default_buying_price_list(header.company)
 	rows = get_expense_rows(manifest, price_list)
 
 	return {
@@ -575,7 +575,7 @@ def get_expense_row_containers(
 
 	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
 
-	price_list = buying_price_list or get_default_buying_price_list()
+	price_list = buying_price_list or get_default_buying_price_list(get_manifest_header(manifest).company)
 	# every criteria row has to be matched before the winner of this one is known,
 	# so the whole manifest is aggregated and the asked for bucket picked out
 	for row in get_expense_rows(manifest, price_list):
