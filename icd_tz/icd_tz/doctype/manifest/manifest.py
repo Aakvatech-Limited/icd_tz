@@ -15,6 +15,7 @@ from icd_tz.icd_tz.api.accounting_dimensions import (
 	revoke_dimension_records,
 	validate_manifest_not_in_accounts,
 )
+from icd_tz.icd_tz.api.utils import get_icd_setting
 
 
 def get_sheet(workbook, seq_no):
@@ -72,7 +73,7 @@ class Manifest(Document):
 			)
 
 		# ICD Code validation
-		icd_code = frappe.db.get_single_value("ICD TZ Settings", "icd_code")
+		icd_code = get_icd_setting(self.company).icd_code
 		if not icd_code:
 			frappe.throw(
 				frappe._(
