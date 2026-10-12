@@ -15,16 +15,17 @@ def execute():
 	price a purchase order.
 	"""
 
-	settings_doc = frappe.get_single("ICD TZ Settings")
-	if settings_doc.port_storage_days:
-		return
+	for name in frappe.get_all("ICD Setting", pluck="name"):
+		settings_doc = frappe.get_doc("ICD Setting", name)
+		if settings_doc.port_storage_days:
+			continue
 
-	for charge in CHARGES:
-		settings_doc.append("port_storage_days", {"charge": charge})
+		for charge in CHARGES:
+			settings_doc.append("port_storage_days", {"charge": charge})
 
-	settings_doc.flags.ignore_permissions = True
-	settings_doc.flags.ignore_mandatory = True
-	settings_doc.flags.ignore_validate = True
-	settings_doc.save()
+		settings_doc.flags.ignore_permissions = True
+		settings_doc.flags.ignore_mandatory = True
+		settings_doc.flags.ignore_validate = True
+		settings_doc.save()
 
-	print(f"Added {len(CHARGES)} Port Storage Day charge(s) for the day ranges to be filled in")
+		print(f"Added {len(CHARGES)} Port Storage Day charge(s) to the ICD Setting of {settings_doc.company}")
