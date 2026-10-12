@@ -100,7 +100,8 @@ def upload_edi_file(document):
 def retry_failed_deliveries():
 	"""Queue again every recent submitted document whose EDI file has not gone out"""
 
-	if not frappe.db.get_single_value("ICD TZ Settings", "enable_edi"):
+	companies = frappe.get_all("ICD Setting", filters={"enable_edi": 1}, pluck="company")
+	if not companies:
 		return
 
 	since = add_days(now_datetime(), -RETRY_DAYS)
@@ -114,6 +115,7 @@ def retry_failed_deliveries():
 				# a receiver email marks a message the SMTP channel carries, not SFTP
 				"receiver_email": ["is", "not set"],
 				"creation": [">=", since],
+				"company": ["in", companies],
 				**get_due_filters(doctype),
 			},
 			pluck="name",

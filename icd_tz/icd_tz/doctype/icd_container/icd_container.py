@@ -17,6 +17,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 )
 from icd_tz.icd_tz.api.purchase_order import set_rows
 from icd_tz.icd_tz.api.tanesw import get_bill_crns, get_discharge_date
+from icd_tz.icd_tz.api.utils import get_icd_setting
 
 # containers manifested longer ago than this are left to a manifest scoped run,
 # so an unscoped run never retries bills the tracking API will not answer for
@@ -176,19 +177,48 @@ def update_port_storage_days(manifest=None):
 		)
 		return
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	containers_by_company = defaultdict(list)
+	for container in containers:
+		containers_by_company[container.company].append(container)
+
+	receipt_dates = get_icd_receipt_dates({container.manifest for container in containers})
+	for company, company_containers in containers_by_company.items():
+		bands = get_configured_port_storage_bands(company)
+		if bands:
+			append_company_storage_days(company_containers, bands, receipt_dates)
+
+
+def get_configured_port_storage_bands(company: str | None) -> dict:
+	"""Port storage bands of the company, or nothing while its days cannot be counted
+
+	Counting against a half configured band set would leave the uncovered days out, and
+	the page refuses to price in the same state. One company is skipped, not the run.
+	"""
+
+	if not company or not frappe.db.exists("ICD Setting", {"company": company}):
+		frappe.log_error(
+			title="Port storage days not counted",
+			message=f"{company or 'A container without a company'} has no ICD Setting. Create it to count the port storage days.",
+			reference_doctype="Company" if company else None,
+			reference_name=company,
+		)
+		return {}
+
+	settings_doc = get_icd_setting(company)
 	bands = get_port_storage_bands(settings_doc)
 	if not bands or not all(is_band_configured(row) for row in settings_doc.port_storage_days):
-		# counting against a half configured band set would leave the uncovered days
-		# out, and the page refuses to price in the same state
-		frappe.logger("icd_tz").warning(
-			"Port storage days: the day ranges are not set on the Expenses tab of ICD TZ Settings"
+		frappe.log_error(
+			title="Port storage days not counted",
+			message=f"Set the From and To days of the Port Storage Days on the Expenses tab of the ICD Setting of {company}.",
+			reference_doctype="ICD Setting",
+			reference_name=settings_doc.name,
 		)
-		return
+		return {}
 
-	manifests = {container.manifest for container in containers}
-	receipt_dates = get_icd_receipt_dates(manifests)
+	return bands
 
+
+def append_company_storage_days(containers: list, bands: dict, receipt_dates: dict):
 	for batch in create_batch(containers, BATCH_SIZE):
 		for container in batch:
 			try:
@@ -221,7 +251,7 @@ def get_containers_for_storage_days(manifest=None) -> list:
 	return frappe.get_all(
 		"ICD Container",
 		filters=filters,
-		fields=["name", "manifest", "container_no", "ship_dc_date"],
+		fields=["name", "company", "manifest", "container_no", "ship_dc_date"],
 		order_by="creation asc",
 	)
 
