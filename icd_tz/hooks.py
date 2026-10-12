@@ -33,6 +33,8 @@ doctype_js = {
 	"Vehicle": "public/js/vehicle.js",
 	"Contract": "public/js/contract.js",
 	"Purchase Invoice": "public/js/purchase_invoice.js",
+	"Item": "public/js/item_defaults.js",
+	"Item Group": "public/js/item_defaults.js",
 }
 
 doctype_list_js = {
@@ -137,6 +139,8 @@ after_migrate = [
 # Hook on document methods and events
 
 doc_events = {
+	"Item": {"validate": "icd_tz.icd_tz.api.item_accounts.validate"},
+	"Item Group": {"validate": "icd_tz.icd_tz.api.item_accounts.validate"},
 	"Sales Invoice": {
 		"before_save": "icd_tz.icd_tz.api.sales_invoice.before_save",
 		"on_submit": [
