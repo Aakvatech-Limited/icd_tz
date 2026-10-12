@@ -11,7 +11,7 @@ from frappe.utils.background_jobs import enqueue
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
 from icd_tz.icd_tz.api.edi.delivery import queue_delivery
 from icd_tz.icd_tz.api.transport_charges import validate_reception_transport_unpaid
-from icd_tz.icd_tz.api.utils import validate_delivered_containers
+from icd_tz.icd_tz.api.utils import get_icd_setting, validate_delivered_containers
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
 
@@ -42,7 +42,7 @@ class ContainerReception(Document):
 		if not self.ship_dc_date or not self.posting_date:
 			return
 
-		self.received_date = get_received_date(self.posting_date, self.ship_dc_date)
+		self.received_date = get_received_date(self.posting_date, self.ship_dc_date, self.company)
 
 	def validate(self):
 		self.validate_container_no()
@@ -375,7 +375,7 @@ class ContainerReception(Document):
 			frappe.throw("New Ship D/C Date is the same as the current Ship D/C Date")
 
 		old_ship_dc_date = self.ship_dc_date
-		new_received_date = get_received_date(self.posting_date, new_ship_dc_date)
+		new_received_date = get_received_date(self.posting_date, new_ship_dc_date, self.company)
 
 		if self.movement_order:
 			self.update_cmo_ship_dc_date(old_ship_dc_date, new_ship_dc_date)
@@ -426,10 +426,10 @@ class ContainerReception(Document):
 			enqueue(method=daily_update_date_container_stay, container_id=container_doc.name)
 
 
-def get_received_date(posting_date, ship_dc_date):
+def get_received_date(posting_date, ship_dc_date, company: str):
 	"""Received date is posting_date if it is past the settings threshold after ship_dc_date, otherwise ship_dc_date"""
 
-	threshold_hours = frappe.db.get_single_value("ICD TZ Settings", "received_date_threshold_hours")
+	threshold_hours = get_icd_setting(company).received_date_threshold_hours
 	hours_after_ship_dc_date = time_diff_in_hours(posting_date, ship_dc_date)
 	if hours_after_ship_dc_date >= threshold_hours:
 		return getdate(posting_date)

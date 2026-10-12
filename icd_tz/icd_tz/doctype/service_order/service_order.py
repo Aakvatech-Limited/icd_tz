@@ -9,6 +9,7 @@ from frappe.utils import flt
 from icd_tz.icd_tz.api.icd_services import BOOKING, SERVICES
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
+	get_icd_setting,
 	get_service_key,
 	set_container_cf_company,
 	validate_cf_agent,
@@ -103,6 +104,8 @@ class ServiceOrder(Document):
 			self.place_of_destination = container_doc.place_of_destination
 			self.country_of_destination = container_doc.country_of_destination
 			self.consignee = container_doc.consignee
+			if not self.company:
+				self.company = container_doc.company
 			if not self.m_bl_no:
 				self.m_bl_no = container_doc.m_bl_no
 			if not self.h_bl_no and container_doc.has_hbl == 1:
@@ -185,7 +188,7 @@ class ServiceOrder(Document):
 		return flt(self.gross_volume) if self.is_loose_cargo else 1
 
 	def get_services(self):
-		self.add_container_services(frappe.get_cached_doc("ICD TZ Settings"))
+		self.add_container_services(get_icd_setting(self.company))
 		self.get_other_charges()
 
 	def add_container_services(self, settings_doc):

@@ -1,7 +1,7 @@
 import frappe
 
 from icd_tz.icd_tz.api.icd_services import get_item_services
-from icd_tz.icd_tz.api.utils import get_service_items, validate_qty_storage_item
+from icd_tz.icd_tz.api.utils import get_icd_setting, get_service_items, validate_qty_storage_item
 
 
 def before_save(doc, method):
@@ -20,7 +20,7 @@ def update_sales_references(doc):
 	if doc.is_return:
 		invoice_id = None
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(doc.company)
 	item_services = get_item_services(settings_doc)
 	storage_items = get_service_items(settings_doc, "Storage-Single") + get_service_items(
 		settings_doc, "Storage-Double"

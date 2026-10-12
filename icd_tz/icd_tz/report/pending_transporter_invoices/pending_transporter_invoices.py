@@ -23,7 +23,7 @@ def execute(filters=None):
 		filters.company, filters.transporter, filters.from_date, filters.to_date, filters.manifest
 	)
 
-	return get_columns(), get_rows(containers)
+	return get_columns(), get_rows(containers, filters.company)
 
 
 def get_columns() -> list:
@@ -64,12 +64,12 @@ def get_columns() -> list:
 	]
 
 
-def get_rows(containers: list) -> list:
+def get_rows(containers: list, company: str) -> list:
 	"""One row per container, priced the way Get Transport Services would price it today"""
 
-	criteria_rows = get_transport_rows()
+	criteria_rows = get_transport_rows(company)
 	price_lists = {
-		transporter: get_transport_price_list(transporter)[0]
+		transporter: get_transport_price_list(transporter, company)[0]
 		for transporter in {container.transporter for container in containers if container.transporter}
 	}
 

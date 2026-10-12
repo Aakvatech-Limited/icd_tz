@@ -13,6 +13,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 	get_expense_rows,
 	get_manifest_header,
 )
+from icd_tz.icd_tz.api.utils import get_container_items, get_icd_setting
 
 BATCH_SIZE = 500
 
@@ -34,7 +35,7 @@ def create_purchase_order(
 	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
 
 	selected = set(frappe.parse_json(criteria_rows) or [])
-	price_list = buying_price_list or get_default_buying_price_list()
+	price_list = buying_price_list or get_default_buying_price_list(get_manifest_header(manifest).company)
 	# the day row names are needed here, they go onto the order line
 	rows = [
 		row
@@ -98,14 +99,15 @@ def get_wip_account(company: str) -> str | None:
 	rather than made unsavable.
 	"""
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-	if not settings_doc.enable_wip_and_cogs_for_expenses or not settings_doc.wip_account:
+	settings_doc = get_icd_setting(company)
+	wip_account = settings_doc.get("wip_account")
+	if not settings_doc.enable_wip_and_cogs_for_expenses or not wip_account:
 		return None
 
-	if frappe.get_cached_value("Account", settings_doc.wip_account, "company") != company:
+	if frappe.get_cached_value("Account", wip_account, "company") != company:
 		return None
 
-	return settings_doc.wip_account
+	return wip_account
 
 
 def get_required_wip_account(company: str) -> str | None:
@@ -116,7 +118,7 @@ def get_required_wip_account(company: str) -> str | None:
 	what would otherwise send the expense quietly back to the ERPNext default.
 	"""
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(company)
 	if not settings_doc.enable_wip_and_cogs_for_expenses:
 		return None
 
@@ -124,7 +126,7 @@ def get_required_wip_account(company: str) -> str | None:
 	if not wip_account:
 		frappe.throw(
 			_("Port expenses are booked to work in progress, but {0} cannot be used for {1}").format(
-				frappe.bold(settings_doc.wip_account or _("no WIP Account")), frappe.bold(company)
+				frappe.bold(settings_doc.get("wip_account") or _("no WIP Account")), frappe.bold(company)
 			),
 			title=_("WIP Account Not Usable"),
 		)
@@ -280,18 +282,18 @@ def release_expense_containers(doc):
 def get_expense_coverage(doc) -> tuple[dict, set]:
 	"""What an order or invoice covers: containers per one off expense type, and storage day rows
 
-	A plain purchase order carries no icd_container, so this costs one attribute
-	read per line and returns nothing.
+	A plain purchase order carries no icd_container, so this returns nothing and does
+	not need the ICD Setting of its company.
 	"""
 
-	expense_items = get_expense_items_by_type()
 	one_off = {}
 	storage_day_rows = set()
+	container_items = get_container_items(doc)
+	if not container_items:
+		return one_off, storage_day_rows
 
-	for item in doc.items:
-		if not item.get("icd_container"):
-			continue
-
+	expense_items = get_expense_items_by_type(doc.company)
+	for item in container_items:
 		expense_type = expense_items.get(item.item_code)
 		if expense_type in ONE_OFF_EXPENSE_TYPES:
 			one_off.setdefault(expense_type, set()).add(item.icd_container)
@@ -302,10 +304,10 @@ def get_expense_coverage(doc) -> tuple[dict, set]:
 	return one_off, storage_day_rows
 
 
-def get_expense_items_by_type() -> dict:
+def get_expense_items_by_type(company: str) -> dict:
 	"""Item code to port expense type, read from the configured criteria"""
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(company)
 
 	return {
 		row.expense_item: row.expense_type

@@ -15,6 +15,7 @@ from icd_tz.icd_tz.api.transport_charges import (
 	get_transport_items,
 	stamp_transport_invoice,
 )
+from icd_tz.icd_tz.api.utils import get_container_items
 
 
 def set_wip_account(doc, method=None):
@@ -30,13 +31,17 @@ def set_wip_account(doc, method=None):
 	Runs before validate so ERPNext still has its say on every other line.
 	"""
 
+	container_items = get_container_items(doc)
+	if not container_items:
+		return
+
 	wip_account = get_wip_account(doc.company)
 	if not wip_account:
 		return
 
-	held_items = {*get_expense_items_by_type(), *get_transport_items()}
-	for item in doc.items:
-		if item.get("icd_container") and item.item_code in held_items:
+	held_items = {*get_expense_items_by_type(doc.company), *get_transport_items(doc.company)}
+	for item in container_items:
+		if item.item_code in held_items:
 			item.expense_account = wip_account
 
 

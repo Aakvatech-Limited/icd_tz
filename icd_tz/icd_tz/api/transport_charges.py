@@ -11,7 +11,7 @@ from icd_tz.icd_tz.api.port_expenses import (
 	get_default_buying_price_list,
 )
 from icd_tz.icd_tz.api.purchase_order import get_required_wip_account
-from icd_tz.icd_tz.api.utils import get_best_criteria
+from icd_tz.icd_tz.api.utils import get_best_criteria, get_container_items, get_icd_setting
 
 
 @frappe.whitelist()
@@ -43,10 +43,10 @@ def get_transport_services(
 			title=_("Nothing to Bill"),
 		)
 
-	container_items = get_container_transport_items(containers)
-	validate_no_draft_transport_invoice(get_transport_items(), list(container_items), purchase_invoice)
+	container_items = get_container_transport_items(containers, company)
+	validate_no_draft_transport_invoice(get_transport_items(company), list(container_items), purchase_invoice)
 
-	price_list, contract = get_transport_price_list(supplier, posting_date)
+	price_list, contract = get_transport_price_list(supplier, company, posting_date)
 	item_codes = set(container_items.values())
 	rates = get_buying_rates(item_codes, price_list, posting_date)
 	items = {}
@@ -139,10 +139,10 @@ def get_unpaid_transport_containers(
 	return query.run(as_dict=True)
 
 
-def get_container_transport_items(containers: list) -> dict:
+def get_container_transport_items(containers: list, company: str) -> dict:
 	"""Transport item of each ICD Container, from the most specific Transport row that matches it"""
 
-	criteria_rows = get_transport_rows()
+	criteria_rows = get_transport_rows(company)
 	container_items = {}
 	unmatched = []
 	for container in containers:
@@ -170,7 +170,9 @@ def get_transport_row(container, criteria_rows: list):
 	return get_best_criteria(criteria_rows, get_container_key(container, container, container.port))
 
 
-def get_transport_price_list(supplier: str, on_date: str | None = None) -> tuple[str, str | None]:
+def get_transport_price_list(
+	supplier: str, company: str, on_date: str | None = None
+) -> tuple[str, str | None]:
 	"""Price list of the rate based supplier contract active on the date, else the settings default,
 	and that contract
 	"""
@@ -178,7 +180,7 @@ def get_transport_price_list(supplier: str, on_date: str | None = None) -> tuple
 	# an unticked Rate Based clears the price list, so a contract price list is always rate based
 	contract = get_active_contract(SUPPLIER_PARTY_TYPE, supplier, on_date)
 
-	return contract.get("price_list") or get_default_buying_price_list(), contract.get("name")
+	return contract.get("price_list") or get_default_buying_price_list(company), contract.get("name")
 
 
 def validate_no_draft_transport_invoice(item_codes: set, icd_containers: list, purchase_invoice: str | None):
@@ -210,28 +212,26 @@ def validate_no_draft_transport_invoice(item_codes: set, icd_containers: list, p
 		)
 
 
-def get_transport_rows() -> list:
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+def get_transport_rows(company: str) -> list:
+	settings_doc = get_icd_setting(company)
 
 	return [row for row in settings_doc.expense_types if row.expense_type == TRANSPORT_EXPENSE_TYPE]
 
 
-def get_transport_items() -> set:
-	return {row.expense_item for row in get_transport_rows()}
+def get_transport_items(company: str) -> set:
+	return {row.expense_item for row in get_transport_rows(company)}
 
 
 def get_transport_containers(doc) -> list:
 	"""ICD Containers the transport lines of a purchase invoice pay for"""
 
-	transport_items = get_transport_items()
+	container_items = get_container_items(doc)
+	if not container_items:
+		return []
 
-	return list(
-		{
-			item.icd_container
-			for item in doc.items
-			if item.item_code in transport_items and item.get("icd_container")
-		}
-	)
+	transport_items = get_transport_items(doc.company)
+
+	return list({item.icd_container for item in container_items if item.item_code in transport_items})
 
 
 def stamp_transport_invoice(doc):
