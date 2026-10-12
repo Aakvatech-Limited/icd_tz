@@ -63,7 +63,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Our identifier as this shipping line knows us. Falls back to the Default Sender ID in ICD TZ Settings.",
+   "description": "Our identifier as this shipping line knows us. Falls back to the Default Sender ID in ICD Setting.",
    "fieldname": "sender_id",
    "fieldtype": "Data",
    "label": "Sender ID"
@@ -241,7 +241,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-04 18:00:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Partner",
