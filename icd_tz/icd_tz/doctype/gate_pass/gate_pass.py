@@ -27,7 +27,7 @@ from icd_tz.icd_tz.api.icd_services import (
 	SERVICE_FIELDS,
 	get_scope_services,
 )
-from icd_tz.icd_tz.api.utils import validate_cf_agent, validate_no_draft_container_records
+from icd_tz.icd_tz.api.utils import get_icd_setting, validate_cf_agent, validate_no_draft_container_records
 
 
 class GatePass(Document):
@@ -256,7 +256,7 @@ class GatePass(Document):
 		self.set_expiry_datetime()
 
 	def set_expiry_datetime(self):
-		settings = frappe.get_single("ICD TZ Settings")
+		settings = get_icd_setting(self.company)
 		if not settings.gate_pass_expiry_hours:
 			return
 
