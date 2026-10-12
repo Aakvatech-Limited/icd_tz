@@ -2,6 +2,18 @@
   <div
     class="grid grid-cols-1 gap-4 border-b border-gray-200 bg-gray-50 p-4 md:grid-cols-10"
   >
+    <div class="md:col-span-1">
+      <label class="mb-1 block text-xs uppercase tracking-wide text-gray-600"
+        >Company</label
+      >
+      <Autocomplete
+        :options="companyOptions"
+        :modelValue="company"
+        placeholder="Company"
+        @update:modelValue="(option) => $emit('update:company', option?.value)"
+      />
+    </div>
+
     <div class="md:col-span-2">
       <label class="mb-1 block text-xs uppercase tracking-wide text-gray-600"
         >Manifest</label
@@ -41,7 +53,7 @@
     </div>
 
     <!-- read-only context: the port and vessel come from the manifest, the currency from the price list -->
-    <div class="flex items-end md:col-span-4">
+    <div class="flex items-end md:col-span-3">
       <div
         class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] divide-x divide-gray-200 rounded border border-gray-300 bg-white"
       >
@@ -74,9 +86,10 @@
 
 <script setup>
 import { createListResource } from "frappe-ui";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
-defineProps({
+const props = defineProps({
+  company: String,
   manifest: String,
   buyingPriceList: String,
   supplier: String,
@@ -85,16 +98,43 @@ defineProps({
   currency: String,
 });
 
-defineEmits(["update:manifest", "update:buyingPriceList", "update:supplier"]);
+defineEmits([
+  "update:company",
+  "update:manifest",
+  "update:buyingPriceList",
+  "update:supplier",
+]);
+
+const companies = createListResource({
+  doctype: "Company",
+  fields: ["name"],
+  orderBy: "name asc",
+  pageLength: 100,
+  auto: true,
+});
 
 const manifests = createListResource({
   doctype: "Manifest",
   fields: ["name", "vessel_name"],
-  filters: { docstatus: 1 },
+  filters: getManifestFilters(),
   orderBy: "creation desc",
   pageLength: 100,
-  auto: true,
+  // the company is set later when the page opens on a manifest, and the watcher loads then
+  auto: Boolean(props.company),
 });
+
+// the manifests of the selected company only
+watch(
+  () => props.company,
+  () => {
+    manifests.update({ filters: getManifestFilters() });
+    manifests.reload();
+  }
+);
+
+function getManifestFilters() {
+  return { docstatus: 1, company: props.company || undefined };
+}
 
 const priceLists = createListResource({
   doctype: "Price List",
@@ -112,6 +152,10 @@ const suppliers = createListResource({
   pageLength: 100,
   auto: true,
 });
+
+const companyOptions = computed(() =>
+  (companies.data || []).map((row) => ({ label: row.name, value: row.name }))
+);
 
 const manifestOptions = computed(() =>
   (manifests.data || []).map((row) => ({ label: row.name, value: row.name }))
