@@ -178,6 +178,15 @@ class TestContainerUnpacking(FrappeTestCase):
 
 		self.assertEqual({row.gross_volume for row in get_hbl_containers(unpacking)}, {7.25})
 
+	def test_the_consolidators_cbm_overrides_the_manifest_cbm(self):
+		unpacking = make_unpacking(receive_lcl_box())
+		for row in unpacking.hbls:
+			row.consolidator_gross_volume = 6.75
+
+		unpacking.submit()
+
+		self.assertEqual({row.gross_volume for row in get_hbl_containers(unpacking)}, {6.75})
+
 	def test_a_bill_with_no_cbm_at_all_is_saved_but_not_submitted(self):
 		frappe.db.set_value("House BL", {"parent": self.manifest.name}, "gross_volume", 0)
 
