@@ -16,13 +16,23 @@ var show_port_expense_dialog = () => {
     title: __("Create Port Expense Order"),
     fields: [
       {
+        label: __("Company"),
+        fieldname: "company",
+        fieldtype: "Link",
+        options: "Company",
+        reqd: 1,
+        default: frappe.defaults.get_user_default("Company"),
+        // a manifest of the old company does not belong to the new one
+        onchange: () => d.set_value("manifest", ""),
+      },
+      {
         label: __("Manifest"),
         fieldname: "manifest",
         fieldtype: "Link",
         options: "Manifest",
         reqd: 1,
         get_query: () => {
-          return { filters: { docstatus: 1 } };
+          return { filters: { docstatus: 1, company: d.get_value("company") } };
         },
       },
     ],
