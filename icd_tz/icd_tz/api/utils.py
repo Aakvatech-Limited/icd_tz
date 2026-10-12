@@ -134,6 +134,31 @@ def get_best_criteria(criteria_rows, key: dict):
 	return winner
 
 
+def get_container_items(doc) -> list:
+	"""Lines that carry an ICD Container, the only lines the ICD Setting of the company applies to"""
+
+	return [item for item in doc.items if item.get("icd_container")]
+
+
+def get_icd_setting(company: str | None):
+	"""The ICD Setting of a company, from the cache
+
+	Found by its company field, because a renamed Company keeps the old record name.
+	"""
+
+	if not company:
+		frappe.throw(_("Set the Company to read its ICD Setting"), title=_("Company Not Set"))
+
+	name = frappe.db.get_value("ICD Setting", {"company": company})
+	if not name:
+		frappe.throw(
+			_("Create the ICD Setting of company {0} to continue").format(frappe.bold(company)),
+			title=_("ICD Setting Not Found"),
+		)
+
+	return frappe.get_cached_doc("ICD Setting", name)
+
+
 def get_service_item(settings_doc, service_type: str, key: dict, is_loose_cargo: bool = False) -> str | None:
 	"""Item a service is charged on, from the criteria row that best fits the container
 
@@ -305,7 +330,7 @@ def validate_qty_storage_item(doc):
 	if doc.get("h_bl_no") or not doc.get("m_bl_no"):
 		return
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(doc.company)
 	storage_services = [
 		row.service_name
 		for row in settings_doc.service_types
