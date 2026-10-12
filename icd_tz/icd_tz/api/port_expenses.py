@@ -95,11 +95,11 @@ def get_charge_of_day(day, start_date, bands: dict) -> str | None:
 	return None
 
 
-def get_manifest_header(manifest: str) -> dict:
+def get_manifest_header(manifest: str, company: str | None = None) -> dict:
 	"""Manifest a port expense run is for
 
 	Its dimension records only exist once it is submitted, so an earlier run
-	would silently price nothing.
+	would silently price nothing. A given company must be the company of the manifest.
 	"""
 
 	header = frappe.db.get_value(
@@ -110,6 +110,14 @@ def get_manifest_header(manifest: str) -> dict:
 
 	if header.docstatus != 1:
 		frappe.throw(_("Manifest {0} is not submitted, so it has no containers to expense").format(manifest))
+
+	if company and header.company != company:
+		frappe.throw(
+			_("Manifest {0} belongs to {1}, not {2}").format(
+				frappe.bold(manifest), frappe.bold(header.company), frappe.bold(company)
+			),
+			title=_("Manifest of Another Company"),
+		)
 
 	return header
 
@@ -497,17 +505,18 @@ def has_unstamped_storage_days(icd_container: str, stamp_field: str) -> bool:
 
 
 @frappe.whitelist()
-def get_expense_view(manifest: str, buying_price_list: str | None = None) -> dict:
+def get_expense_view(manifest: str, buying_price_list: str | None = None, company: str | None = None) -> dict:
 	"""Everything the port expense page shows for one manifest"""
 
 	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
 
-	header = get_manifest_header(manifest)
+	header = get_manifest_header(manifest, company)
 	price_list = buying_price_list or get_default_buying_price_list(header.company)
 	rows = get_expense_rows(manifest, price_list)
 
 	return {
 		"manifest": manifest,
+		"company": header.company,
 		"port": header.port,
 		"vessel_name": header.vessel_name,
 		"buying_price_list": price_list,
@@ -565,6 +574,7 @@ def get_expense_row_containers(
 	criteria_row: str,
 	display_qty: float | None = None,
 	buying_price_list: str | None = None,
+	company: str | None = None,
 ) -> list:
 	"""Containers behind one displayed row, for the drill down
 
@@ -575,7 +585,8 @@ def get_expense_row_containers(
 
 	frappe.has_permission("Manifest", "read", doc=manifest, throw=True)
 
-	price_list = buying_price_list or get_default_buying_price_list(get_manifest_header(manifest).company)
+	header = get_manifest_header(manifest, company)
+	price_list = buying_price_list or get_default_buying_price_list(header.company)
 	# every criteria row has to be matched before the winner of this one is known,
 	# so the whole manifest is aggregated and the asked for bucket picked out
 	for row in get_expense_rows(manifest, price_list):
