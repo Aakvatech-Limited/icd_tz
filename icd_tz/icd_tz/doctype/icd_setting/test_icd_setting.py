@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestICDTZSettings(FrappeTestCase):
+class TestICDSetting(FrappeTestCase):
 	pass
