@@ -1,6 +1,16 @@
 [
   {
     "dt": "Contract",
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "options": "Company",
+    "insert_after": "cb_party",
+    "reqd": 1,
+    "description": "The ICD Setting of this company gives the storage day destinations and the default price list"
+  },
+  {
+    "dt": "Contract",
     "fieldname": "is_rate_based",
     "fieldtype": "Check",
     "label": "Rate Based",

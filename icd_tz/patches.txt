@@ -11,3 +11,4 @@ icd_tz.patches.index_icd_dimension_fields
 icd_tz.patches.create_icd_setting_company_record
 icd_tz.patches.create_port_expense_defaults
 icd_tz.patches.show_contract_rate_fields_for_suppliers
+icd_tz.patches.set_contract_company
