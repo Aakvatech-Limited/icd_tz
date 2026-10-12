@@ -195,7 +195,7 @@ class TestSharedBoxRelease(FrappeTestCase):
 		self.item = frappe.get_single("ICD TZ Settings").expense_types[0].expense_item
 		frappe.db.set_single_value(
 			"ICD TZ Settings",
-			{"enable_wip_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
+			{"enable_wip_and_cogs_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
 		)
 		self.manifest = make_manifest()
 		self.bills = {m_bl_no: self.make_dimension("ICD Master BL", m_bl_no=m_bl_no) for m_bl_no in BILLS}
