@@ -107,6 +107,7 @@ const priceLists = createListResource({
 const suppliers = createListResource({
   doctype: "Supplier",
   fields: ["name"],
+  filters: { disabled: 0, is_transporter: 0 },
   orderBy: "name asc",
   pageLength: 100,
   auto: true,
