@@ -55,6 +55,10 @@ frappe.ui.form.on("Contract", {
   is_storage_days_based: function (frm) {
     set_destination_options(frm);
   },
+
+  company: function (frm) {
+    set_destination_options(frm);
+  },
 });
 
 function set_destination_options(frm) {
