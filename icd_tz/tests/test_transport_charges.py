@@ -92,7 +92,7 @@ class TransportTestCase(FrappeTestCase):
 			"ICD TZ Settings",
 			{
 				"default_buying_price_list": PRICE_LIST,
-				"enable_wip_for_expenses": 0,
+				"enable_wip_and_cogs_for_expenses": 0,
 				"received_date_threshold_hours": 48,
 			},
 		)
@@ -397,7 +397,9 @@ class TestTransportInvoiceStamp(TransportTestCase):
 		wip = frappe.db.get_value(
 			"Account", {"company": self.company, "is_group": 0, "root_type": "Asset"}, "name"
 		)
-		frappe.db.set_single_value("ICD TZ Settings", {"enable_wip_for_expenses": 1, "wip_account": wip})
+		frappe.db.set_single_value(
+			"ICD TZ Settings", {"enable_wip_and_cogs_for_expenses": 1, "wip_account": wip}
+		)
 		doc = self.make_invoice_doc()
 
 		set_wip_account(doc)
