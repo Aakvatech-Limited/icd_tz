@@ -1,4 +1,5 @@
 import frappe
+from erpnext import get_default_company
 from frappe import _
 from frappe.query_builder.functions import IfNull
 from frappe.utils import get_link_to_form, getdate
@@ -16,7 +17,7 @@ from icd_tz.icd_tz.api.utils import get_best_criteria, get_container_items, get_
 
 @frappe.whitelist()
 def get_transport_services(
-	company: str,
+	company: str | None,
 	supplier: str,
 	from_date: str,
 	to_date: str,
@@ -31,6 +32,7 @@ def get_transport_services(
 	"""
 
 	frappe.has_permission("Purchase Invoice", "create", throw=True)
+	company = company or get_default_company()
 	if getdate(from_date) > getdate(to_date):
 		frappe.throw(_("From Date cannot be after To Date"))
 
