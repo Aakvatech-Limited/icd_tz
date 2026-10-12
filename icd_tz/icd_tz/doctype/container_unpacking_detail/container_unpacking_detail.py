@@ -8,9 +8,9 @@ from frappe.utils import cint, flt
 class ContainerUnpackingDetail(Document):
 	@property
 	def gross_volume(self) -> float:
-		"""CBM the cargo is billed on, the consolidator's only when the manifest gives none"""
+		"""CBM the cargo is billed on, the consolidator's when set, else the manifest's"""
 
-		return flt(self.manifest_gross_volume) or flt(self.consolidator_gross_volume)
+		return flt(self.consolidator_gross_volume) or flt(self.manifest_gross_volume)
 
 	def set_package_difference(self):
 		self.package_difference = cint(self.counted_packages) - cint(self.manifest_packages)
