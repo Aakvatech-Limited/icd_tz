@@ -4,10 +4,11 @@
 from time import sleep
 
 import frappe
+from erpnext import get_default_company
 from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
-from icd_tz.icd_tz.api.contract import get_storage_day_counts
+from icd_tz.icd_tz.api.contract import get_settings_destinations, get_storage_day_counts
 from icd_tz.icd_tz.api.icd_services import RECEPTION, get_scope_services
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
@@ -449,7 +450,7 @@ class Container(Document):
 		if not self.place_of_destination:
 			return
 
-		places = get_place_of_destination()
+		places = get_settings_destinations(self.company)
 		places_str = ", ".join(places)
 		if self.place_of_destination not in places:
 			frappe.throw(
@@ -484,15 +485,10 @@ class Container(Document):
 
 
 @frappe.whitelist()
-def get_place_of_destination():
-	destinations = []
+def get_place_of_destination(company: str | None = None) -> set:
+	"""Places of destination of the company, or of the user's default company when none is given"""
 
-	icd_doc = frappe.get_doc("ICD TZ Settings")
-
-	for row in icd_doc.storage_days:
-		destinations.append(row.destination)
-
-	return set(destinations)
+	return get_settings_destinations(company or get_default_company())
 
 
 def daily_update_date_container_stay(container_id=None):
