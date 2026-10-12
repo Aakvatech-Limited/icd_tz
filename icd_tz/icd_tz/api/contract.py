@@ -87,8 +87,8 @@ def validate_transporter_contract(doc):
 		)
 
 
-def get_active_contract(party_type: str, party: str, on_date: str | None = None) -> dict:
-	"""Submitted contract of a party that covers the date, today by default"""
+def get_active_contract(party_type: str, party: str, on_date: str | None = None, *, company: str) -> dict:
+	"""Submitted contract of a party with the company that covers the date, today by default"""
 
 	if not party:
 		return {}
@@ -99,6 +99,7 @@ def get_active_contract(party_type: str, party: str, on_date: str | None = None)
 		{
 			"party_type": party_type,
 			"party_name": party,
+			"company": company,
 			"start_date": ("<=", on_date),
 			"end_date": (">=", on_date),
 			"docstatus": 1,
@@ -109,27 +110,30 @@ def get_active_contract(party_type: str, party: str, on_date: str | None = None)
 	return contract or {}
 
 
-def get_selling_price_list(c_and_f_company: str) -> str:
-	"""Price list of a rate based contract, else the ICD TZ Settings default"""
+def get_selling_price_list(c_and_f_company: str, company: str) -> str:
+	"""Price list of a rate based contract, else the default of the ICD Setting of the company"""
 
-	contract = get_active_contract(CF_PARTY_TYPE, c_and_f_company)
+	contract = get_active_contract(CF_PARTY_TYPE, c_and_f_company, company=company)
 	if contract.get("is_rate_based") and contract.get("price_list"):
 		return contract["price_list"]
 
-	return frappe.get_cached_doc("ICD TZ Settings").get("default_price_list")
+	return get_icd_setting(company).default_price_list
 
 
 def get_storage_day_counts(container_doc) -> dict:
 	"""Free, Single and Double day counts for the container place of destination
 
-	An active storage days based contract of the container C&F company wins over ICD TZ Settings.
+	An active storage days based contract of the container C&F company wins over the ICD Setting of
+	the container company.
 	"""
 
-	contract = get_active_contract(CF_PARTY_TYPE, container_doc.get("c_and_f_company"))
+	contract = get_active_contract(
+		CF_PARTY_TYPE, container_doc.get("c_and_f_company"), company=container_doc.company
+	)
 	if contract.get("is_storage_days_based"):
 		source = frappe.get_cached_doc("Contract", contract["name"])
 	else:
-		source = frappe.get_cached_doc("ICD TZ Settings")
+		source = get_icd_setting(container_doc.company)
 
 	counts = dict.fromkeys(STORAGE_CHARGES, 0)
 	for row in source.storage_days:
@@ -190,7 +194,7 @@ def validate_storage_days(doc):
 	if not doc.is_storage_days_based:
 		return
 
-	destinations = get_settings_destinations(doc.get("company") or get_default_company())
+	destinations = get_settings_destinations(doc.company)
 	if not destinations:
 		frappe.throw(
 			_("No Place of Destination is set in ICD TZ Settings, Please set it to continue"),
