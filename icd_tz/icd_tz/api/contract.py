@@ -1,6 +1,9 @@
 import frappe
+from erpnext import get_default_company
 from frappe import _
 from frappe.utils import cint, nowdate
+
+from icd_tz.icd_tz.api.utils import get_icd_setting
 
 CF_PARTY_TYPE = "Clearing and Forwarding Company"
 SUPPLIER_PARTY_TYPE = "Supplier"
@@ -55,10 +58,10 @@ def before_submit(doc, method):
 
 
 @frappe.whitelist()
-def get_storage_destinations() -> list:
-	"""Places of destination a Storage Days row can use"""
+def get_storage_destinations(company: str | None = None) -> list:
+	"""Places of destination a Storage Days row can use, of the user's default company when none is given"""
 
-	return sorted(get_settings_destinations())
+	return sorted(get_settings_destinations(company or get_default_company()))
 
 
 def validate_buying_price_list(doc):
@@ -187,7 +190,7 @@ def validate_storage_days(doc):
 	if not doc.is_storage_days_based:
 		return
 
-	destinations = get_settings_destinations()
+	destinations = get_settings_destinations(doc.get("company") or get_default_company())
 	if not destinations:
 		frappe.throw(
 			_("No Place of Destination is set in ICD TZ Settings, Please set it to continue"),
@@ -234,7 +237,7 @@ def validate_storage_days(doc):
 		)
 
 
-def get_settings_destinations() -> set:
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+def get_settings_destinations(company: str) -> set:
+	settings_doc = get_icd_setting(company)
 
 	return {row.destination for row in settings_doc.storage_days if row.destination}
