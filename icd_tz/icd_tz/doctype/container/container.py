@@ -11,6 +11,7 @@ from icd_tz.icd_tz.api.contract import get_storage_day_counts
 from icd_tz.icd_tz.api.icd_services import RECEPTION, get_scope_services
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
+	get_icd_setting,
 	get_invoice_refs,
 	validate_delivered_container,
 )
@@ -381,7 +382,7 @@ class Container(Document):
 	def check_corridor_levy_eligibility(self):
 		"""A container bound for a Corridor Levy country pays the levy, an empty one only storage; an invoiced levy stays charged"""
 
-		levy_countries = {row.country for row in frappe.get_cached_doc("ICD TZ Settings").countries}
+		levy_countries = {row.country for row in get_icd_setting(self.company).countries}
 		is_levy_country = self.country_of_destination in levy_countries
 		self.has_corridor_levy_charges = int(
 			bool(self.c_sales_invoice) or (is_levy_country and not self.is_empty_container)
