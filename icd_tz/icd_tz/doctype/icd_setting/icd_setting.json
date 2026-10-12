@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:company",
  "creation": "2024-09-13 14:41:07.161668",
  "default_view": "List",
  "doctype": "DocType",
@@ -8,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_qvvx",
+  "company",
   "icd_code",
   "default_price_list",
   "column_break_8yjq8",
@@ -32,9 +34,7 @@
   "column_break_blvn",
   "movement_order_requires",
   "column_break_wip",
-  "enable_wip_for_expenses",
-  "wip_account",
-  "cogs_account",
+  "enable_wip_and_cogs_for_expenses",
   "expense_pricing_criteria_section",
   "expense_types",
   "port_storage_section",
@@ -47,6 +47,15 @@
   "icd_un_locode"
  ],
  "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
   {
    "description": "Only cargo whose Place of Delivery in the Master BL sheet matches this code will be imported from the manifest file.",
    "fieldname": "icd_code",
@@ -190,29 +199,13 @@
   },
   {
    "default": "0",
-   "fieldname": "enable_wip_for_expenses",
+   "fieldname": "enable_wip_and_cogs_for_expenses",
    "fieldtype": "Check",
-   "label": "Enable WIP for Port Expenses"
-  },
-  {
-   "depends_on": "enable_wip_for_expenses",
-   "fieldname": "wip_account",
-   "fieldtype": "Link",
-   "label": "WIP Account",
-   "mandatory_depends_on": "enable_wip_for_expenses",
-   "options": "Account"
+   "label": "Enable WIP and COGS for Expenses"
   },
   {
    "fieldname": "column_break_wip",
    "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "enable_wip_for_expenses",
-   "fieldname": "cogs_account",
-   "fieldtype": "Link",
-   "label": "COGS Account",
-   "mandatory_depends_on": "enable_wip_for_expenses",
-   "options": "Account"
   },
   {
    "fieldname": "expense_defaults_section",
@@ -271,12 +264,13 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "issingle": 1,
+ "issingle": 0,
  "links": [],
- "modified": "2026-10-09 12:00:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
- "name": "ICD TZ Settings",
+ "name": "ICD Setting",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
