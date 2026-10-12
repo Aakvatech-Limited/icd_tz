@@ -249,6 +249,8 @@ def make_sales_order(
 			order_h_bl_no = source_doc.h_bl_no
 
 	else:
+		# without a source document, the containers being billed give the company
+		company = frappe.get_cached_value("Container", items[0]["container_id"], "company")
 		if not consignee and h_bl_no:
 			consignee = frappe.get_cached_value("Container", {"h_bl_no": h_bl_no}, "consignee")
 		if not consignee and m_bl_no:
@@ -402,7 +404,7 @@ def get_empty_container_services(m_bl_no: str) -> list:
 def build_sales_order(items: list, customer: str, company: str, c_and_f_company: str | None = None, **values):
 	"""Save a draft Sales Order for charge rows the caller has already priced"""
 
-	selling_price_list = get_selling_price_list(c_and_f_company)
+	selling_price_list = get_selling_price_list(c_and_f_company, company)
 
 	sales_order = frappe.get_doc(
 		{
