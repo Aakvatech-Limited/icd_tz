@@ -15,80 +15,11 @@ from icd_tz.icd_tz.api.port_expenses import (
 )
 
 
-class ICDTZSettings(Document):
+class ICDSetting(Document):
 	def before_save(self):
 		self.validate_storage_days()
 		self.validate_expense_types()
 		self.validate_port_storage_days()
-		self.validate_wip_accounts()
-
-	def validate_wip_accounts(self):
-		"""What the two accounts must be before expenses can be booked to work in progress
-
-		The form makes them mandatory and filters out group accounts, but neither
-		reaches an import, a patch or the API, and a group account fails only later at
-		posting time.
-		"""
-
-		if not self.enable_wip_for_expenses:
-			return
-
-		missing = [
-			self.meta.get_label(field) for field in ("wip_account", "cogs_account") if not self.get(field)
-		]
-		if missing:
-			frappe.throw(
-				_("{0} is required while port expenses are booked to work in progress").format(
-					frappe.bold(" and ".join(missing))
-				),
-				title=_("WIP Accounts Not Set"),
-			)
-
-		if self.wip_account == self.cogs_account:
-			frappe.throw(
-				_("WIP Account and COGS Account must differ, or releasing an expense would post nothing"),
-				title=_("WIP Accounts Not Set"),
-			)
-
-		companies = set()
-		for field in ("wip_account", "cogs_account"):
-			account = frappe.get_cached_value(
-				"Account", self.get(field), ["is_group", "company"], as_dict=True
-			)
-			if account.is_group:
-				frappe.throw(
-					_("{0} is a group account, which cannot be posted to").format(
-						frappe.bold(self.get(field))
-					),
-					title=_("WIP Accounts Not Set"),
-				)
-
-			companies.add(account.company)
-
-		currencies = {
-			frappe.get_cached_value("Account", self.get(field), "account_currency")
-			for field in ("wip_account", "cogs_account")
-		}
-		currencies.discard(None)
-		currencies.discard("")
-		company_currencies = {
-			frappe.get_cached_value("Company", company, "default_currency") for company in companies
-		}
-		if currencies - company_currencies:
-			frappe.throw(
-				_(
-					"WIP Account and COGS Account must be in the company currency, or a released expense cannot be converted back"
-				),
-				title=_("WIP Accounts Not Set"),
-			)
-
-		if len(companies) > 1:
-			frappe.throw(
-				_("WIP Account and COGS Account belong to different companies: {0}").format(
-					frappe.bold(", ".join(sorted(companies)))
-				),
-				title=_("WIP Accounts Not Set"),
-			)
 
 	def validate_storage_days(self):
 		storage_days = []

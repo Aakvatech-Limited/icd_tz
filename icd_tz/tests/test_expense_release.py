@@ -52,13 +52,13 @@ class TestExpenseRelease(FrappeTestCase):
 	def enable_wip(self):
 		frappe.db.set_single_value(
 			"ICD TZ Settings",
-			{"enable_wip_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
+			{"enable_wip_and_cogs_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
 		)
 
 	# --- when the move applies at all ------------------------------------
 
 	def test_nothing_moves_while_the_setting_is_off(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_wip_for_expenses", 0)
+		frappe.db.set_single_value("ICD TZ Settings", "enable_wip_and_cogs_for_expenses", 0)
 
 		self.assertEqual(get_release_accounts(self.company), {})
 
@@ -80,7 +80,8 @@ class TestExpenseRelease(FrappeTestCase):
 
 	def test_nothing_moves_while_an_account_is_missing(self):
 		frappe.db.set_single_value(
-			"ICD TZ Settings", {"enable_wip_for_expenses": 1, "wip_account": self.wip, "cogs_account": None}
+			"ICD TZ Settings",
+			{"enable_wip_and_cogs_for_expenses": 1, "wip_account": self.wip, "cogs_account": None},
 		)
 
 		self.assertEqual(get_release_accounts(self.company), {})
@@ -179,7 +180,7 @@ class TestReleasePosts(FrappeTestCase):
 		self.item = frappe.get_single("ICD TZ Settings").expense_types[0].expense_item
 		frappe.db.set_single_value(
 			"ICD TZ Settings",
-			{"enable_wip_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
+			{"enable_wip_and_cogs_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
 		)
 		self.manifest = make_manifest()
 		self.container = self.make_icd_container()

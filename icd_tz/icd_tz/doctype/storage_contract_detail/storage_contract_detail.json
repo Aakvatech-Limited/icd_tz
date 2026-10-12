@@ -13,7 +13,7 @@
  ],
  "fields": [
   {
-   "description": "Loaded from the destinations defined in ICD TZ Settings",
+   "description": "Loaded from the destinations defined in ICD Setting",
    "fieldname": "destination",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -46,7 +46,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-03 10:00:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Storage Contract Detail",

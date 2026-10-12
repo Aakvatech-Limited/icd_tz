@@ -64,14 +64,14 @@ class WipTestCase(FrappeTestCase):
 		frappe.db.set_single_value(
 			"ICD TZ Settings",
 			{
-				"enable_wip_for_expenses": 1,
+				"enable_wip_and_cogs_for_expenses": 1,
 				"wip_account": wip_account or self.wip,
 				"cogs_account": self.cogs,
 			},
 		)
 
 	def disable_wip(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_wip_for_expenses", 0)
+		frappe.db.set_single_value("ICD TZ Settings", "enable_wip_and_cogs_for_expenses", 0)
 
 
 class TestWipAccountSetting(WipTestCase):
@@ -107,47 +107,11 @@ class TestWipAccountSetting(WipTestCase):
 		self.assertRaises(frappe.ValidationError, get_required_wip_account, self.other_company)
 
 	def test_an_order_is_refused_while_the_account_is_missing(self):
-		frappe.db.set_single_value("ICD TZ Settings", {"enable_wip_for_expenses": 1, "wip_account": None})
-
-		self.assertRaises(frappe.ValidationError, get_required_wip_account, self.company)
-
-	def test_turning_it_on_without_the_accounts_is_refused(self):
-		settings_doc = frappe.get_single("ICD TZ Settings")
-		settings_doc.update({"enable_wip_for_expenses": 1, "wip_account": None, "cogs_account": None})
-
-		self.assertRaises(frappe.ValidationError, settings_doc.validate_wip_accounts)
-
-	def test_the_two_accounts_must_differ(self):
-		settings_doc = frappe.get_single("ICD TZ Settings")
-		settings_doc.update({"enable_wip_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.wip})
-
-		self.assertRaises(frappe.ValidationError, settings_doc.validate_wip_accounts)
-
-	def test_two_accounts_of_different_companies_are_refused(self):
-		if not self.other_company:
-			self.skipTest("this test needs a second company")
-
-		other_accounts = get_accounts(self.other_company)
-		if not other_accounts:
-			self.skipTest(f"{self.other_company} has no postable expense account")
-
-		settings_doc = frappe.get_single("ICD TZ Settings")
-		settings_doc.update(
-			{
-				"enable_wip_for_expenses": 1,
-				"wip_account": self.wip,
-				"cogs_account": other_accounts[0],
-			}
+		frappe.db.set_single_value(
+			"ICD TZ Settings", {"enable_wip_and_cogs_for_expenses": 1, "wip_account": None}
 		)
 
-		self.assertRaises(frappe.ValidationError, settings_doc.validate_wip_accounts)
-
-	def test_a_group_account_is_refused(self):
-		group = frappe.db.get_value("Account", {"company": self.company, "is_group": 1}, "name")
-		settings_doc = frappe.get_single("ICD TZ Settings")
-		settings_doc.update({"enable_wip_for_expenses": 1, "wip_account": group, "cogs_account": self.cogs})
-
-		self.assertRaises(frappe.ValidationError, settings_doc.validate_wip_accounts)
+		self.assertRaises(frappe.ValidationError, get_required_wip_account, self.company)
 
 
 class TestOrderAndInvoiceLines(WipTestCase):

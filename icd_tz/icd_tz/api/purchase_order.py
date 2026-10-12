@@ -99,7 +99,7 @@ def get_wip_account(company: str) -> str | None:
 	"""
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-	if not settings_doc.enable_wip_for_expenses or not settings_doc.wip_account:
+	if not settings_doc.enable_wip_and_cogs_for_expenses or not settings_doc.wip_account:
 		return None
 
 	if frappe.get_cached_value("Account", settings_doc.wip_account, "company") != company:
@@ -117,7 +117,7 @@ def get_required_wip_account(company: str) -> str | None:
 	"""
 
 	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
-	if not settings_doc.enable_wip_for_expenses:
+	if not settings_doc.enable_wip_and_cogs_for_expenses:
 		return None
 
 	wip_account = get_wip_account(company)

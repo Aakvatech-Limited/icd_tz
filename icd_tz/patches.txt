@@ -1,4 +1,5 @@
 [pre_model_sync]
+icd_tz.patches.rename_icd_tz_settings_to_icd_setting
 
 [post_model_sync]
 icd_tz.patches.create_item_group
