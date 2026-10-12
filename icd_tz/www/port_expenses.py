@@ -1,4 +1,5 @@
 import frappe
+from erpnext import get_default_company
 
 no_cache = 1
 
@@ -13,6 +14,7 @@ def get_context(context):
 		"default_route": "/port-expenses",
 		"site_name": frappe.local.site,
 		"csrf_token": frappe.sessions.get_csrf_token(),
+		"default_company": get_default_company(),
 	}
 
 	return context
