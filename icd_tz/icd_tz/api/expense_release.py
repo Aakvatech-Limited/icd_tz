@@ -4,6 +4,8 @@ import frappe
 from frappe.query_builder.functions import Sum
 from frappe.utils import flt, nowdate
 
+from icd_tz.icd_tz.api.utils import get_container_items, get_icd_setting
+
 RELEASE_REMARK = "Port expenses released from WIP to COGS for Sales Invoice {0}"
 
 # what the expenses were booked against, and what the release is booked back against
@@ -83,7 +85,8 @@ def release_expenses(sales_invoice: str):
 	"""
 
 	invoice = frappe.get_doc("Sales Invoice", sales_invoice)
-	if invoice.docstatus != 1 or invoice.is_return:
+	# an invoice without a container line has nothing in WIP, whatever its company
+	if invoice.docstatus != 1 or invoice.is_return or not get_container_items(invoice):
 		return
 
 	accounts = get_release_accounts(invoice.company, invoice.name)
@@ -141,11 +144,14 @@ def get_release_accounts(company: str, sales_invoice: str | None = None) -> dict
 	so a setting that quietly holds expenses in WIP can be found and corrected.
 	"""
 
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_icd_setting(company)
 	if not settings_doc.enable_wip_and_cogs_for_expenses:
 		return {}
 
-	accounts = {"wip_account": settings_doc.wip_account, "cogs_account": settings_doc.cogs_account}
+	accounts = {
+		"wip_account": settings_doc.get("wip_account"),
+		"cogs_account": settings_doc.get("cogs_account"),
+	}
 	if not all(accounts.values()):
 		return log_release_blocked(
 			company, sales_invoice, "WIP Account and COGS Account must both be set in ICD TZ Settings"
