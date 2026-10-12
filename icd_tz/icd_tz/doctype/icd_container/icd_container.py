@@ -38,6 +38,20 @@ class ICDContainer(Document):
 	def autoname(self):
 		self.name = build_dimension_name(self.container_no, self.manifest)
 
+	@frappe.whitelist(methods=["POST"])
+	def fetch_ship_dc_date(self):
+		"""Look up the discharge date of this container from TANeSW now, instead of waiting for the job"""
+
+		if self.ship_dc_date:
+			frappe.throw(_("Ship D/C Date is already set"))
+
+		if not self.m_bl_no:
+			frappe.throw(_("M BL No is required to look up the discharge date"))
+
+		set_bill_discharge_dates(self.m_bl_no, {self.container_no: self})
+
+		return frappe.db.get_value("ICD Container", self.name, "ship_dc_date")
+
 
 def update_ship_dc_dates(manifest=None):
 	"""Fill ship_dc_date from TANeSW for manifested containers that lack one

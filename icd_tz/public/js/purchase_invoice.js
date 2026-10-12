@@ -102,7 +102,7 @@ var set_transport_services = async (frm, supplier, posting_date, services) => {
         title: __("Transport Items Without a Price"),
         indicator: "orange",
         message: __(
-          "These items have no buying price on {0}, so their lines have a zero rate. Set the rate before you submit: {1}",
+          "These items have no buying price on <b>{0}</b>, so their lines have a zero rate. Set the rate before you submit: <b>{1}</b>",
           [
             frappe.datetime.str_to_user(posting_date),
             services.unpriced_items
