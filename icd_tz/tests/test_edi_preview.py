@@ -8,6 +8,7 @@ from icd_tz.icd_tz.api.edi.codeco import CODECOGenerator
 from icd_tz.icd_tz.api.edi.interchange import preview
 from icd_tz.icd_tz.api.edi.movement import ContainerMovement
 from icd_tz.tests.test_edi_codeco import GATE_IN_DEFAULTS, make_partner
+from icd_tz.tests.utils import set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -16,7 +17,7 @@ class TestEDIPreview(FrappeTestCase):
 	"""The EDI Partner form previews a movement with that partner"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
+		set_test_icd_setting({"enable_edi": 1})
 		self.partner = make_partner()
 		self.partner.db_set({"enable_edi": 0, "file_extension": "txt"})
 		self.movement = ContainerMovement(**GATE_IN_DEFAULTS)
