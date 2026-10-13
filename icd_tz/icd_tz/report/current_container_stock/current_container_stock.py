@@ -56,6 +56,7 @@ def get_columns():
 
 
 def get_data(filters=None):
+	filters = filters or {}
 	container = frappe.qb.DocType("Container")
 
 	query = (
@@ -76,9 +77,10 @@ def get_data(filters=None):
 			container.cargo_type,
 		)
 		.where(container.has_hbl == 0)
+		.where(container.company == filters.get("company"))
 	)
 
-	status_filter = filters.get("status_filter") if filters else None
+	status_filter = filters.get("status_filter")
 
 	# a container that is not Delivered is still in house
 	if status_filter == "Delivered":

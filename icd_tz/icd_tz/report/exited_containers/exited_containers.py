@@ -78,6 +78,7 @@ def get_data(filters=None):
 		)
 		.where(container.status == "Delivered")
 		.where(container.has_hbl == 0)
+		.where(container.company == filters.get("company"))
 		.orderby(container.gate_out_date, order=Order.desc)
 	)
 

@@ -73,6 +73,7 @@ def get_data(filters=None):
 			reception.transporter,
 		)
 		.where(container.has_hbl == 0)
+		.where(container.company == filters.get("company"))
 		.orderby(container.posting_date, order=Order.desc)
 	)
 

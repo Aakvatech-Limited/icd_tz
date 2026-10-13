@@ -246,7 +246,8 @@
    "fieldname": "company",
    "fieldtype": "Link",
    "label": "Company",
-   "options": "Company"
+   "options": "Company",
+   "search_index": 1
   },
   {
    "fieldname": "section_break_hn92e",
@@ -402,7 +403,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-04 15:00:00.000000",
+ "modified": "2026-10-13 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Gate Pass",

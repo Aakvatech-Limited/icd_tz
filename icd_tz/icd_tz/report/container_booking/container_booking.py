@@ -44,6 +44,7 @@ def get_data(filters):
 		)
 		.where(
 			(ycb.docstatus == 1)
+			& (ycb.company == filters.get("company"))
 			& (ycb.inspection_date >= filters.get("from_date"))
 			& (ycb.inspection_date <= filters.get("to_date"))
 		)

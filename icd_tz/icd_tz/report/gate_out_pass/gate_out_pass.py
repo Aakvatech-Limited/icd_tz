@@ -64,6 +64,7 @@ def get_data(filters=None):
 			gate_pass.gate_out_date,
 		)
 		.where(gate_pass.docstatus == 1)
+		.where(gate_pass.company == filters.get("company"))
 		.where(gate_pass.gate_out_date.isnotnull())
 		.orderby(gate_pass.gate_out_date, order=Order.desc)
 	)

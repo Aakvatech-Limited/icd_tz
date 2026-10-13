@@ -78,6 +78,7 @@ def get_data(filters):
 			invoice_item.base_net_amount,
 		)
 		.where(invoice.docstatus == 1)
+		.where(invoice.company == filters.get("company"))
 		.orderby(invoice.posting_date, order=Order.desc)
 	)
 
