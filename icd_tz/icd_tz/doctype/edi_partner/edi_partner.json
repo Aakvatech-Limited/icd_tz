@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:shipping_line_code",
+ "autoname": "format:{shipping_line_code}-{abbr}",
  "creation": "2026-09-14 09:00:00",
  "description": "EDI connection and identity of one shipping line, matched on the TANeSW shipping agent code",
  "doctype": "DocType",
@@ -10,9 +10,12 @@
  "field_order": [
   "shipping_line_code",
   "shipping_line_name",
+  "column_break_owre",
+  "company",
+  "abbr",
   "column_break_identity",
-  "sender_id",
   "enable_edi",
+  "sender_id",
   "file_section",
   "file_name_format",
   "column_break_file",
@@ -42,14 +45,29 @@
  ],
  "fields": [
   {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "company.abbr",
+   "fieldname": "abbr",
+   "fieldtype": "Data",
+   "label": "Company Abbreviation",
+   "read_only": 1
+  },
+  {
    "description": "Shipping agent code as it appears in the TANeSW manifest. Container records are matched on this value.",
    "fieldname": "shipping_line_code",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Shipping Line Code",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "description": "Shipping agent name, for reference only",
@@ -189,8 +207,8 @@
    "description": "Private key used for SSH/SFTP authentication",
    "fieldname": "authentication_key",
    "fieldtype": "Password",
-   "length": 5000,
    "label": "Authentication Key",
+   "length": 5000,
    "mandatory_depends_on": "eval:doc.authentication_method=='Key' && doc.connection_type=='SFTP'"
   },
   {
@@ -236,16 +254,20 @@
   {
    "fieldname": "column_break_dqme",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_owre",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-12 12:00:00.000000",
+ "modified": "2026-10-13 06:14:28.693267",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "EDI Partner",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
