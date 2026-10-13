@@ -31,6 +31,8 @@ from datetime import datetime
 import frappe
 from frappe.utils import format_datetime, getdate, now_datetime
 
+from icd_tz.icd_tz.api.utils import get_icd_setting
+
 
 class COREORGenerator:
 	"""
@@ -126,15 +128,21 @@ class COREORGenerator:
 
 		return "22G1"
 
-	def _get_sender_id(self):
-		"""Our own identifier, taken from ICD TZ Settings"""
+	def _get_default_sender_id(self) -> str | None:
+		"""The Default Sender ID of the ICD Setting of the company of the release"""
 
-		return frappe.db.get_single_value("ICD TZ Settings", "default_sender_id") or "ICD"
+		source = self.container_reception or self.container_movement_order
+		return get_icd_setting(source.company).default_sender_id
+
+	def _get_sender_id(self):
+		"""Our own identifier, taken from the ICD Setting"""
+
+		return self._get_default_sender_id() or "ICD"
 
 	def _get_receiver_id(self):
 		"""Release orders are addressed to this ICD, so the facility code identifies the recipient"""
 
-		return frappe.db.get_single_value("ICD TZ Settings", "default_sender_id") or "TZDARDSEL"
+		return self._get_default_sender_id() or "TZDARDSEL"
 
 	def _add_segment(self, segment):
 		"""Add a segment to the message"""
