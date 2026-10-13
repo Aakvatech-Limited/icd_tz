@@ -77,7 +77,7 @@ class Manifest(Document):
 		if not icd_code:
 			frappe.throw(
 				frappe._(
-					"ICD Code is not configured. Please set it in <b>ICD TZ Settings</b> before extracting manifest data."
+					"ICD Code is not configured. Please set it in the <b>ICD Setting</b> before extracting manifest data."
 				)
 			)
 		icd_code = icd_code.strip()
@@ -115,7 +115,7 @@ class Manifest(Document):
 		if not allowed_mbl_nos:
 			frappe.throw(
 				f"No records found for ICD Code <b>{icd_code}</b> in this manifest file. "
-				"Please verify the ICD Code in <b>ICD TZ Settings</b> matches the "
+				"Please verify the ICD Code in the <b>ICD Setting</b> matches the "
 				"'Place of Delivery' values in the Master BL sheet."
 			)
 
