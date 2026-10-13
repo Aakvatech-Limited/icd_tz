@@ -179,7 +179,11 @@ def get_expense_accounts(item_code: str, company: str) -> dict:
 
 
 def get_wip_cogs_map(company: str) -> dict:
-	"""Each WIP Account of the company with the one COGS Account it pairs with"""
+	"""Each WIP Account of the company with the one COGS Account it pairs with
+
+	A WIP Account that rows pair with two COGS Accounts, which only imported data can
+	do, maps to None, so the release refuses it instead of picking one.
+	"""
 
 	rows = frappe.get_all(
 		"Item Default",
@@ -192,7 +196,12 @@ def get_wip_cogs_map(company: str) -> dict:
 		distinct=True,
 	)
 
-	return {row.wip_account: row.cogs_account for row in rows}
+	wip_cogs_map = {}
+	for row in rows:
+		paired = wip_cogs_map.get(row.wip_account, row.cogs_account)
+		wip_cogs_map[row.wip_account] = row.cogs_account if paired == row.cogs_account else None
+
+	return wip_cogs_map
 
 
 def get_wip_accounts(item_codes, company: str) -> dict:
