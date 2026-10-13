@@ -4,6 +4,14 @@
 frappe.query_reports["Container Booking"] = {
   filters: [
     {
+      fieldname: "company",
+      label: __("Company"),
+      fieldtype: "Link",
+      options: "Company",
+      reqd: 1,
+      default: frappe.defaults.get_user_default("Company"),
+    },
+    {
       fieldname: "from_date",
       label: __("From Date"),
       fieldtype: "Date",
