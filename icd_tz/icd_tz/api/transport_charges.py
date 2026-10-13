@@ -28,7 +28,7 @@ def get_transport_services(
 
 	One line per container, so each carries its own manifest, bill of lading and container dimensions.
 	Each item is priced once, on the invoice posting date, from the price list of the rate based
-	contract of the supplier active on that date, else the ICD TZ Settings default.
+	contract of the supplier active on that date, else the ICD Setting default.
 	"""
 
 	frappe.has_permission("Purchase Invoice", "create", throw=True)
@@ -159,7 +159,7 @@ def get_container_transport_items(containers: list, company: str) -> dict:
 	if unmatched:
 		frappe.throw(
 			_(
-				"No Transport row matches these containers: {0}. Add a Transport row in ICD TZ Settings > Expenses."
+				"No Transport row matches these containers: {0}. Add a Transport row on the Expenses tab of the ICD Setting."
 			).format(", ".join(unmatched)),
 			title=_("Transport Charges Not Configured"),
 		)

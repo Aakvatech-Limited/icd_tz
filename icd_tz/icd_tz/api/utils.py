@@ -80,7 +80,7 @@ def get_size_bucket(size: str | None) -> str | None:
 def get_service_key(size: str | None = None, cargo_type: str | None = None, port: str | None = None) -> dict:
 	"""Criteria values a container is matched on
 
-	Filling one of these in on a criteria row in ICD TZ Settings narrows that row, with
+	Filling one of these in on a criteria row in the ICD Setting narrows that row, with
 	no code change: every service is matched on whatever its own row carries. A brand
 	new criteria column is not free, since only the caller knows where its value comes
 	from on a container.
@@ -197,7 +197,7 @@ def throw_missing_criteria(service_type: str, key: dict):
 
 	frappe.throw(
 		frappe._(
-			"{0} Pricing Criteria for {1} is not set in ICD TZ Settings, Please set it to continue"
+			"{0} Pricing Criteria for {1} is not set in the ICD Setting, Please set it to continue"
 		).format(service_type, criteria or frappe._("this container"))
 	)
 

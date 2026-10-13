@@ -137,7 +137,7 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 	]
 	if not criteria_rows:
 		frappe.throw(
-			_("No Port Expense Pricing Criteria is set in ICD TZ Settings, Please set it to continue"),
+			_("No Port Expense Pricing Criteria is set in the ICD Setting, Please set it to continue"),
 			title=_("Port Expenses Not Configured"),
 		)
 
@@ -209,14 +209,14 @@ def validate_storage_bands_configured(settings_doc, criteria_rows: list):
 
 	if not settings_doc.port_storage_days:
 		frappe.throw(
-			_("No Port Storage Days are set on the Expenses tab of ICD TZ Settings"),
+			_("No Port Storage Days are set on the Expenses tab of the ICD Setting"),
 			title=_("Port Storage Days Not Set"),
 		)
 
 	unset = [row.charge for row in settings_doc.port_storage_days if not is_band_configured(row)]
 	if unset:
 		frappe.throw(
-			_("Set the From and To days for {0} on the Expenses tab of ICD TZ Settings").format(
+			_("Set the From and To days for {0} on the Expenses tab of the ICD Setting").format(
 				", ".join(unset)
 			),
 			title=_("Port Storage Days Not Set"),
@@ -406,7 +406,7 @@ def get_default_buying_price_list(company: str) -> str:
 	price_list = get_icd_setting(company).default_buying_price_list
 	if not price_list:
 		frappe.throw(
-			_("Default Buying Price List is not set on the Expenses tab of ICD TZ Settings"),
+			_("Default Buying Price List is not set on the Expenses tab of the ICD Setting"),
 			title=_("Port Expenses Not Configured"),
 		)
 

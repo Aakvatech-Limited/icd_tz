@@ -30,7 +30,7 @@ class ContainerService:
 	exempt_cargo_type: str | None = None
 
 	def get_items(self, settings_doc) -> list:
-		"""Every item this service is charged on in ICD TZ Settings"""
+		"""Every item this service is charged on in the ICD Setting"""
 
 		if self.settings_item_field:
 			item_code = settings_doc.get(self.settings_item_field)

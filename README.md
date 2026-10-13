@@ -18,7 +18,7 @@ Repository evidence shows this app is **ERPNext required**. It depends on ERPNex
 |---|---|
 | Container data is scattered across manifests, spreadsheets, gate logs, and billing documents | Provides dedicated Manifest, Container, Container Reception, Movement Order, Booking, Inspection, Service Order, and Gate Pass records |
 | Depot teams need visibility of which containers are in the yard and what stage they are in | Tracks container status, location, storage days, booking, inspection, and gate-out state |
-| Billing for storage, handling, stripping, verification, removal, and corridor levy is difficult to coordinate manually | Uses ICD TZ Settings, service item setup, Sales Orders, and Sales Invoices to link operational services with ERPNext billing |
+| Billing for storage, handling, stripping, verification, removal, and corridor levy is difficult to coordinate manually | Uses the ICD Setting of each company, service item setup, Sales Orders, and Sales Invoices to link operational services with ERPNext billing |
 | Containers may be released before required charges are cleared | Gate Pass validation checks storage, reception, booking, inspection, removal, and levy invoices before release |
 | Manifest import is time-consuming | Manifest logic reads attached spreadsheet workbooks and populates container, MBL, HBL, and consignee-related child records |
 | Shipping line or terminal EDI messages need to be generated consistently | CODECO and COREOR generators create UN/EDIFACT-style EDI messages from operational records |
@@ -74,7 +74,7 @@ Repository evidence shows this app is **ERPNext required**. It depends on ERPNex
 | Record gate-in / reception | Container Reception DocType and CODECO gate-in generation |
 | Track container stock and location | Container and Container Location DocTypes |
 | Book stripping or customs verification | In Yard Container Booking and Container Inspection DocTypes |
-| Generate billable service orders | Service Order DocType and ICD TZ Settings |
+| Generate billable service orders | Service Order DocType and ICD Setting |
 | Create ERPNext billing documents | Sales Order custom methods and Sales Invoice event hooks |
 | Control gate-out | Gate Pass validation and auto-expiry logic |
 | Monitor depot activity | ICD workspace, dashboards, number cards, charts, and reports |
@@ -155,7 +155,7 @@ Suggested screenshots to add before publishing:
 
 A practical demo can be built around this flow:
 
-1. Configure ICD TZ Settings, service items, storage day rules, the EDI tab and its EDI Partner records, and gate pass expiry hours.
+1. Configure the ICD Setting of each company, service items, storage day rules, the EDI tab and its EDI Partner records, and gate pass expiry hours.
 2. Upload a sample manifest workbook and extract container, MBL, HBL, and consignee data.
 3. Create a Container Movement Order.
 4. Submit a Container Reception and confirm the container appears in the yard.
@@ -195,7 +195,7 @@ A practical demo can be built around this flow:
 | Risk / consideration | Why it matters |
 |---|---|
 | ERPNext dependency | The app references ERPNext DocTypes directly, so install ERPNext first |
-| Pricing configuration | Missing ICD TZ Settings entries can block service and billing workflows |
+| Pricing configuration | Missing ICD Setting entries can block service and billing workflows |
 | EDI partner testing | Generated files should be validated with receiving parties before production use |
 | Gate pass release control | Gate-out validation depends on invoices and linked service records being accurately maintained |
 | Manifest workbook format | Spreadsheet extraction depends on expected sheet and column layout |
@@ -247,7 +247,7 @@ Prepare ERPNext, ICD billing policies, master data, service items, price lists, 
 - Port expense tracking: a Port Expenses page that prices every configured terminal charge for a manifest from a buying price list, then creates a draft Purchase Order carrying one line per container.
 - Gate Pass validation for pending storage, reception, booking, inspection, removal, and levy charges.
 - CODECO and COREOR EDI message generation.
-- EDI Partner records, one per shipping line, each with its shipping line code, sender ID, connection type, SFTP / SSH connection test, directory, email recipients, enable flag, and its own message templates.
+- EDI Partner records, one for each shipping line and company, named `{shipping_line_code}-{abbr}`, each with its shipping line code, sender ID, connection type, SFTP / SSH connection test, directory, email recipients, enable flag, and its own message templates.
 - ICD workspace, dashboard cards, number cards, dashboard charts, and script reports.
 - Install and migration hooks for custom fields, property setters, item groups, services, container states, and ICD settings defaults.
 
@@ -297,10 +297,11 @@ After installation, configure these areas before production use:
 
 | Configuration area | What to set |
 |---|---|
-| ICD TZ Settings | Default price list, storage day rules, service pricing criteria, LCL criteria, corridor levy countries, signature validation, gate pass expiry hours |
-| ICD TZ Settings, Expenses tab | Default buying price list, port expense pricing criteria (charge to item, by size, cargo type, destination and port), Transport rows (transport item by size, cargo type and port), and the port storage day bands |
-| Contract | C&F company contracts (Rate Based selling price list, Storage Days) and transporter Supplier contracts (Rate Based buying price list) |
-| EDI Partner | Shipping line code and name, sender ID, enable EDI, connection type, URL, port, source IP, IP behind DNS, authentication method, password or key, directory, receiver email and CC |
+| ICD Setting (one for each company) | Default price list, storage day rules, service pricing criteria, LCL criteria, corridor levy countries, signature validation, gate pass expiry hours |
+| ICD Setting, Expenses tab | Enable WIP and COGS for Expenses, default buying price list, port expense pricing criteria (charge to item, by size, cargo type, destination and port), Transport rows (transport item by size, cargo type and port), and the port storage day bands |
+| Item and Item Group defaults | WIP Account and COGS Account of each company for the port expense and transport items. The Item row has priority. The Item Group row is the fallback. In a company, one WIP Account pairs with one COGS Account |
+| Contract | Company of the contract, C&F company contracts (Rate Based selling price list, Storage Days) and transporter Supplier contracts (Rate Based buying price list) |
+| EDI Partner | Company, shipping line code and name, sender ID, enable EDI, connection type, URL, port, source IP, IP behind DNS, authentication method, password or key, directory, receiver email and CC |
 | Item Prices | Prices for the ICD service items created by patches |
 | Master data | Consignees, C&F companies, clearing agents, transporters, vehicles, drivers, security officers, locations, document types |
 | ERPNext selling setup | Customers, price list, taxes, accounts, currency, and invoice workflow |
@@ -322,7 +323,8 @@ Use the ICD workspace to access operational areas:
 | Man Power | Employee, Security Officer |
 | Condition and Location | Container State, Container Location |
 | Item and Prices | Item, Item Price |
-| Settings | ICD TZ Settings, EDI Partner, Document Type |
+| Reports | The ICD script reports, each with a Company filter |
+| Settings | ICD Setting, EDI Partner, Document Type |
 | Port expenses | Manifest, ICD Container, Purchase Order, Purchase Invoice |
 
 ## Port Expenses
@@ -332,7 +334,7 @@ tracked against `ICD Container`, the accounting dimension record created when a 
 
 ### The flow
 
-1. Configure the Expenses tab of ICD TZ Settings: the buying price list, one criteria row per
+1. Configure the Expenses tab of the ICD Setting: the buying price list, one criteria row per
    charge, and the port storage day bands. A blank criteria field matches any value, and the most
    specific matching row wins. The price list has no default, so the view refuses to price until one
    is chosen deliberately. Rows with the Expense Type `Transport` are for transport charges, so the
@@ -389,7 +391,7 @@ a Purchase Invoice, one line per container, and paid once per container.
 
 ### Setup
 
-1. On the Expenses tab of ICD TZ Settings, add one or more rows with the Expense Type `Transport`
+1. On the Expenses tab of the ICD Setting, add one or more rows with the Expense Type `Transport`
    to Port Expense Pricing Criteria. Each row sets the transport item. Size, Cargo Type and Port are
    optional. A blank field matches any value, and the most specific matching row wins. A row with
    all three fields blank matches every container.
@@ -415,8 +417,8 @@ a Purchase Invoice, one line per container, and paid once per container.
 
 A draft invoice that carries the same containers blocks a second fetch. On submit, the invoice is
 recorded on each container, and a container of another transporter is refused. On cancel, the
-containers are released. With WIP enabled on the Expenses tab, transport lines are held on the WIP
-account until the container is invoiced.
+containers are released. With WIP and COGS enabled in the ICD Setting of the company, transport
+lines are held on the WIP account of the transport item until the container is invoiced.
 
 ### Pending Transporter Invoices
 
@@ -435,7 +437,7 @@ have no transporter. An empty item, rate or price list shows what to set before 
 | Billing operations | Service Order, Service Order Detail, Container Service Detail, ICD TZ Service Detail, ICD TZ Loose Detail | Collect and generate billable ICD service lines |
 | Gate operations | Gate Pass | Control gate-out and container release |
 | Parties and people | Consignee, Clearing and Forwarding Company, Clearing Agent, Transporter, Security officer | Maintain operational counterparties and staff-facing records |
-| Settings and references | ICD TZ Settings, ICD TZ Settings Detail, EDI Partner, Document Type, Document Attachment, Corridor Levy Country | Configure service pricing, EDI, documents, attachments, and levy rules |
+| Settings and references | ICD Setting, ICD TZ Settings Detail, EDI Partner, Document Type, Document Attachment, Corridor Levy Country | Configure service pricing, EDI, documents, attachments, and levy rules |
 
 Submittable operational DocTypes include Manifest, Container Movement Order, Container Reception, In Yard Container Booking, Container Inspection, Container Verification Movement, Service Order, and Gate Pass.
 
@@ -541,7 +543,7 @@ Whitelisted and callable methods include:
 | `doctype_js` | Adds Sales Order client script |
 | `doctype_list_js` | Adds list scripts for Custom Field, Property Setter, and Sales Order |
 | `doc_events` | Sales Invoice `before_save` and `on_submit`; Sales Order `before_save` and `on_trash` |
-| `patches.txt` | Creates item group, ICD service items, container states, and updates ICD TZ Settings |
+| `patches.txt` | Creates item group, ICD service items, container states, and updates the ICD Setting |
 
 ## Background Jobs
 
@@ -599,7 +601,7 @@ icd_tz/
 
 - Run `bench --site your-site.local migrate` after installation and after pulling new changes.
 - Custom fields and property setters are registered in both `after_install` and `after_migrate`.
-- Patches create default item group, service items, container states, and ICD TZ Settings references.
+- Patches create default item group, service items, container states, and ICD Setting references.
 - Validate custom fields on Sales Order, Sales Invoice, Sales Order Item, Sales Invoice Item, Vehicle, and Driver after migration.
 - Confirm open operational documents before changing billing rules or gate pass validation policies.
 
@@ -609,7 +611,7 @@ icd_tz/
 2. Pull the target app branch.
 3. Run `bench --site your-site.local migrate`.
 4. Rebuild assets if client scripts or desk assets change.
-5. Review ICD TZ Settings, EDI Partner records, custom fields, property setters, and service item mappings.
+5. Review the ICD Setting of each company, EDI Partner records, custom fields, property setters, and service item mappings.
 6. Test manifest import, container reception, service order, invoice submit, and gate pass submission in staging.
 7. Confirm reports and dashboards still load.
 
@@ -637,11 +639,11 @@ Use this only after a backup and business approval.
 |---|---|
 | App install fails | Confirm ERPNext is installed before `icd_tz` |
 | Manifest extraction fails | Confirm workbook format, attached file path, and `openpyxl` availability |
-| Service Order cannot generate services | Check ICD TZ Settings service criteria, storage days, price list, and service item mappings |
+| Service Order cannot generate services | Check the service criteria in the ICD Setting, storage days, price list, and service item mappings |
 | Sales Order items are missing | Use the Sales Order update items action and confirm linked containers / service orders are submitted |
-| Sales Invoice does not update ICD records | Confirm invoice items contain container fields and service item codes match ICD TZ Settings |
+| Sales Invoice does not update ICD records | Confirm invoice items contain container fields and service item codes match the ICD Setting |
 | Gate Pass cannot submit | Review pending storage, reception, booking, inspection, removal, and corridor levy invoices |
-| EDI file missing | Confirm the ICD TZ Settings EDI tab is enabled, that an enabled EDI Partner exists for the container `sline_code`, and that the unit is a container rather than a vehicle, loose cargo or a house bill record |
+| EDI file missing | Confirm Enable EDI is ticked in the ICD Setting of the company, that an enabled EDI Partner of that company exists for the container `sline_code`, and that the unit is a container rather than a vehicle, loose cargo or a house bill record |
 | Gate Pass auto-cancels | Check gate pass expiry hours and whether gate confirmation happened before expiry |
 
 ## Security
