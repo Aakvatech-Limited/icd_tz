@@ -20,6 +20,7 @@ from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import (
 from icd_tz.tests.test_edi_codeco import GATE_IN_DEFAULTS, make_partner
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, INHERITED_EDI_VALUES, M_BL_NO
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
+from icd_tz.tests.utils import set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -30,9 +31,9 @@ class TestCOSTCO(FrappeTestCase):
 	"""The stripping report of one container, built from the partner's COSTCO template"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
-		frappe.db.set_single_value("ICD TZ Settings", "default_sender_id", "TZDARDSEL")
+		set_test_icd_setting({"enable_edi": 1})
+		set_test_icd_setting({"icd_un_locode": "TZDAR"})
+		set_test_icd_setting({"default_sender_id": "TZDARDSEL"})
 		self.partner = make_partner()
 
 	def tearDown(self):
@@ -104,9 +105,9 @@ class TestUnpackingEDI(FrappeTestCase):
 	"""Submitting a Container Unpacking attaches its COSTCO, like a gate attaches its CODECO"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
+		set_test_icd_setting({"received_date_threshold_hours": 48})
+		set_test_icd_setting({"enable_edi": 1})
+		set_test_icd_setting({"icd_un_locode": "TZDAR"})
 		set_settings_storage_days()
 		make_partner().db_set("receiver_cc_email", "ops@example.com")
 		make_lcl_manifest()
@@ -146,14 +147,14 @@ class TestUnpackingEDI(FrappeTestCase):
 		self.assertIn("DTM+7:202610041430:203'", get_file_content(unpacking.edi_file))
 
 	def test_a_line_without_edi_is_unpacked_without_a_file(self):
-		frappe.db.set_value("EDI Partner", "CMA", "enable_edi", 0)
+		frappe.db.set_value("EDI Partner", {"shipping_line_code": "CMA"}, "enable_edi", 0)
 		unpacking = self.make_unpacking()
 		unpacking.submit()
 
 		self.assertFalse(unpacking.edi_file)
 
 	def test_an_amended_unpacking_drops_the_inherited_recipients(self):
-		frappe.db.set_value("EDI Partner", "CMA", "enable_edi", 0)
+		frappe.db.set_value("EDI Partner", {"shipping_line_code": "CMA"}, "enable_edi", 0)
 		unpacking = self.make_unpacking(**INHERITED_EDI_VALUES)
 
 		attach_unpacking(unpacking)
