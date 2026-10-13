@@ -2,7 +2,6 @@ import frappe
 from frappe import _
 from frappe.utils import create_batch, flt, nowdate
 
-from icd_tz.icd_tz.api.item_accounts import get_required_wip_accounts
 from icd_tz.icd_tz.api.port_expenses import (
 	CHARGE_FLAGS,
 	CRITERIA_FIELDS,
@@ -100,7 +99,6 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 		frappe.throw(_("Select a Supplier before creating the Purchase Order"))
 
 	header = get_manifest_header(manifest)
-	wip_accounts = get_required_wip_accounts({row["item_code"] for row in rows}, header.company)
 
 	purchase_order = frappe.new_doc("Purchase Order")
 	purchase_order.update(
@@ -118,7 +116,7 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 
 	for row in rows:
 		for container in row["containers"]:
-			add_container_line(purchase_order, manifest, row, container, wip_accounts.get(row["item_code"]))
+			add_container_line(purchase_order, manifest, row, container)
 
 	purchase_order.flags.ignore_permissions = True
 	purchase_order.insert()
@@ -126,13 +124,15 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 	return purchase_order
 
 
-def add_container_line(purchase_order, manifest: str, row: dict, container: dict, wip_account: str | None):
-	"""One order line for one container, stamped with its accounting dimensions"""
+def add_container_line(purchase_order, manifest: str, row: dict, container: dict):
+	"""One order line for one container, stamped with its accounting dimensions
+
+	Its WIP Account is set before validate, when the order is a container expense.
+	"""
 
 	purchase_order.append(
 		"items",
 		{
-			"expense_account": wip_account,
 			"item_code": row["item_code"],
 			"qty": container["qty"],
 			"rate": row["rate"],
