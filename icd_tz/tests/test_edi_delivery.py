@@ -21,18 +21,21 @@ from icd_tz.icd_tz.doctype.edi_partner.edi_partner import EDIPartner
 from icd_tz.icd_tz.doctype.gate_pass.gate_pass import GatePass
 from icd_tz.tests.test_edi_codeco import make_partner
 from icd_tz.tests.test_edi_movement import make_manifest, make_reception
+from icd_tz.tests.utils import set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
 
 class TestEDIDelivery(FrappeTestCase):
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
-		frappe.db.set_single_value("ICD TZ Settings", "default_sender_id", "TZDARDSEL")
+		set_test_icd_setting({"enable_edi": 1})
+		set_test_icd_setting({"icd_un_locode": "TZDAR"})
+		set_test_icd_setting({"default_sender_id": "TZDARDSEL"})
 		self.partner = make_partner()
 		self.partner.db_set({"connection_type": "SFTP", "url": "sftp.example.com", "user": "edi"})
-		frappe.clear_document_cache("EDI Partner", "CMA")
+		frappe.clear_document_cache(
+			"EDI Partner", frappe.db.get_value("EDI Partner", {"shipping_line_code": "CMA"})
+		)
 		make_manifest()
 		self.reception = self.make_submitted_reception()
 
@@ -76,7 +79,9 @@ class TestEDIDelivery(FrappeTestCase):
 
 	def test_an_smtp_partner_is_not_uploaded_to(self):
 		self.partner.db_set("connection_type", "SMTP")
-		frappe.clear_document_cache("EDI Partner", "CMA")
+		frappe.clear_document_cache(
+			"EDI Partner", frappe.db.get_value("EDI Partner", {"shipping_line_code": "CMA"})
+		)
 
 		self.send().assert_not_called()
 		self.assertFalse(self.is_sent())
@@ -196,7 +201,7 @@ class TestEDIDelivery(FrappeTestCase):
 		self.assertNotIn(self.reception.name, self.get_retried())
 
 	def test_retry_does_nothing_while_edi_is_off(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 0)
+		set_test_icd_setting({"enable_edi": 0})
 
 		self.assertEqual(self.get_retried(), [])
 
