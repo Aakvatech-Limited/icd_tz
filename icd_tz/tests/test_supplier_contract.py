@@ -9,6 +9,7 @@ from icd_tz.icd_tz.api.contract import SUPPLIER_PARTY_TYPE, get_active_contract
 from icd_tz.tests.test_port_expenses import make_buying_price_list
 from icd_tz.tests.test_storage_contract import create_price_list, make_contract
 from icd_tz.tests.test_transport_charges import make_supplier
+from icd_tz.tests.utils import get_test_company
 
 SUPPLIER = "_Test Contract Supplier"
 BUYING_PRICE_LIST = "_Test Supplier Contract Buying"
@@ -83,8 +84,12 @@ class TestSupplierContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		self.assertEqual(get_active_contract(SUPPLIER_PARTY_TYPE, self.supplier), {})
 		self.assertEqual(
-			get_active_contract(SUPPLIER_PARTY_TYPE, self.supplier, add_days(nowdate(), -45))["name"],
+			get_active_contract(SUPPLIER_PARTY_TYPE, self.supplier, company=get_test_company()), {}
+		)
+		self.assertEqual(
+			get_active_contract(
+				SUPPLIER_PARTY_TYPE, self.supplier, add_days(nowdate(), -45), company=get_test_company()
+			)["name"],
 			contract.name,
 		)

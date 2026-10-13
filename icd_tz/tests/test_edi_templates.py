@@ -14,6 +14,7 @@ from icd_tz.icd_tz.api.edi.templates import (
 	validate_template,
 )
 from icd_tz.tests.test_edi_codeco import GATE_IN_DEFAULTS, make_partner
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -28,9 +29,9 @@ MINIMAL_TEMPLATE = (
 
 class TestEDIPartnerTemplates(FrappeTestCase):
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
-		frappe.db.set_single_value("ICD TZ Settings", "default_sender_id", "TZDARDSEL")
+		set_test_icd_setting({"enable_edi": 1})
+		set_test_icd_setting({"icd_un_locode": "TZDAR"})
+		set_test_icd_setting({"default_sender_id": "TZDARDSEL"})
 		self.partner = make_partner()
 
 	def tearDown(self):
@@ -81,6 +82,7 @@ class TestEDIPartnerTemplates(FrappeTestCase):
 				"doctype": "EDI Partner",
 				"shipping_line_code": "MSK",
 				"enable_edi": 1,
+				"company": get_test_company(),
 				"templates": [{"edi_type": "CODECO", "template": MINIMAL_TEMPLATE}],
 			}
 		).insert(ignore_permissions=True)

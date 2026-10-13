@@ -7,8 +7,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
+from icd_tz.icd_tz.api.container_expense import before_validate
 from icd_tz.icd_tz.api.port_expenses import TRANSPORT_EXPENSE_TYPE
-from icd_tz.icd_tz.api.purchase_invoice import set_wip_account, validate_no_zero_rate
+from icd_tz.icd_tz.api.purchase_invoice import validate_no_zero_rate
 from icd_tz.icd_tz.api.transport_charges import (
 	clear_transport_invoice,
 	get_transport_services,
@@ -18,6 +19,7 @@ from icd_tz.icd_tz.api.transport_charges import (
 from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
 from icd_tz.tests.test_port_expenses import get_expense_account, make_buying_price_list, make_item_price
+from icd_tz.tests.utils import get_test_company, get_test_icd_setting, set_item_accounts, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -70,7 +72,7 @@ def make_supplier(name: str) -> str:
 def set_transport_rows(*rows: dict):
 	"""Replace the Transport rows of the expense criteria"""
 
-	settings_doc = frappe.get_doc("ICD TZ Settings")
+	settings_doc = get_test_icd_setting()
 	settings_doc.expense_types = [
 		row for row in settings_doc.expense_types if row.expense_type != TRANSPORT_EXPENSE_TYPE
 	]
@@ -79,17 +81,16 @@ def set_transport_rows(*rows: dict):
 
 	settings_doc.flags.ignore_mandatory = True
 	settings_doc.save()
-	frappe.clear_cache(doctype="ICD TZ Settings")
+	frappe.clear_cache(doctype="ICD Setting")
 
 
 class TransportTestCase(FrappeTestCase):
 	def setUp(self):
-		self.company = frappe.db.get_value("Company", {}, "name")
+		self.company = get_test_company()
 		self.item = make_transport_item()
 		self.supplier = make_supplier(TRANSPORTER)
 		make_buying_price_list(PRICE_LIST)
-		frappe.db.set_single_value(
-			"ICD TZ Settings",
+		set_test_icd_setting(
 			{
 				"default_buying_price_list": PRICE_LIST,
 				"enable_wip_and_cogs_for_expenses": 0,
@@ -113,7 +114,7 @@ class TransportTestCase(FrappeTestCase):
 	def tearDown(self):
 		# FrappeTestCase only rolls back once per class, and every test makes the same container
 		frappe.db.rollback()
-		frappe.clear_document_cache("ICD TZ Settings", "ICD TZ Settings")
+		frappe.clear_document_cache("ICD Setting", get_test_icd_setting().name)
 
 	def make_icd_container(self) -> str:
 		master_bl = frappe.new_doc("ICD Master BL")
@@ -393,18 +394,29 @@ class TestTransportInvoiceStamp(TransportTestCase):
 			frappe.ValidationError, validate_reception_transport_unpaid, self.manifest.name, CONTAINER_NO
 		)
 
-	def test_a_transport_line_is_held_on_wip(self):
+	def test_a_flagged_transport_line_is_held_on_the_wip_account_of_its_item(self):
 		wip = frappe.db.get_value(
 			"Account", {"company": self.company, "is_group": 0, "root_type": "Asset"}, "name"
 		)
-		frappe.db.set_single_value(
-			"ICD TZ Settings", {"enable_wip_and_cogs_for_expenses": 1, "wip_account": wip}
+		cogs = get_expense_account(self.company)
+		set_item_accounts(self.item, wip, cogs)
+		set_test_icd_setting({"enable_wip_and_cogs_for_expenses": 1})
+
+		invoice = frappe.new_doc("Purchase Invoice")
+		invoice.update({"company": self.company, "is_icd_container_expense": 1})
+		invoice.append(
+			"items",
+			{
+				"item_code": self.item,
+				"expense_account": cogs,
+				"icd_container": self.container,
+				"icd_master_bl": frappe.db.get_value("ICD Container", self.container, "master_bl"),
+				"manifest": self.manifest.name,
+			},
 		)
-		doc = self.make_invoice_doc()
+		before_validate(invoice)
 
-		set_wip_account(doc)
-
-		self.assertEqual(doc.items[0].expense_account, wip)
+		self.assertEqual(invoice.items[0].expense_account, wip)
 
 
 class TestZeroRate(FrappeTestCase):

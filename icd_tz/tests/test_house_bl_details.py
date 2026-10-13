@@ -7,6 +7,7 @@ from frappe.utils import nowdate
 
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -19,7 +20,7 @@ class TestHouseBLDetails(FrappeTestCase):
 	"""A house bill record takes its details from its own House BL row"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
 		for name in (CONSOLIDATOR, HOUSE_CONSIGNEE):
 			if not frappe.db.exists("Consignee", name):
@@ -56,6 +57,7 @@ class TestHouseBLDetails(FrappeTestCase):
 		container = frappe.new_doc("Container")
 		container.update(
 			{
+				"company": get_test_company(),
 				"container_reception": self.reception.name,
 				"container_no": CONTAINER_NO,
 				"manifest": self.reception.manifest,

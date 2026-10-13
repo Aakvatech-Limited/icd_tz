@@ -4,6 +4,8 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from icd_tz.tests.utils import get_test_company
+
 test_ignore = ["Company", "Cost Center"]
 
 
@@ -40,7 +42,9 @@ class TestGatePass(FrappeTestCase):
 
 
 def make_container(**values):
-	container = frappe.get_doc({"doctype": "Container", "container_no": "GPTU1234567", **values})
+	container = frappe.get_doc(
+		{"doctype": "Container", "company": get_test_company(), "container_no": "GPTU1234567", **values}
+	)
 	container.set_new_name()
 	container.db_insert()
 	return container
@@ -50,6 +54,7 @@ def make_gate_pass(container, **values):
 	return frappe.get_doc(
 		{
 			"doctype": "Gate Pass",
+			"company": get_test_company(),
 			"container_id": container.name,
 			"container_no": container.container_no,
 			**values,

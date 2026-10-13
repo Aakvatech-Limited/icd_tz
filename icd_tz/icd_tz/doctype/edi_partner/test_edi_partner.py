@@ -9,57 +9,76 @@ from icd_tz.icd_tz.doctype.edi_partner.edi_partner import (
 	get_default_file_name_format,
 	get_partner,
 )
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
 
 class TestEDIPartner(FrappeTestCase):
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "default_sender_id", "TZDARDSEL")
+		self.company = get_test_company()
+		self.abbr = frappe.get_cached_value("Company", self.company, "abbr")
+		set_test_icd_setting({"enable_edi": 1, "default_sender_id": "TZDARDSEL"})
 		self.partner = make_partner("TCM", enable_edi=1)
 
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_code_is_uppercased_and_names_the_record(self):
+	def test_code_is_uppercased_and_the_record_is_named_by_code_and_abbreviation(self):
 		partner = make_partner(" tlo ")
 
 		self.assertEqual(partner.shipping_line_code, "TLO")
-		self.assertEqual(partner.name, "TLO")
+		self.assertEqual(partner.abbr, self.abbr)
+		self.assertEqual(partner.name, f"TLO-{self.abbr}")
 
-	def test_duplicate_code_is_rejected(self):
+	def test_duplicate_code_in_one_company_is_rejected(self):
 		with self.assertRaises(frappe.DuplicateEntryError):
 			make_partner("TCM")
 
-	def test_sender_falls_back_to_the_settings_default(self):
+	def test_the_same_line_can_have_a_partner_in_another_company(self):
+		other_company = frappe.db.get_value("Company", {"name": ("!=", self.company)}, "name")
+		if not other_company:
+			self.skipTest("this test needs a second company")
+		partner = make_partner("TCM", company=other_company)
+
+		self.assertEqual(partner.name, f"TCM-{frappe.get_cached_value('Company', other_company, 'abbr')}")
+
+	def test_sender_falls_back_to_the_default_of_the_company(self):
 		self.assertEqual(self.partner.sender, "TZDARDSEL")
 
 		self.partner.sender_id = "OWNCODE"
 		self.assertEqual(self.partner.sender, "OWNCODE")
 
-	def test_partner_is_found_for_its_code(self):
-		self.assertEqual(get_partner("TCM").name, "TCM")
+	def test_partner_is_found_for_its_code_and_company(self):
+		self.assertEqual(get_partner("TCM", self.company).name, self.partner.name)
 
 	def test_lookup_ignores_case_and_padding(self):
-		self.assertEqual(get_partner("  tcm ").name, "TCM")
+		self.assertEqual(get_partner("  tcm ", self.company).name, self.partner.name)
 
-	def test_no_partner_when_code_is_missing(self):
-		self.assertIsNone(get_partner(None))
-		self.assertIsNone(get_partner(""))
+	def test_no_partner_when_code_or_company_is_missing(self):
+		self.assertIsNone(get_partner(None, self.company))
+		self.assertIsNone(get_partner("", self.company))
+		self.assertIsNone(get_partner("TCM", None))
 
 	def test_no_partner_when_the_line_is_not_configured(self):
-		self.assertIsNone(get_partner("NOSUCH"))
+		self.assertIsNone(get_partner("NOSUCH", self.company))
+
+	def test_no_partner_of_another_company(self):
+		other_company = frappe.db.get_value("Company", {"name": ("!=", self.company)}, "name")
+		if not other_company:
+			self.skipTest("this test needs a second company")
+
+		self.assertIsNone(get_partner("TCM", other_company))
 
 	def test_no_partner_when_the_line_is_disabled(self):
 		self.partner.db_set("enable_edi", 0)
 
-		self.assertIsNone(get_partner("TCM"))
+		self.assertIsNone(get_partner("TCM", self.company))
 
-	def test_no_partner_when_the_master_switch_is_off(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 0)
+	def test_no_partner_when_edi_is_off_for_the_company(self):
+		set_test_icd_setting({"enable_edi": 0})
 
-		self.assertIsNone(get_partner("TCM"))
+		self.assertIsNone(get_partner("TCM", self.company))
 
 	def test_new_partner_gets_the_default_file_name_format(self):
 		self.assertEqual(self.partner.file_name_format, DEFAULT_FILE_NAME_FORMAT)
@@ -153,6 +172,7 @@ def make_partner(shipping_line_code, **values):
 			"doctype": "EDI Partner",
 			"shipping_line_code": shipping_line_code,
 			"shipping_line_name": f"{shipping_line_code} LIMITED",
+			"company": get_test_company(),
 			"connection_type": "SMTP",
 			"receiver_email": "edi@example.com",
 			**values,

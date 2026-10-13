@@ -9,6 +9,7 @@ from frappe.utils import getdate
 
 from icd_tz.icd_tz.api import tanesw
 from icd_tz.tests.test_tanesw_discharge import M_BL_NO, FakeTracking
+from icd_tz.tests.utils import get_test_company
 
 MANIFEST = "MTEST-2026-00099"
 
@@ -23,6 +24,7 @@ class TestICDContainer(FrappeTestCase):
 		container = frappe.new_doc("ICD Container")
 		container.update(
 			{
+				"company": get_test_company(),
 				"container_no": container_no,
 				"manifest": MANIFEST,
 				"m_bl_no": m_bl_no,

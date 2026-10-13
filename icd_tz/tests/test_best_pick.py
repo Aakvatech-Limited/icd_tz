@@ -15,6 +15,7 @@ from icd_tz.tests.test_port_expenses import (
 	make_movement_order,
 	set_discharge_date,
 )
+from icd_tz.tests.utils import get_test_company
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -111,7 +112,9 @@ class TestBestPick(FrappeTestCase):
 
 	def test_a_reception_needs_the_container_of_its_order(self):
 		reception = frappe.new_doc("Container Reception")
-		reception.update({"manifest": self.manifest, "movement_order": "ICD-CMO-TEST-0001"})
+		reception.update(
+			{"company": get_test_company(), "manifest": self.manifest, "movement_order": "ICD-CMO-TEST-0001"}
+		)
 
 		self.assertRaises(frappe.ValidationError, reception.validate_container_no)
 

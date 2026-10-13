@@ -22,6 +22,7 @@ from icd_tz.icd_tz.api.accounting_dimensions import (
 	get_referencing_vouchers,
 )
 from icd_tz.patches.index_icd_dimension_fields import WIP_BALANCE_INDEX, get_guarded_fields
+from icd_tz.tests.utils import get_test_company, get_test_icd_setting
 
 CONTAINER_NO = "MSKU1234567"
 LOOSE_CARGO_NO = "LOOSE0000001"
@@ -31,6 +32,8 @@ CONSIGNEE = "_Test ICD Dimension Consignee"
 
 class TestAccountingDimensions(FrappeTestCase):
 	def setUp(self):
+		# a container line of a company needs its ICD Setting, even with no expense configured
+		get_test_icd_setting()
 		self.manifest = make_manifest()
 		self.container_dimension = build_dimension_name(CONTAINER_NO, self.manifest.name)
 		self.master_bl_dimension = build_dimension_name(M_BL_NO, self.manifest.name)
@@ -633,7 +636,7 @@ def get_service_item():
 
 
 def get_company():
-	company = frappe.db.get_value("Company", {}, "name")
+	company = get_test_company()
 	if not company:
 		frappe.throw("No Company on the test site")
 

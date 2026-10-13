@@ -9,6 +9,7 @@ from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import u
 from icd_tz.tests.test_edi_movement import make_manifest, make_reception
 from icd_tz.tests.test_empty_container_billing import make_order_for
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -17,6 +18,7 @@ def make_service_order(**values):
 	order = frappe.new_doc("Service Order")
 	order.update(
 		{
+			"company": get_test_company(),
 			"container_no": "LCLU1234567",
 			"container_status": "LCL",
 			"c_and_f_company": "_Test C and F",
@@ -33,7 +35,7 @@ class TestSalesOrderGrossVolume(FrappeTestCase):
 	"""A Sales Order cannot bill LCL cargo that has no gross volume"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
 		self.manifest = make_manifest()
 
@@ -85,7 +87,12 @@ class TestServiceOrderGrossVolume(FrappeTestCase):
 	def make_container(self, gross_volume):
 		container = frappe.new_doc("Container")
 		container.update(
-			{"container_no": "LCLU1234567", "freight_indicator": "LCL", "gross_volume": gross_volume}
+			{
+				"company": get_test_company(),
+				"container_no": "LCLU1234567",
+				"freight_indicator": "LCL",
+				"gross_volume": gross_volume,
+			}
 		)
 		container.db_insert()
 

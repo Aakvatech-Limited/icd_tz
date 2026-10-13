@@ -17,6 +17,7 @@ from icd_tz.icd_tz.api.sales_order import (
 from icd_tz.icd_tz.api.utils import get_cargo_container_ids
 from icd_tz.tests.test_draft_sales_order_guard import make_container, make_draft_order
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -30,7 +31,7 @@ class TestEmptyContainerBilling(FrappeTestCase):
 	"""Keeping the shipping line debt off the consignee invoice"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		make_manifest()
 		self.reception = make_reception()
 
@@ -41,6 +42,7 @@ class TestEmptyContainerBilling(FrappeTestCase):
 		container = frappe.new_doc("Container")
 		container.update(
 			{
+				"company": get_test_company(),
 				"container_reception": self.reception.name,
 				"container_no": CONTAINER_NO,
 				"m_bl_no": m_bl_no,
@@ -117,7 +119,7 @@ class TestEmptyContainerIsNotServiced(FrappeTestCase):
 	"""An empty box owes storage and nothing else"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		make_manifest()
 		self.reception = make_reception()
 
@@ -128,6 +130,7 @@ class TestEmptyContainerIsNotServiced(FrappeTestCase):
 		container = frappe.new_doc("Container")
 		container.update(
 			{
+				"company": get_test_company(),
 				"container_reception": self.reception.name,
 				"container_no": CONTAINER_NO,
 				"m_bl_no": M_BL_NO,
@@ -144,7 +147,9 @@ class TestEmptyContainerIsNotServiced(FrappeTestCase):
 
 	def make_service_order(self, container_id):
 		service_order = frappe.new_doc("Service Order")
-		service_order.update({"container_id": container_id, "container_no": CONTAINER_NO})
+		service_order.update(
+			{"company": get_test_company(), "container_id": container_id, "container_no": CONTAINER_NO}
+		)
 		service_order.flags.ignore_mandatory = True
 
 		return service_order
@@ -171,7 +176,7 @@ class TestEmptyContainerOrderGuards(FrappeTestCase):
 	"""Refusing a second bill for storage days already on a draft"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		make_manifest()
 		self.reception = make_reception()
 

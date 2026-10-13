@@ -13,6 +13,7 @@ from icd_tz.tests.test_edi_movement import (
 	make_reception,
 )
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -71,7 +72,7 @@ def make_unpacking(container_id: str, consolidator_gross_volume: float = 2.5, **
 	"""Draft unpacking, the consolidator's CBM filled in where the manifest gives none"""
 
 	unpacking = frappe.new_doc("Container Unpacking")
-	unpacking.update({"container_id": container_id, **values})
+	unpacking.update({"company": get_test_company(), "container_id": container_id, **values})
 	unpacking.set_hbls()
 	for row in unpacking.hbls:
 		if not row.manifest_gross_volume:
@@ -99,7 +100,7 @@ class TestContainerUnpacking(FrappeTestCase):
 	"""HBL records exist only once the luggage is counted out of the LCL box"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
 		self.manifest = make_lcl_manifest()
 
@@ -196,7 +197,9 @@ class TestContainerUnpacking(FrappeTestCase):
 
 	def test_a_draft_is_saved_with_no_clerk(self):
 		unpacking = frappe.new_doc("Container Unpacking")
-		unpacking.update({"container_id": receive_lcl_box(), "seal_condition": "Intact"})
+		unpacking.update(
+			{"company": get_test_company(), "container_id": receive_lcl_box(), "seal_condition": "Intact"}
+		)
 		unpacking.set_hbls()
 
 		unpacking.insert(ignore_permissions=True)
@@ -223,7 +226,13 @@ class TestContainerUnpacking(FrappeTestCase):
 			unpacking.submit()
 
 	def test_booking_an_lcl_box_before_unpacking_is_refused(self):
-		booking = frappe.get_doc({"doctype": "In Yard Container Booking", "container_id": receive_lcl_box()})
+		booking = frappe.get_doc(
+			{
+				"doctype": "In Yard Container Booking",
+				"company": get_test_company(),
+				"container_id": receive_lcl_box(),
+			}
+		)
 
 		self.assertRaises(frappe.ValidationError, booking.validate_container_is_unpacked)
 
@@ -232,7 +241,13 @@ class TestContainerUnpacking(FrappeTestCase):
 		unpacking = unpack_container(box)
 
 		for container_id in (box, unpacking.hbls[0].container_id):
-			booking = frappe.get_doc({"doctype": "In Yard Container Booking", "container_id": container_id})
+			booking = frappe.get_doc(
+				{
+					"doctype": "In Yard Container Booking",
+					"company": get_test_company(),
+					"container_id": container_id,
+				}
+			)
 			booking.validate_container_is_unpacked()
 
 	def test_the_count_records_a_shortage(self):
@@ -299,7 +314,7 @@ class TestInternalHBLUnpacking(FrappeTestCase):
 	"""A box the manifest gives no house bills is unpacked under ICD house bills"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
 		manifest = make_manifest()
 		manifest.containers[0].freight_indicator = "LCL"
