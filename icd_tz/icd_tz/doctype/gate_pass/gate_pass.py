@@ -347,7 +347,7 @@ def auto_expire_gate_passes():
 			# Add a comment after cancelling
 			doc.add_comment(
 				"Comment",
-				f"Auto-cancelled due to expiry. Gate Pass expired on <b>{gp.expiry_date}</b>. Container was not moved out within the agreed time settled in ICD TZsettings.",
+				f"Auto-cancelled due to expiry. Gate Pass expired on <b>{gp.expiry_date}</b>. Container was not moved out within the time set in the ICD Setting.",
 			)
 		except Exception as e:
 			traceback = frappe.get_traceback()
