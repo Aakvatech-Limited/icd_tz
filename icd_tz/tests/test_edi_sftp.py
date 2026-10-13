@@ -9,6 +9,7 @@ import paramiko
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.edi.sftp import SFTPConnection, get_pem_text, get_private_key
+from icd_tz.tests.utils import get_test_company
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -28,6 +29,7 @@ class TestEDISFTP(FrappeTestCase):
 				"doctype": "EDI Partner",
 				"shipping_line_code": "ZSFTP",
 				"connection_type": "SFTP",
+				"company": get_test_company(),
 				"url": "sftp.example.com",
 				"port": 2222,
 				"user": "edi",
