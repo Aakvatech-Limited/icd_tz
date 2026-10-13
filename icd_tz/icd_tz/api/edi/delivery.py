@@ -78,7 +78,7 @@ def send_edi_file(doctype: str, name: str):
 
 def upload_edi_file(document):
 	movement = DOCUMENT_MESSAGES[document.doctype][1](document)
-	partner = get_partner(movement.shipping_line_code)
+	partner = get_partner(movement.shipping_line_code, movement.company)
 	if partner is None or not partner.is_sftp:
 		return
 
