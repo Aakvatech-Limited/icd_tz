@@ -123,6 +123,42 @@ def insert_purchase_order(name: str, docstatus: int = 1, flagged: int = 0, compa
 	return name
 
 
+def skip_without_inspection_services(test_case):
+	"""The data patches read the table of the removed inspection services, a new site has none"""
+
+	if not frappe.db.table_exists("Container Inspection Detail"):
+		test_case.skipTest("the site has no table of the removed inspection services")
+
+
+def insert_inspection_service(container_id: str, service: str, docstatus: int = 1, **row) -> str:
+	"""An inspection with one row of the removed services table, which the data patches read"""
+
+	inspection = frappe.generate_hash(length=10)
+	insert_row(
+		"Container Inspection",
+		{
+			"name": inspection,
+			"container_id": container_id,
+			"company": get_test_company(),
+			"docstatus": docstatus,
+		},
+	)
+	insert_row(
+		"Container Inspection Detail",
+		{
+			"name": frappe.generate_hash(length=10),
+			"parent": inspection,
+			"parenttype": "Container Inspection",
+			"parentfield": "services",
+			"service": service,
+			"docstatus": docstatus,
+			**row,
+		},
+	)
+
+	return inspection
+
+
 def insert_row(doctype: str, values: dict):
 	"""A bare table row, without the document checks a test does not need"""
 
