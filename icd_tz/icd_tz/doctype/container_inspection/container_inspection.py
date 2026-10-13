@@ -42,7 +42,7 @@ class ContainerInspection(Document):
 	def set_container_status(self):
 		"""An HBL container is loose cargo, so its status is always LCL"""
 
-		if self.has_hbl:
+		if self.h_bl_no:
 			self.container_status = "LCL"
 
 	def set_additional_inspection(self):
@@ -108,7 +108,7 @@ class ContainerInspection(Document):
 	def is_change_of_status(self) -> bool:
 		"""The consignee changed an FCL box to LCL, so it is unpacked and charged for the change"""
 
-		return self.container_status == "LCL" and not self.has_hbl
+		return self.container_status == "LCL" and not self.h_bl_no
 
 	def unpack_container(self):
 		"""Split the box into the consignee's HBL record and the empty box left for the shipping line"""

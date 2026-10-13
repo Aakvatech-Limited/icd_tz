@@ -140,11 +140,11 @@ class TestInspectionLCLChange(FrappeTestCase):
 			self.assertRaises(frappe.ValidationError, inspect_container, self.box, **{field: 0})
 
 	def test_an_hbl_container_is_always_inspected_as_lcl(self):
-		frappe.db.set_value("Container", self.box, "has_hbl", 1)
+		frappe.db.set_value("Container", self.box, {"has_hbl": 1, "h_bl_no": "_T-HBL-1"})
 
 		inspection = inspect_container(self.box, container_status="FCL", volume=0, counted_packages=0)
 
-		self.assertEqual((inspection.container_status, inspection.has_hbl), ("LCL", 1))
+		self.assertEqual((inspection.container_status, inspection.h_bl_no), ("LCL", "_T-HBL-1"))
 		self.assertFalse(frappe.db.exists("Container Unpacking", {"container_inspection": inspection.name}))
 
 	def test_an_inspection_with_no_status_change_unpacks_nothing(self):
@@ -158,7 +158,8 @@ class TestInspectionLCLChange(FrappeTestCase):
 
 		inspection = inspect_container(self.box, is_additional_booking=1)
 
-		self.assertEqual((inspection.container_status, inspection.has_hbl), ("LCL", 1))
+		self.assertEqual(inspection.container_status, "LCL")
+		self.assertTrue(inspection.h_bl_no)
 		self.assertEqual(frappe.db.count("Container Unpacking", {"container_id": self.box}), 1)
 
 	def test_the_manifest_unpacking_refuses_the_cargo_record(self):
