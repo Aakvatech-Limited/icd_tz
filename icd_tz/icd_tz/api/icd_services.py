@@ -28,6 +28,8 @@ class ContainerService:
 	on_service_order: bool = True
 	show_criteria: bool = False
 	exempt_cargo_type: str | None = None
+	# Container property with the number of times a repeated service is owed
+	count_property: str | None = None
 
 	def get_items(self, settings_doc) -> list:
 		"""Every item this service is charged on in the ICD Setting"""
@@ -66,29 +68,30 @@ class ContainerService:
 
 		return self.find_item(settings_doc, key, is_loose_cargo)
 
-	def get_unbilled_qty(self, container, settings_doc, booked_qty: float) -> float:
-		"""Booked quantity of a repeated service, less what its invoices already billed"""
+	def get_unbilled_qty(self, container, settings_doc, unit_qty: float) -> float:
+		"""Owed quantity of a repeated service, less what its invoices already billed"""
 
 		if not container.get(self.flag_field):
 			return 0
 
-		return booked_qty - container.get_billed_qty(self.invoice_field, self.get_items(settings_doc))
+		owed_qty = getattr(container, self.count_property) * unit_qty
+		return owed_qty - container.get_billed_qty(self.invoice_field, self.get_items(settings_doc))
 
 	def set_invoice(self, container_id: str, doc):
 		"""Write a submitted Sales Invoice to the Container, or drop it when doc is its return"""
 
-		if self.scope == BOOKING:
-			self.set_booking_invoice(container_id, doc)
-			return
-
-		invoice_id = None if doc.is_return else doc.name
-		if self.scope == RECEPTION:
-			frappe.db.set_value("Container", container_id, self.invoice_field, invoice_id)
+		if self.count_property:
+			invoice_refs = self.get_repeated_invoices(container_id, doc)
 		else:
-			self.set_container_invoice(container_id, invoice_id)
+			invoice_refs = None if doc.is_return else doc.name
 
-	def set_booking_invoice(self, container_id: str, doc):
-		"""Keep every invoice of a repeated booking service, a return drops the invoice it reverses"""
+		if self.scope == CONTAINER:
+			self.set_container_invoice(container_id, invoice_refs)
+		else:
+			frappe.db.set_value("Container", container_id, self.invoice_field, invoice_refs)
+
+	def get_repeated_invoices(self, container_id: str, doc) -> str | None:
+		"""Every invoice of a repeated service, a return drops the invoice it reverses"""
 
 		invoices = get_invoice_refs(frappe.db.get_value("Container", container_id, self.invoice_field))
 
@@ -98,11 +101,11 @@ class ContainerService:
 		elif doc.name not in invoices:
 			invoices.append(doc.name)
 
-		frappe.db.set_value("Container", container_id, self.invoice_field, ",".join(invoices) or None)
+		return ",".join(invoices) or None
 
-	def set_container_invoice(self, container_id: str, invoice_id: str | None):
+	def set_container_invoice(self, container_id: str, invoice_refs: str | None):
 		container_doc = frappe.get_doc("Container", container_id)
-		container_doc.set(self.invoice_field, invoice_id)
+		container_doc.set(self.invoice_field, invoice_refs)
 		container_doc.status = "At Gatepass"
 		container_doc.save(ignore_permissions=True)
 
@@ -126,9 +129,21 @@ SHORE_HANDLING = ContainerService(
 ICD_HANDLING = ContainerService(
 	"ICD Handling", "ICD Handling", "has_icd_handling_charge", "ih_sales_invoice", RECEPTION
 )
-STRIPPING = ContainerService("Stripping", "Stripping", "has_stripping_charges", "st_sales_invoice", BOOKING)
+STRIPPING = ContainerService(
+	"Stripping",
+	"Stripping",
+	"has_stripping_charges",
+	"st_sales_invoice",
+	BOOKING,
+	count_property="booking_count",
+)
 CUSTOM_VERIFICATION = ContainerService(
-	"Custom Verification", "Verification", "has_custom_verification_charges", "cv_sales_invoice", BOOKING
+	"Custom Verification",
+	"Verification",
+	"has_custom_verification_charges",
+	"cv_sales_invoice",
+	BOOKING,
+	count_property="booking_count",
 )
 REMOVAL = ContainerService(
 	"Removal", "Removal", "has_removal_charges", "r_sales_invoice", CONTAINER, on_service_order=False
@@ -139,8 +154,14 @@ CORRIDOR_LEVY = ContainerService(
 CHANGE_OF_STATUS = ContainerService(
 	"Change of Status", "Change of Status", "has_change_of_status_charge", "cs_sales_invoice", CONTAINER
 )
+# TODO: compare lift_count with the billed qty, any invoice now passes the Gate Pass
 LIFT_ON_OFF = ContainerService(
-	"Lift On/Off", "Lift On/Off", "has_lift_on_off_charge", "lo_sales_invoice", CONTAINER
+	"Lift On/Off",
+	"Lift On/Off",
+	"has_lift_on_off_charge",
+	"lo_sales_invoice",
+	CONTAINER,
+	count_property="lift_count",
 )
 GATE_PASS_CANCELLATION = ContainerService(
 	"Gate Pass Cancellation",
