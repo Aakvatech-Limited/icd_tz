@@ -2,52 +2,16 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from icd_tz.icd_tz.api.item_accounts import get_wip_accounts
 from icd_tz.icd_tz.api.port_expenses import ONE_OFF_BILLED_FIELDS
 from icd_tz.icd_tz.api.purchase_order import (
 	get_expense_coverage,
-	get_expense_items_by_type,
 	set_rows,
 	validate_not_already_claimed,
 )
 from icd_tz.icd_tz.api.transport_charges import (
 	clear_transport_invoice,
-	get_transport_items,
 	stamp_transport_invoice,
 )
-from icd_tz.icd_tz.api.utils import get_container_items
-
-
-def set_wip_account(doc, method=None):
-	"""Hold port expense lines on the work in progress account
-
-	The mapper copies the account from the order the invoice was made from, but an
-	invoice raised on its own has none, and an invoice can be edited after it is made.
-	The expense is released to cost of goods sold when the container is invoiced, so a
-	line that slipped onto another account would never be released.
-
-	Only a configured port expense item on a container line is held: a container can be
-	tagged on any purchase, and the rest of the invoice is ERPNext's to account for.
-	Runs before validate so ERPNext still has its say on every other line.
-	"""
-
-	container_items = get_container_items(doc)
-	if not container_items:
-		return
-
-	expense_items = get_container_expense_items(doc.company)
-	wip_accounts = get_wip_accounts(
-		{item.item_code for item in container_items if item.item_code in expense_items}, doc.company
-	)
-	for item in container_items:
-		if wip_account := wip_accounts.get(item.item_code):
-			item.expense_account = wip_account
-
-
-def get_container_expense_items(company: str) -> set:
-	"""Port expense and transport items, the items a line with a container is a container expense for"""
-
-	return {*get_expense_items_by_type(company), *get_transport_items(company)}
 
 
 def validate_no_zero_rate(doc, method=None):

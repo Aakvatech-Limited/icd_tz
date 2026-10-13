@@ -164,11 +164,12 @@ doc_events = {
 		"before_submit": "icd_tz.icd_tz.api.contract.before_submit",
 	},
 	"Purchase Order": {
+		"before_validate": "icd_tz.icd_tz.api.container_expense.before_validate",
 		"on_submit": "icd_tz.icd_tz.api.purchase_order.on_submit",
 		"on_cancel": "icd_tz.icd_tz.api.purchase_order.on_cancel",
 	},
 	"Purchase Invoice": {
-		"before_validate": "icd_tz.icd_tz.api.purchase_invoice.set_wip_account",
+		"before_validate": "icd_tz.icd_tz.api.container_expense.before_validate",
 		"before_submit": "icd_tz.icd_tz.api.purchase_invoice.validate_no_zero_rate",
 		"on_submit": "icd_tz.icd_tz.api.purchase_invoice.on_submit",
 		"on_cancel": "icd_tz.icd_tz.api.purchase_invoice.on_cancel",

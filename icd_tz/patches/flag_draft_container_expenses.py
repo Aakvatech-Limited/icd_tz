@@ -2,7 +2,7 @@ import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.utils import get_link_to_form
 
-from icd_tz.icd_tz.api.purchase_invoice import get_container_expense_items
+from icd_tz.icd_tz.api.container_expense import get_container_expense_items
 from icd_tz.icd_tz.api.purchase_order import set_rows
 from icd_tz.patches.create_custom_fields import load_json
 
