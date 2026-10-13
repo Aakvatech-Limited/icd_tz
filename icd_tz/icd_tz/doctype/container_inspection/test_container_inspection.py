@@ -12,28 +12,31 @@ from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import (
 from icd_tz.tests.test_container_income_refs import insert
 from icd_tz.tests.test_edi_codeco import make_partner
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
-from icd_tz.tests.test_port_expense_settings import make_item
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
 from icd_tz.tests.utils import set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
-SERVICE = "_T Stripping"
 
-
-def inspect_container(container_id: str, is_additional_booking: int = 0, **service):
-	"""Submitted inspection, its one service row changing the box to LCL unless told otherwise"""
+def inspect_container(container_id: str, is_additional_booking: int = 0, **values):
+	"""Submitted inspection that changes the box to LCL unless told otherwise"""
 
 	inspection = frappe.new_doc("Container Inspection")
-	inspection.in_yard_container_booking = insert(
-		"In Yard Container Booking",
-		container_id=container_id,
-		is_additional_booking=is_additional_booking,
-		docstatus=1,
-	).name
-	inspection.append(
-		"services",
-		{"service": SERVICE, "status_changed_to": "LCL", "volume": "12.5", "counted_packages": 40, **service},
+	inspection.update(
+		{
+			"in_yard_container_booking": insert(
+				"In Yard Container Booking",
+				container_id=container_id,
+				is_additional_booking=is_additional_booking,
+				docstatus=1,
+			).name,
+			"inspector_name": "_T TRA Officer",
+			"icd_official": frappe.db.get_value("Employee", {"status": "Active"}, "name"),
+			"container_status": "LCL",
+			"volume": 12.5,
+			"counted_packages": 40,
+			**values,
+		}
 	)
 	inspection.insert(ignore_permissions=True)
 	inspection.submit()
@@ -51,7 +54,6 @@ class TestInspectionLCLChange(FrappeTestCase):
 	def setUp(self):
 		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
-		make_item(SERVICE)
 		make_manifest()
 		self.received_date = add_days(nowdate(), -5)
 		self.box = make_reception(
@@ -118,16 +120,45 @@ class TestInspectionLCLChange(FrappeTestCase):
 		self.assertEqual([getdate(row.date) for row in empty.container_dates], [getdate(nowdate())])
 		self.assertEqual({empty.get(flag) for flag in CARGO_CHARGE_FLAGS}, {0})
 
+	def test_a_change_of_status_charges_the_cargo_record(self):
+		inspection = inspect_container(self.box)
+
+		self.assertEqual(frappe.db.get_value("Container", self.box, "has_change_of_status_charge"), 1)
+		self.assertEqual(get_unpacking(inspection).hbls[0].counted_packages, 40)
+
+	def test_an_fcl_inspection_owes_no_change_of_status(self):
+		inspect_container(self.box, container_status="FCL", volume=0, counted_packages=0)
+
+		self.assertEqual(frappe.db.get_value("Container", self.box, "has_change_of_status_charge"), 0)
+
+	def test_the_inspection_details_are_required_to_submit(self):
+		for field in ("container_status", "inspector_name", "icd_official"):
+			self.assertRaises(frappe.ValidationError, inspect_container, self.box, **{field: None})
+
+	def test_a_change_of_status_needs_its_volume_and_packages(self):
+		for field in ("volume", "counted_packages"):
+			self.assertRaises(frappe.ValidationError, inspect_container, self.box, **{field: 0})
+
+	def test_an_hbl_container_is_always_inspected_as_lcl(self):
+		frappe.db.set_value("Container", self.box, "has_hbl", 1)
+
+		inspection = inspect_container(self.box, container_status="FCL", volume=0, counted_packages=0)
+
+		self.assertEqual((inspection.container_status, inspection.has_hbl), ("LCL", 1))
+		self.assertFalse(frappe.db.exists("Container Unpacking", {"container_inspection": inspection.name}))
+
 	def test_an_inspection_with_no_status_change_unpacks_nothing(self):
-		inspection = inspect_container(self.box, status_changed_to="", volume="", counted_packages=0)
+		inspection = inspect_container(self.box, container_status="FCL", volume=0, counted_packages=0)
 
 		self.assertFalse(frappe.db.exists("Container Unpacking", {"container_inspection": inspection.name}))
 		self.assertEqual(frappe.db.get_value("Container", self.box, "has_hbl"), 0)
 
-	def test_an_additional_inspection_cannot_split_the_box_again(self):
+	def test_an_additional_inspection_of_the_cargo_record_does_not_split_it_again(self):
 		inspect_container(self.box)
 
-		self.assertRaises(frappe.ValidationError, inspect_container, self.box, is_additional_booking=1)
+		inspection = inspect_container(self.box, is_additional_booking=1)
+
+		self.assertEqual((inspection.container_status, inspection.has_hbl), ("LCL", 1))
 		self.assertEqual(frappe.db.count("Container Unpacking", {"container_id": self.box}), 1)
 
 	def test_the_manifest_unpacking_refuses_the_cargo_record(self):
@@ -154,7 +185,7 @@ class TestInspectionLCLChange(FrappeTestCase):
 		)
 
 	def test_an_unpacking_needs_an_inspection_that_changes_to_lcl(self):
-		inspection = inspect_container(self.box, status_changed_to="", volume="", counted_packages=0)
+		inspection = inspect_container(self.box, container_status="FCL", volume=0, counted_packages=0)
 
 		self.assertRaises(
 			frappe.ValidationError, make_unpacking, self.box, container_inspection=inspection.name
