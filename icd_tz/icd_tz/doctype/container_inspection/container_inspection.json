@@ -25,6 +25,12 @@
   "posting_datetime",
   "current_container_location",
   "inspection_details_section",
+  "icd_official",
+  "has_hbl",
+  "container_status",
+  "volume",
+  "counted_packages",
+  "column_break_inspector",
   "inspector_name",
   "inspection_results",
   "column_break_oepr",
@@ -35,8 +41,6 @@
   "is_additional_inspection",
   "column_break_gdea",
   "additional_note",
-  "services_tab",
-  "services",
   "amended_from",
   "naming_series"
  ],
@@ -69,6 +73,44 @@
    "fieldname": "inspection_details_section",
    "fieldtype": "Section Break",
    "label": "Inspection Details"
+  },
+  {
+   "fieldname": "icd_official",
+   "fieldtype": "Link",
+   "label": "ICD Official",
+   "options": "Employee"
+  },
+  {
+   "default": "0",
+   "fetch_from": "container_id.has_hbl",
+   "fieldname": "has_hbl",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Has HBL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_status",
+   "fieldtype": "Select",
+   "label": "Container Status",
+   "options": "\nFCL\nLCL",
+   "read_only_depends_on": "eval:doc.has_hbl"
+  },
+  {
+   "depends_on": "eval:doc.container_status == 'LCL' && !doc.has_hbl",
+   "fieldname": "volume",
+   "fieldtype": "Float",
+   "label": "Volume (CBM)"
+  },
+  {
+   "depends_on": "eval:doc.container_status == 'LCL' && !doc.has_hbl",
+   "fieldname": "counted_packages",
+   "fieldtype": "Int",
+   "label": "Counted Packages"
+  },
+  {
+   "fieldname": "column_break_inspector",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "inspector_name",
@@ -127,17 +169,6 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "services_tab",
-   "fieldtype": "Tab Break",
-   "label": "Service Details"
-  },
-  {
-   "fieldname": "services",
-   "fieldtype": "Table",
-   "label": "Services",
-   "options": "Container Inspection Detail"
   },
   {
    "fieldname": "column_break_bu4nq",
@@ -271,7 +302,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-03 16:00:08.108628",
+ "modified": "2026-10-13 17:46:47.270706",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Inspection",
