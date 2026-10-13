@@ -20,6 +20,7 @@ from icd_tz.tests.utils import (
 	get_test_company,
 	get_test_icd_setting,
 	insert_purchase_order,
+	insert_row,
 	set_test_icd_setting,
 )
 
@@ -57,16 +58,20 @@ class TestCompanyRecordPatch(FrappeTestCase):
 
 	def add_single_values(self, values: dict):
 		for field, value in values.items():
-			frappe.db.sql(
-				"insert into tabSingles (doctype, field, value) values ('ICD Setting', %s, %s)",
-				(field, value),
-			)
+			insert_row("Singles", {"doctype": "ICD Setting", "field": field, "value": value})
 
 	def add_old_child_row(self, name: str, idx: int):
-		frappe.db.sql(
-			"""insert into `tabICD TZ Settings Detail` (name, parent, parenttype, parentfield, idx, destination, charge)
-			values (%s, 'ICD TZ Settings', 'ICD Setting', 'storage_days', %s, 'Local', 'Free')""",
-			(name, idx),
+		insert_row(
+			"ICD TZ Settings Detail",
+			{
+				"name": name,
+				"parent": "ICD TZ Settings",
+				"parenttype": "ICD Setting",
+				"parentfield": "storage_days",
+				"idx": idx,
+				"destination": "Local",
+				"charge": "Free",
+			},
 		)
 
 	def test_the_single_values_move_to_the_record_of_the_wip_account_company(self):
@@ -109,10 +114,7 @@ class TestContractCompanyPatch(FrappeTestCase):
 		frappe.db.rollback()
 
 	def add_contract(self, name: str):
-		frappe.db.sql(
-			"insert into tabContract (name, party_type, party_name, docstatus) values (%s, 'Customer', 'x', 0)",
-			(name,),
-		)
+		insert_row("Contract", {"name": name, "party_type": "Customer", "party_name": "x", "docstatus": 0})
 
 	def run_patch(self):
 		# the field already exists, and creating it again would commit the test transaction
@@ -150,10 +152,18 @@ class TestDraftFlagPatch(FrappeTestCase):
 	def add_order(self, name: str, docstatus: int, lines: list):
 		insert_purchase_order(name, docstatus, company=self.company)
 		for idx, (item_code, container) in enumerate(lines, 1):
-			frappe.db.sql(
-				"""insert into `tabPurchase Order Item` (name, parent, parenttype, parentfield, idx, item_code, icd_container, docstatus)
-				values (%s, %s, 'Purchase Order', 'items', %s, %s, %s, %s)""",
-				(f"{name}-{idx}", name, idx, item_code, container, docstatus),
+			insert_row(
+				"Purchase Order Item",
+				{
+					"name": f"{name}-{idx}",
+					"parent": name,
+					"parenttype": "Purchase Order",
+					"parentfield": "items",
+					"idx": idx,
+					"item_code": item_code,
+					"icd_container": container,
+					"docstatus": docstatus,
+				},
 			)
 
 	def test_drafts_of_container_expenses_only_are_flagged_and_mixed_drafts_listed(self):
@@ -182,9 +192,15 @@ class TestEDIPartnerPatch(FrappeTestCase):
 
 	def test_each_partner_gets_the_company_and_is_renamed_by_code_and_abbreviation(self):
 		keep_only_the_test_setting()
-		frappe.db.sql(
-			"""insert into `tabEDI Partner` (name, shipping_line_code, sender_id, enable_edi, docstatus)
-			values ('_TPRT', '_TPRT', 'OWNID', 1, 0)"""
+		insert_row(
+			"EDI Partner",
+			{
+				"name": "_TPRT",
+				"shipping_line_code": "_TPRT",
+				"sender_id": "OWNID",
+				"enable_edi": 1,
+				"docstatus": 0,
+			},
 		)
 
 		set_edi_partner_company.execute()
