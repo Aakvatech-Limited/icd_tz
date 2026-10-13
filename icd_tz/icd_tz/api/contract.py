@@ -197,7 +197,7 @@ def validate_storage_days(doc):
 	destinations = get_settings_destinations(doc.company)
 	if not destinations:
 		frappe.throw(
-			_("No Place of Destination is set in ICD TZ Settings, Please set it to continue"),
+			_("No Place of Destination is set in the ICD Setting, Please set it to continue"),
 			title=_("Storage Days Not Configured"),
 		)
 
@@ -209,7 +209,7 @@ def validate_storage_days(doc):
 
 		if row.destination not in destinations:
 			frappe.throw(
-				_("At Row#: {0}, Place of Destination {1} is not set in ICD TZ Settings").format(
+				_("At Row#: {0}, Place of Destination {1} is not set in the ICD Setting").format(
 					row.idx, frappe.bold(row.destination)
 				)
 			)
