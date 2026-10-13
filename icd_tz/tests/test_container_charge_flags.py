@@ -8,9 +8,15 @@ from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.sales_order import get_storage_services
 from icd_tz.icd_tz.doctype.gate_pass.test_gate_pass import make_container
-from icd_tz.tests.test_container_income_refs import RECEPTION, get_container, make_reception_containers
+from icd_tz.tests.test_container_income_refs import (
+	RECEPTION,
+	get_container,
+	make_reception_containers,
+	with_settings,
+)
 from icd_tz.tests.test_lcl_gross_volume import make_service_order
 from icd_tz.tests.test_service_criteria import criteria, settings
+from icd_tz.tests.utils import get_test_company, get_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -20,11 +26,16 @@ def levy_settings(*countries):
 
 
 def new_container(**values):
-	return frappe.get_doc({"doctype": "Container", "days_to_be_billed": 0, **values})
+	return frappe.get_doc(
+		{"doctype": "Container", "company": get_test_company(), "days_to_be_billed": 0, **values}
+	)
 
 
 class TestCreationAndInspectionFlags(FrappeTestCase):
 	"""Reception charges are set on save, booking charges on booking submit"""
+
+	def setUp(self):
+		get_test_icd_setting()
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -45,7 +56,9 @@ class TestCreationAndInspectionFlags(FrappeTestCase):
 
 	def test_a_submitted_booking_charges_stripping_and_verification(self):
 		mbl, _ = make_reception_containers()
-		booking = frappe.get_doc({"doctype": "In Yard Container Booking", "container_id": mbl})
+		booking = frappe.get_doc(
+			{"doctype": "In Yard Container Booking", "company": get_test_company(), "container_id": mbl}
+		)
 
 		booking.on_submit()
 
@@ -55,7 +68,9 @@ class TestCreationAndInspectionFlags(FrappeTestCase):
 
 	def test_a_submitted_inspection_leaves_the_booking_charges(self):
 		mbl, _ = make_reception_containers()
-		inspection = frappe.get_doc({"doctype": "Container Inspection", "container_id": mbl})
+		inspection = frappe.get_doc(
+			{"doctype": "Container Inspection", "company": get_test_company(), "container_id": mbl}
+		)
 
 		inspection.update_container_doc()
 
@@ -89,7 +104,9 @@ class TestRemovalAndLevyFlags(FrappeTestCase):
 		other_country = new_container(country_of_destination="Kenya")
 		no_country = new_container()
 
-		with patch("frappe.get_cached_doc", return_value=levy_settings("Zambia")):
+		with patch(
+			"icd_tz.icd_tz.doctype.container.container.get_icd_setting", return_value=levy_settings("Zambia")
+		):
 			for container in (levy_country, other_country, no_country):
 				container.check_corridor_levy_eligibility()
 
@@ -100,7 +117,9 @@ class TestRemovalAndLevyFlags(FrappeTestCase):
 	def test_invoiced_levy_stays_charged(self):
 		container = new_container(country_of_destination="Zambia", c_sales_invoice="_T-SINV-C")
 
-		with patch("frappe.get_cached_doc", return_value=levy_settings("Zambia")):
+		with patch(
+			"icd_tz.icd_tz.doctype.container.container.get_icd_setting", return_value=levy_settings("Zambia")
+		):
 			container.check_corridor_levy_eligibility()
 
 		self.assertEqual(container.has_corridor_levy_charges, 1)
@@ -108,7 +127,9 @@ class TestRemovalAndLevyFlags(FrappeTestCase):
 	def test_an_empty_container_owes_no_removal_or_levy(self):
 		container = new_container(is_empty_container=1, has_single_charge=1, country_of_destination="Zambia")
 
-		with patch("frappe.get_cached_doc", return_value=levy_settings("Zambia")):
+		with patch(
+			"icd_tz.icd_tz.doctype.container.container.get_icd_setting", return_value=levy_settings("Zambia")
+		):
 			container.check_corridor_levy_eligibility()
 		container.check_removal_charges_elibility()
 
@@ -123,7 +144,9 @@ class TestRemovalAndLevyFlags(FrappeTestCase):
 			c_sales_invoice="_T-SINV-C",
 		)
 
-		with patch("frappe.get_cached_doc", return_value=levy_settings("Zambia")):
+		with patch(
+			"icd_tz.icd_tz.doctype.container.container.get_icd_setting", return_value=levy_settings("Zambia")
+		):
 			container.check_corridor_levy_eligibility()
 		container.check_removal_charges_elibility()
 
@@ -143,7 +166,7 @@ class TestRemovalAndLevyBilling(FrappeTestCase):
 			settings([criteria("Removal", "_T Removal")]), gatepass_cancellation_item=None
 		)
 
-		with patch("frappe.get_cached_doc", return_value=removal_settings):
+		with with_settings(removal_settings):
 			return [row["item_code"] for row in get_storage_services(m_bl_no="_T-RM-MBL")]
 
 	def test_removal_is_billed_after_the_storage_days_are_invoiced(self):
