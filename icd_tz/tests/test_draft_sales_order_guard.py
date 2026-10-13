@@ -9,6 +9,7 @@ from frappe.utils import nowdate
 
 from icd_tz.icd_tz.api.sales_order import make_sales_order, validate_no_draft_sales_order
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -20,6 +21,7 @@ def make_container(container_reception: str, is_empty_container: int = 0) -> str
 	container = frappe.new_doc("Container")
 	container.update(
 		{
+			"company": get_test_company(),
 			"container_reception": container_reception,
 			"container_no": CONTAINER_NO,
 			"m_bl_no": M_BL_NO,
@@ -56,7 +58,7 @@ class TestDraftSalesOrderGuard(FrappeTestCase):
 	"""Refusing a second order while a draft for the same BL bills the same container"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		make_manifest()
 		self.reception = make_reception()
 
