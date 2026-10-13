@@ -2,7 +2,7 @@ import frappe
 
 from icd_tz.icd_tz.api.accounting_dimensions import DIMENSIONS, GUARDED_DOCTYPES
 
-# expense_release.get_wip_balance filters GL Entry by the WIP account, then by container
+# expense_release.get_wip_balances filters GL Entry by the WIP account, then by container
 WIP_BALANCE_INDEX = ["account", "icd_container"]
 
 
