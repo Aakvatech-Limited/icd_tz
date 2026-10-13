@@ -112,6 +112,7 @@ def build_purchase_order(manifest: str, buying_price_list: str, supplier: str, r
 			"buying_price_list": buying_price_list,
 			"currency": frappe.get_cached_value("Price List", buying_price_list, "currency"),
 			"manifest": manifest,
+			"is_icd_container_expense": 1,
 		}
 	)
 
