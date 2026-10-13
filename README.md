@@ -433,7 +433,7 @@ have no transporter. An empty item, rate or price list shows what to set before 
 |---|---|---|
 | Manifest and BL | Manifest, Master BL, House BL, HBL Container, Containers Detail, HouseBI | Capture manifest, MBL, HBL, cargo, and container details |
 | Container operations | Container, Container Movement Order, Container Reception, Container Location, Container State, Condition state | Track container movement, status, location, condition, and reception |
-| Yard services | In Yard Container Booking, Booking detail, Container Inspection, Container Inspection Detail, Container Verification Movement | Manage stripping, verification, inspection, and internal yard activities |
+| Yard services | In Yard Container Booking, Booking detail, Container Inspection, Container Verification Movement | Manage stripping, verification, inspection, and internal yard activities |
 | Billing operations | Service Order, Service Order Detail, Container Service Detail, ICD TZ Service Detail, ICD TZ Loose Detail | Collect and generate billable ICD service lines |
 | Gate operations | Gate Pass | Control gate-out and container release |
 | Parties and people | Consignee, Clearing and Forwarding Company, Clearing Agent, Transporter, Security officer | Maintain operational counterparties and staff-facing records |
