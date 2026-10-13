@@ -20,7 +20,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Service Type",
-   "options": "\nLevy\nTransport\nVerification\nRemoval\nStripping\nShore\nICD Handling\nLift On/Off\nStorage-Single\nStorage-Double",
+   "options": "\nLevy\nTransport\nVerification\nRemoval\nStripping\nShore\nICD Handling\nLift On/Off\nChange of Status\nStorage-Single\nStorage-Double",
    "reqd": 1,
    "search_index": 1
   },
@@ -70,7 +70,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-13 16:37:10.969019",
+ "modified": "2026-10-13 17:46:47.270706",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Service Detail",

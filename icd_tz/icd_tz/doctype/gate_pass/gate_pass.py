@@ -76,7 +76,6 @@ class GatePass(Document):
 				self.validate_container_charges(),
 				self.validate_in_yard_booking(),
 				self.validate_reception_charges(),
-				self.validate_inspection_charges(),
 			]
 
 		service_msg = ""
@@ -201,30 +200,6 @@ class GatePass(Document):
 				msg += f"<li>{service.label} Charges</li>"
 
 			invoices += service.get_invoices(self.container_charges)
-
-		return msg, invoices
-
-	def validate_inspection_charges(self):
-		"""Validate the Inspection Charges for the Gate Pass and return its linked invoices"""
-
-		msg = ""
-		invoices = []
-
-		inspection_info = frappe.db.get_all(
-			"Container Inspection", {"container_id": self.container_id}, pluck="name"
-		)
-		if len(inspection_info) == 0:
-			return "", []
-
-		for inspection in inspection_info:
-			inspection_doc = frappe.get_doc("Container Inspection", inspection)
-
-			for d in inspection_doc.get("services"):
-				service = str(d.get("service")).lower()
-				if ("off" in service or "status" in service) and not d.get("sales_invoice"):
-					msg += f"<li>{d.get('service')}</li>"
-
-				invoices.append(d.get("sales_invoice"))
 
 		return msg, invoices
 

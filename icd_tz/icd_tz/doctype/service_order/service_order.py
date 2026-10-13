@@ -189,7 +189,6 @@ class ServiceOrder(Document):
 
 	def get_services(self):
 		self.add_container_services(get_icd_setting(self.company))
-		self.get_other_charges()
 
 	def add_container_services(self, settings_doc):
 		"""Add a line for each flagged service the Container still owes"""
@@ -233,42 +232,6 @@ class ServiceOrder(Document):
 
 		service_item = service.find_item(settings_doc, self.get_criteria_key(container), self.is_loose_cargo)
 		self.append("services", {"service": service_item, "qty": qty})
-
-	def get_other_charges(self):
-		if not self.container_id:
-			return
-
-		inspeactions = frappe.db.get_all(
-			"Container Inspection", {"container_id": self.container_id, "docstatus": 1}, ["name"]
-		)
-		if len(inspeactions) == 0:
-			return
-
-		insp_service_dict = {}
-		for inspection in inspeactions:
-			inspection_doc = frappe.get_doc("Container Inspection", inspection.name)
-
-			for d in inspection_doc.get("services"):
-				if d.get("sales_invoice"):
-					continue
-
-				# only inspections made before it stopped being added carry a verification row
-				if "verification" in str(d.get("service")).lower():
-					continue
-
-				if not d.get("service"):
-					continue
-
-				qty_to_add = self.unit_qty
-				if d.get("service") in insp_service_dict:
-					insp_service_dict[d.get("service")]["qty"] += qty_to_add
-					insp_service_dict[d.get("service")]["remarks"] = "<b>Having Multiple Inspections</b>"
-				else:
-					new_row = {"service": d.get("service"), "qty": qty_to_add}
-					insp_service_dict[d.get("service")] = new_row
-
-		for item in insp_service_dict.values():
-			self.append("services", item)
 
 	def create_getpass(self):
 		"""

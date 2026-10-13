@@ -34,9 +34,6 @@ def update_sales_references(doc):
 		elif item.item_code in storage_items:
 			update_storage_date_refs(item.container_id, invoice_id, item.container_child_refs)
 
-		else:
-			update_container_insp(item.container_id, item.item_code, invoice_id)
-
 	sales_order = doc.items[0].sales_order
 	service_orders = frappe.db.get_all(
 		"Service Order",
@@ -54,17 +51,3 @@ def update_storage_date_refs(container_id, invoice_id, child_refs):
 
 	container_doc.status = "At Gatepass"
 	container_doc.save(ignore_permissions=True)
-
-
-def update_container_insp(container_id, item_code, invoice_id):
-	container_inspections = frappe.db.get_all(
-		"Container Inspection", {"container_id": container_id, "docstatus": 1}, pluck="name"
-	)
-	if len(container_inspections) == 0:
-		return
-
-	for inspeaction in container_inspections:
-		insp_doc = frappe.get_doc("Container Inspection", inspeaction)
-		for row in insp_doc.services:
-			if row.service == item_code:
-				frappe.db.set_value("Container Inspection Detail", row.name, "sales_invoice", invoice_id)

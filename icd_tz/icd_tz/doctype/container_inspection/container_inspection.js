@@ -13,13 +13,6 @@ frappe.ui.form.on("Container Inspection", {
     frm.trigger("create_additional_booking");
   },
   set_filters: (frm) => {
-    frm.set_query("service", "services", () => {
-      return {
-        filters: {
-          item_group: "ICD Services",
-        },
-      };
-    });
     frm.set_query("driver_name", () => {
       return {
         filters: {
