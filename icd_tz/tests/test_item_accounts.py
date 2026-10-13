@@ -5,7 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.item_accounts import get_expense_accounts, get_wip_cogs_map
-from icd_tz.tests.utils import get_foreign_expense_account, get_test_company, make_test_account
+from icd_tz.tests.utils import get_foreign_expense_account, get_test_company, insert_row, make_test_account
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -59,10 +59,17 @@ class ItemAccountsTestCase(FrappeTestCase):
 		}
 
 	def add_wip_balance(self, wip_account: str, amount: float = 100):
-		frappe.db.sql(
-			"""insert into `tabGL Entry` (name, account, debit, credit, is_cancelled, icd_container, company)
-			values (%s, %s, %s, 0, 0, '_T-ACCOUNTS-BOX', %s)""",
-			(frappe.generate_hash(length=10), wip_account, amount, self.company),
+		insert_row(
+			"GL Entry",
+			{
+				"name": frappe.generate_hash(length=10),
+				"account": wip_account,
+				"debit": amount,
+				"credit": 0,
+				"is_cancelled": 0,
+				"icd_container": "_T-ACCOUNTS-BOX",
+				"company": self.company,
+			},
 		)
 
 
