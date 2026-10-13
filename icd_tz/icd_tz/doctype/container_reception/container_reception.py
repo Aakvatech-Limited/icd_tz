@@ -243,32 +243,10 @@ class ContainerReception(Document):
 
 				docs_to_cancel.append({"doc_type": "Service Order", "doc_name": service_order.name})
 
-		# Check Container Inspection
 		inspections = frappe.db.get_all(
-			"Container Inspection", filters={"container_id": container_id}, fields=["name"]
+			"Container Inspection", filters={"container_id": container_id}, pluck="name"
 		)
-
-		for inspection in inspections:
-			inspection_doc = frappe.get_doc("Container Inspection", inspection.name)
-			invoice_links = []
-
-			for row in inspection_doc.services:
-				if "verification" in str(row.service).lower():
-					continue
-
-				if row.sales_invoice:
-					invoice_links.append((row.service, row.sales_invoice))
-
-			if len(invoice_links) > 0:
-				inspection_url = get_link_to_form("Container Inspection", inspection.name)
-				error_messages.append(
-					f"Container Inspection <a href='{inspection_url}'>{inspection.name}</a> has the following invoices:"
-				)
-				for service_name, invoice_id in invoice_links:
-					invoice_url = get_link_to_form("Sales Invoice", invoice_id)
-					error_messages.append(f"- {service_name}: <a href='{invoice_url}'>{invoice_id}</a>")
-			else:
-				docs_to_cancel.append({"doc_type": "Container Inspection", "doc_name": inspection.name})
+		docs_to_cancel.extend({"doc_type": "Container Inspection", "doc_name": name} for name in inspections)
 
 		# Check In Yard Container Booking
 		bookings = frappe.db.get_all(
