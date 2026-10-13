@@ -19,6 +19,7 @@ class ContainerMovement:
 	"""Everything a CODECO or COSTCO message needs about one container event."""
 
 	document: str
+	company: str
 	is_gate_in: bool
 	shipping_line_code: str
 	container_no: str
@@ -50,6 +51,7 @@ def from_container_reception(reception) -> ContainerMovement | None:
 
 	return ContainerMovement(
 		document=reception.name,
+		company=reception.company,
 		is_gate_in=True,
 		shipping_line_code=reception.shipping_line_code,
 		container_no=reception.container_no,
@@ -94,6 +96,7 @@ def from_gate_pass(gate_pass) -> ContainerMovement | None:
 
 	return ContainerMovement(
 		document=gate_pass.name,
+		company=gate_pass.company,
 		is_gate_in=False,
 		shipping_line_code=container.sline_code or gate_pass.shipping_line_code,
 		# the Gate Pass copies are fetched values, the Container is the source of truth
@@ -126,6 +129,7 @@ def from_container_unpacking(unpacking) -> ContainerMovement:
 
 	return ContainerMovement(
 		document=unpacking.name,
+		company=unpacking.company,
 		is_gate_in=False,
 		shipping_line_code=unpacking.sline_code,
 		container_no=unpacking.container_no,
