@@ -5,10 +5,12 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import nowdate
 
-from icd_tz.icd_tz.api.expense_release import get_wip_balance, release_expenses
+from icd_tz.icd_tz.api.expense_release import release_expenses
 from icd_tz.icd_tz.api.port_expenses import get_expense_rows
 from icd_tz.icd_tz.doctype.container_unpacking.test_container_unpacking import unpack_container
 from icd_tz.tests.test_edi_movement import CONTAINER_NO, M_BL_NO, make_manifest, make_reception
+from icd_tz.tests.test_expense_release import EXPENSE_ITEM as RELEASE_ITEM
+from icd_tz.tests.test_expense_release import get_wip_balance
 from icd_tz.tests.test_port_expenses import (
 	BOX_20,
 	BOX_40,
@@ -23,6 +25,14 @@ from icd_tz.tests.test_port_expenses import (
 from icd_tz.tests.test_port_expenses import M_BL_NO as EXPENSE_M_BL_NO
 from icd_tz.tests.test_port_expenses import make_manifest as make_expense_manifest
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
+from icd_tz.tests.utils import (
+	get_test_company,
+	get_test_icd_setting,
+	make_test_account,
+	make_test_item,
+	set_item_accounts,
+	set_test_icd_setting,
+)
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -96,7 +106,7 @@ class TestInternalHBL(FrappeTestCase):
 	"""Every bill sharing an LCL box gets its own cargo record under an ICD house bill"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
 		make_shared_box_manifest()
 		containers = receive_shared_box()
@@ -178,25 +188,15 @@ class TestSharedBoxRelease(FrappeTestCase):
 	"""Each consignee's invoice releases what WIP holds against its own bill"""
 
 	def setUp(self):
-		self.company = frappe.db.get_value("Company", {}, "name")
-		accounts = frappe.get_all(
-			"Account",
-			{"company": self.company, "is_group": 0, "root_type": "Expense"},
-			pluck="name",
-			limit=2,
-		)
-		if len(accounts) < 2:
-			self.skipTest(f"{self.company} has fewer than two postable expense accounts")
-
-		self.cogs, self.wip = accounts
+		self.company = get_test_company()
+		self.wip = make_test_account("_Test ICD WIP", "Asset")
+		self.cogs = make_test_account("_Test ICD COGS", "Expense")
 		self.cost_center = frappe.db.get_value(
 			"Cost Center", {"company": self.company, "is_group": 0}, "name"
 		)
-		self.item = frappe.get_single("ICD TZ Settings").expense_types[0].expense_item
-		frappe.db.set_single_value(
-			"ICD TZ Settings",
-			{"enable_wip_and_cogs_for_expenses": 1, "wip_account": self.wip, "cogs_account": self.cogs},
-		)
+		self.item = make_test_item(RELEASE_ITEM)
+		set_item_accounts(self.item, self.wip, self.cogs)
+		set_test_icd_setting({"enable_wip_and_cogs_for_expenses": 1})
 		self.manifest = make_manifest()
 		self.bills = {m_bl_no: self.make_dimension("ICD Master BL", m_bl_no=m_bl_no) for m_bl_no in BILLS}
 		self.box = self.make_dimension(
@@ -204,7 +204,7 @@ class TestSharedBoxRelease(FrappeTestCase):
 		)
 
 	def tearDown(self):
-		frappe.clear_document_cache("ICD TZ Settings", "ICD TZ Settings")
+		frappe.clear_document_cache("ICD Setting", get_test_icd_setting().name)
 		frappe.db.rollback()
 
 	def make_dimension(self, doctype, **values):
@@ -234,6 +234,7 @@ class TestSharedBoxRelease(FrappeTestCase):
 				"rate": rate,
 				"icd_container": self.box,
 				"icd_master_bl": self.bills[m_bl_no],
+				"manifest": self.manifest.name,
 				"cost_center": self.cost_center,
 				**line,
 			},
@@ -271,14 +272,14 @@ class TestSharedBoxRelease(FrappeTestCase):
 		released = [self.bill(m_bl_no) for m_bl_no in BILLS]
 
 		self.assertEqual(released, [100000, 20000, None])
-		self.assertEqual(get_wip_balance({"icd_container": self.box}, self.wip), 0)
+		self.assertEqual(get_wip_balance(self.box, self.wip), 0)
 
 	def test_the_second_invoice_does_not_release_the_first_bills_charges_again(self):
 		self.hold_in_wip(M_BL_NO, 100000)
 		self.bill(M_BL_NO)
 
 		self.assertIsNone(self.bill("SHARED-BL-B"))
-		self.assertEqual(get_wip_balance({"icd_container": self.box}, self.wip), 0)
+		self.assertEqual(get_wip_balance(self.box, self.wip), 0)
 
 
 class TestSharedBoxPortExpenses(FrappeTestCase):
