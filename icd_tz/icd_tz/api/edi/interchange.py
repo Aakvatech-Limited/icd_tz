@@ -10,6 +10,7 @@ from frappe.model.naming import getseries
 from frappe.utils import now_datetime
 
 from icd_tz.icd_tz.api.edi.syntax import edifact_datetime, segment, split_segments, text
+from icd_tz.icd_tz.api.utils import get_icd_setting
 from icd_tz.icd_tz.doctype.edi_partner.edi_partner import get_partner
 
 MESSAGE_FUNCTIONS = {"cancellation": "1", "replace": "5", "original": "9"}
@@ -30,7 +31,7 @@ class MessageGenerator:
 	def __init__(self, movement, partner):
 		self.movement = movement
 		self.partner = partner
-		self.settings = frappe.get_cached_doc("ICD TZ Settings")
+		self.settings = get_icd_setting(movement.company)
 		self.reference = self.get_interchange_reference()
 
 	def get_context(self, message_function: str) -> dict:
@@ -127,7 +128,7 @@ def attach(document, movement, generator_class):
 	if movement is None:
 		return
 
-	partner = get_partner(movement.shipping_line_code)
+	partner = get_partner(movement.shipping_line_code, movement.company)
 	if partner is None:
 		return
 
@@ -180,7 +181,11 @@ def preview(movement, generator_class, message_function: str, edi_partner: str |
 	if movement is None:
 		return None
 
-	partner = get_preview_partner(edi_partner) if edi_partner else get_partner(movement.shipping_line_code)
+	partner = (
+		get_preview_partner(edi_partner)
+		if edi_partner
+		else get_partner(movement.shipping_line_code, movement.company)
+	)
 	if partner is None:
 		return None
 
