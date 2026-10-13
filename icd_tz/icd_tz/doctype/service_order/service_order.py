@@ -6,7 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
-from icd_tz.icd_tz.api.icd_services import BOOKING, SERVICES
+from icd_tz.icd_tz.api.icd_services import SERVICES
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
 	get_icd_setting,
@@ -197,10 +197,9 @@ class ServiceOrder(Document):
 			return
 
 		container = frappe.get_doc("Container", self.container_id)
-		booked_qty = container.booking_count * self.unit_qty
 		for service in SERVICES:
-			if service.scope == BOOKING:
-				self.add_booking_service(settings_doc, container, service, booked_qty)
+			if service.count_property:
+				self.add_repeated_service(settings_doc, container, service)
 			elif service.on_service_order:
 				self.add_charged_service(settings_doc, container, service)
 
@@ -220,11 +219,11 @@ class ServiceOrder(Document):
 
 		self.append("services", row)
 
-	def add_booking_service(self, settings_doc, container, service, booked_qty):
-		"""Each submitted booking is stripped and verified once, less what was already billed"""
+	def add_repeated_service(self, settings_doc, container, service):
+		"""A service owed once per booking or inspection, less what was already billed"""
 
 		qty = flt(
-			service.get_unbilled_qty(container, settings_doc, booked_qty),
+			service.get_unbilled_qty(container, settings_doc, self.unit_qty),
 			self.precision("qty", "services"),
 		)
 		if qty <= 0:
