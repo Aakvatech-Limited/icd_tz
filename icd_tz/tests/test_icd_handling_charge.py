@@ -16,6 +16,7 @@ from icd_tz.tests.test_icd_services import services_settings, submit_invoice
 from icd_tz.tests.test_lcl_gross_volume import make_service_order
 from icd_tz.tests.test_service_criteria import criteria, settings
 from icd_tz.tests.test_storage_contract import set_settings_storage_days
+from icd_tz.tests.utils import get_test_icd_setting, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -34,7 +35,7 @@ class TestICDHandlingFlag(FrappeTestCase):
 	"""Every loaded container in the yard owes ICD Handling, set again on each save"""
 
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
+		set_test_icd_setting({"received_date_threshold_hours": 48})
 		set_settings_storage_days()
 		make_manifest()
 		self.container_id = make_reception().create_mbl_container()
@@ -87,8 +88,9 @@ class TestICDHandlingBilling(FrappeTestCase):
 	def get_order_services(self, container_id, settings_doc=None, **order_values):
 		order_values = {"container_status": "FCL", "container_size": "22G1", "port": "TEAGTL", **order_values}
 		service_order = make_service_order(container_id=container_id, **order_values)
-		with with_settings(settings_doc or services_settings()):
-			service_order.add_container_services(frappe.get_cached_doc("ICD TZ Settings"))
+		settings_doc = settings_doc or services_settings()
+		with with_settings(settings_doc):
+			service_order.add_container_services(settings_doc)
 		return service_order.services
 
 	def test_an_fcl_order_charges_one_icd_handling_without_criteria_remarks(self):
