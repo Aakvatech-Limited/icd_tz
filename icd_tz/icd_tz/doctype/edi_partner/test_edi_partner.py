@@ -37,6 +37,8 @@ class TestEDIPartner(FrappeTestCase):
 
 	def test_the_same_line_can_have_a_partner_in_another_company(self):
 		other_company = frappe.db.get_value("Company", {"name": ("!=", self.company)}, "name")
+		if not other_company:
+			self.skipTest("this test needs a second company")
 		partner = make_partner("TCM", company=other_company)
 
 		self.assertEqual(partner.name, f"TCM-{frappe.get_cached_value('Company', other_company, 'abbr')}")
@@ -63,6 +65,8 @@ class TestEDIPartner(FrappeTestCase):
 
 	def test_no_partner_of_another_company(self):
 		other_company = frappe.db.get_value("Company", {"name": ("!=", self.company)}, "name")
+		if not other_company:
+			self.skipTest("this test needs a second company")
 
 		self.assertIsNone(get_partner("TCM", other_company))
 
