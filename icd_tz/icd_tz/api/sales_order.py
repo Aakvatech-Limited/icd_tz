@@ -569,7 +569,7 @@ def get_gatepass_cancellation_service(container_doc, settings_doc, container_ref
 		return {}
 
 	if not settings_doc.gatepass_cancellation_item:
-		frappe.throw(_("Gatepass Cancellation Item is not set in ICD TZ Settings, Please set it to continue"))
+		frappe.throw(_("Gatepass Cancellation Item is not set in the ICD Setting, Please set it to continue"))
 
 	return {
 		"item_code": settings_doc.gatepass_cancellation_item,
