@@ -106,6 +106,9 @@
   "has_lift_on_off_charge",
   "lo_sales_invoice",
   "column_break_lift",
+  "has_change_of_status_charge",
+  "cs_sales_invoice",
+  "column_break_change_of_status",
   "has_removal_charges",
   "r_sales_invoice",
   "column_break_gpcnl",
@@ -535,6 +538,24 @@
   },
   {
    "default": "0",
+   "fieldname": "has_change_of_status_charge",
+   "fieldtype": "Check",
+   "label": "Has Change of Status Charge",
+   "read_only": 1
+  },
+  {
+   "description": "Invoice for Change of Status Charge",
+   "fieldname": "cs_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Change of Status Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_change_of_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
    "fieldname": "has_removal_charges",
    "fieldtype": "Check",
    "label": "Has Removal Charges",
@@ -877,7 +898,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-13 16:37:10.969019",
+ "modified": "2026-10-13 17:46:47.270706",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",
