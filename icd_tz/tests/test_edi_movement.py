@@ -7,6 +7,7 @@ from frappe.utils import add_days, getdate, nowdate
 
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in, attach_gate_out
 from icd_tz.icd_tz.api.edi.movement import from_container_reception, from_gate_pass
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -23,9 +24,9 @@ INHERITED_EDI_VALUES = {
 
 class TestEDIMovement(FrappeTestCase):
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "received_date_threshold_hours", 48)
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
+		set_test_icd_setting({"received_date_threshold_hours": 48})
+		set_test_icd_setting({"enable_edi": 1})
+		set_test_icd_setting({"icd_un_locode": "TZDAR"})
 		frappe.db.delete("EDI Partner", {"shipping_line_code": "CMA"})
 		frappe.get_doc(
 			{
@@ -205,8 +206,10 @@ class TestEDIMovement(FrappeTestCase):
 			self.assertFalse(reception.get(fieldname), fieldname)
 
 	def test_an_amended_reception_of_an_sftp_partner_drops_the_inherited_recipients(self):
-		frappe.db.set_value("EDI Partner", "CMA", "connection_type", "SFTP")
-		frappe.clear_document_cache("EDI Partner", "CMA")
+		frappe.db.set_value("EDI Partner", {"shipping_line_code": "CMA"}, "connection_type", "SFTP")
+		frappe.clear_document_cache(
+			"EDI Partner", frappe.db.get_value("EDI Partner", {"shipping_line_code": "CMA"})
+		)
 		reception = make_reception(**INHERITED_EDI_VALUES)
 
 		attach_gate_in(reception)
@@ -236,6 +239,7 @@ class TestEDIMovement(FrappeTestCase):
 		container = frappe.new_doc("Container")
 		container.update(
 			{
+				"company": get_test_company(),
 				"container_reception": reception.name,
 				"container_no": CONTAINER_NO,
 				"manifest": self.manifest.name,
@@ -258,6 +262,7 @@ def make_manifest():
 	manifest = frappe.new_doc("Manifest")
 	manifest.update(
 		{
+			"company": get_test_company(),
 			"manifest": "/private/files/test-manifest.xlsx",
 			"port": "DP WORLD",
 			"mrn": "25ISS000048",
@@ -294,6 +299,7 @@ def make_reception(**values):
 	reception = frappe.new_doc("Container Reception")
 	reception.update(
 		{
+			"company": get_test_company(),
 			"manifest": frappe.db.get_value("Manifest", {}, "name"),
 			"container_no": CONTAINER_NO,
 			"m_bl_no": M_BL_NO,
@@ -317,7 +323,9 @@ def make_reception(**values):
 
 def make_gate_pass(container):
 	gate_pass = frappe.new_doc("Gate Pass")
-	gate_pass.update({"container_id": container.name, "manifest": container.manifest})
+	gate_pass.update(
+		{"company": get_test_company(), "container_id": container.name, "manifest": container.manifest}
+	)
 	gate_pass.flags.ignore_mandatory = True
 	gate_pass.insert(ignore_permissions=True)
 
