@@ -26,7 +26,6 @@
   "current_container_location",
   "inspection_details_section",
   "icd_official",
-  "has_hbl",
   "container_status",
   "volume",
   "counted_packages",
@@ -81,29 +80,20 @@
    "options": "Employee"
   },
   {
-   "default": "0",
-   "fetch_from": "container_id.has_hbl",
-   "fieldname": "has_hbl",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Has HBL",
-   "read_only": 1
-  },
-  {
    "fieldname": "container_status",
    "fieldtype": "Select",
    "label": "Container Status",
    "options": "\nFCL\nLCL",
-   "read_only_depends_on": "eval:doc.has_hbl"
+   "read_only_depends_on": "eval:doc.h_bl_no"
   },
   {
-   "depends_on": "eval:doc.container_status == 'LCL' && !doc.has_hbl",
+   "depends_on": "eval:doc.container_status == 'LCL' && !doc.h_bl_no",
    "fieldname": "volume",
    "fieldtype": "Float",
    "label": "Volume (CBM)"
   },
   {
-   "depends_on": "eval:doc.container_status == 'LCL' && !doc.has_hbl",
+   "depends_on": "eval:doc.container_status == 'LCL' && !doc.h_bl_no",
    "fieldname": "counted_packages",
    "fieldtype": "Int",
    "label": "Counted Packages"
@@ -302,7 +292,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-13 17:46:47.270706",
+ "modified": "2026-10-13 23:45:36.881235",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container Inspection",
