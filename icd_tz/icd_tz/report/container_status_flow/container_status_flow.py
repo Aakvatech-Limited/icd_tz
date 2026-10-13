@@ -18,7 +18,7 @@ STATUS_FLOW = {
 
 def execute(filters=None):
 	columns = get_columns()
-	data = get_data()
+	data = get_data(filters or {})
 	chart = get_chart_data(data)
 	return columns, data, None, chart
 
@@ -46,12 +46,13 @@ def get_columns():
 	]
 
 
-def get_data():
+def get_data(filters):
 	container = frappe.qb.DocType("Container")
 
 	counts = (
 		frappe.qb.from_(container)
 		.select(container.status, container.has_hbl, Count(container.name).as_("total"))
+		.where(container.company == filters.get("company"))
 		.groupby(container.status, container.has_hbl)
 	).run(as_dict=True)
 
