@@ -31,6 +31,7 @@ def services_settings(*extra_rows, loose_rows=()):
 	settings_doc.service_types += [
 		criteria("Removal", "_T Removal"),
 		criteria("Levy", "_T Levy"),
+		criteria("Lift On/Off", "_T Lift On/Off"),
 		criteria("Storage-Single", "_T Storage"),
 		*extra_rows,
 	]
@@ -54,6 +55,7 @@ class TestContainerInvoiceRefs(FrappeTestCase):
 		for item_code, field in (
 			("_T Removal", "r_sales_invoice"),
 			("_T Levy", "c_sales_invoice"),
+			("_T Lift On/Off", "lo_sales_invoice"),
 			("_T Cancellation", "g_sales_invoice"),
 		):
 			container = make_container(container_reception=RECEPTION, status="At Payments").name
@@ -132,6 +134,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 				"cargo_type": "Local",
 				"has_removal_charges": 1,
 				"has_corridor_levy_charges": 1,
+				"has_lift_on_off_charge": 1,
 				"has_cancellation_charge": 1,
 				"has_stripping_charges": 1,
 				"has_custom_verification_charges": 1,
@@ -150,6 +153,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 		labels = [
 			"Removal Charges",
 			"Corridor Levy Charges",
+			"Lift On/Off Charges",
 			"Gate Pass Cancellation Charges",
 			"Stripping Charges",
 			"Custom Verification Charges",
@@ -165,12 +169,14 @@ class TestGatePassServiceCharges(FrappeTestCase):
 			r_sales_invoice="_T-R",
 			has_corridor_levy_charges=1,
 			c_sales_invoice="_T-C",
+			has_lift_on_off_charge=1,
+			lo_sales_invoice="_T-LO",
 		)
 
 		msg, invoices = make_gate_pass(container).validate_container_charges()
 
 		self.assertEqual(msg, "")
-		self.assertEqual([name for name in invoices if name], ["_T-R", "_T-C"])
+		self.assertEqual([name for name in invoices if name], ["_T-R", "_T-C", "_T-LO"])
 
 	def test_cancelling_the_gate_pass_flags_the_charge(self):
 		container = make_container()

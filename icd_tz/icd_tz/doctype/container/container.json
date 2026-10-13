@@ -103,6 +103,9 @@
   "cv_sales_invoice",
   "section_break_dxjt",
   "column_break_anfr",
+  "has_lift_on_off_charge",
+  "lo_sales_invoice",
+  "column_break_lift",
   "has_removal_charges",
   "r_sales_invoice",
   "column_break_gpcnl",
@@ -514,6 +517,24 @@
   },
   {
    "default": "0",
+   "fieldname": "has_lift_on_off_charge",
+   "fieldtype": "Check",
+   "label": "Has Lift On/Off Charge",
+   "read_only": 1
+  },
+  {
+   "description": "Invoice for Lift On/Off Charge",
+   "fieldname": "lo_sales_invoice",
+   "fieldtype": "Data",
+   "label": "Lift On/Off Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lift",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
    "fieldname": "has_removal_charges",
    "fieldtype": "Check",
    "label": "Has Removal Charges",
@@ -856,7 +877,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-04 11:13:05.221860",
+ "modified": "2026-10-13 16:37:10.969019",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",

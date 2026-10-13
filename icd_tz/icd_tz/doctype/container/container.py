@@ -36,6 +36,7 @@ class Container(Document):
 		self.set_reception_charge_flags()
 		self.check_corridor_levy_eligibility()
 		self.check_removal_charges_elibility()
+		self.set_lift_on_off_charge()
 
 	def set_reception_charge_flags(self):
 		"""Every loaded container still in the yard owes the reception services"""
@@ -45,6 +46,12 @@ class Container(Document):
 
 		for service in get_scope_services(RECEPTION):
 			self.set(service.flag_field, 1)
+
+	def set_lift_on_off_charge(self):
+		"""Every HBL container owes the lift on/off charge, whatever its cargo type"""
+
+		if self.has_hbl:
+			self.has_lift_on_off_charge = 1
 
 	def on_trash(self):
 		validate_delivered_container(self.name, self.container_no, action="deleted")
