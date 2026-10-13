@@ -83,7 +83,11 @@ var set_transport_services = async (frm, supplier, posting_date, services) => {
   // the supplier fetch can set its own price list, so the settings one is applied after it
   frappe.after_ajax(async () => {
     frm.clear_table("items");
-    await frm.set_value("buying_price_list", services.buying_price_list);
+    // every line is now a container transport line, so the invoice is a container expense
+    await frm.set_value({
+      is_icd_container_expense: 1,
+      buying_price_list: services.buying_price_list,
+    });
     services.items.forEach((item) => frm.add_child("items", item));
     frm.refresh_field("items");
     frm.cscript.calculate_taxes_and_totals();
