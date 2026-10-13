@@ -109,10 +109,22 @@ def get_foreign_expense_account(company: str) -> str | None:
 def insert_purchase_order(name: str, docstatus: int = 1, flagged: int = 0, company: str | None = None) -> str:
 	"""A bare Purchase Order row, enough for the container expense flag"""
 
-	frappe.db.sql(
-		"""insert into `tabPurchase Order` (name, company, docstatus, supplier, is_icd_container_expense)
-		values (%s, %s, %s, '_Test Supplier', %s)""",
-		(name, company or get_test_company(), docstatus, flagged),
+	insert_row(
+		"Purchase Order",
+		{
+			"name": name,
+			"company": company or get_test_company(),
+			"docstatus": docstatus,
+			"supplier": "_Test Supplier",
+			"is_icd_container_expense": flagged,
+		},
 	)
 
 	return name
+
+
+def insert_row(doctype: str, values: dict):
+	"""A bare table row, without the document checks a test does not need"""
+
+	table = frappe.qb.DocType(doctype)
+	frappe.qb.into(table).columns(*values).insert(*values.values()).run()
