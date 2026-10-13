@@ -9,11 +9,13 @@ from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.edi.codeco import CODECOGenerator
 from icd_tz.icd_tz.api.edi.movement import ContainerMovement
+from icd_tz.tests.utils import get_test_company, set_test_icd_setting
 
 test_ignore = ["Company", "Cost Center"]
 
 GATE_IN_DEFAULTS = {
 	"document": "CR-2026-00001",
+	"company": get_test_company(),
 	"is_gate_in": True,
 	"shipping_line_code": "CMA",
 	"container_no": "UACU6042588",
@@ -34,9 +36,9 @@ GATE_IN_DEFAULTS = {
 
 class TestCODECO(FrappeTestCase):
 	def setUp(self):
-		frappe.db.set_single_value("ICD TZ Settings", "enable_edi", 1)
-		frappe.db.set_single_value("ICD TZ Settings", "icd_un_locode", "TZDAR")
-		frappe.db.set_single_value("ICD TZ Settings", "default_sender_id", "TZDARDSEL")
+		set_test_icd_setting({"enable_edi": 1})
+		set_test_icd_setting({"icd_un_locode": "TZDAR"})
+		set_test_icd_setting({"default_sender_id": "TZDARDSEL"})
 		self.partner = make_partner()
 
 	def tearDown(self):
@@ -211,6 +213,7 @@ def make_partner():
 			"doctype": "EDI Partner",
 			"shipping_line_code": "CMA",
 			"shipping_line_name": "CMA CGM TANZANIA LIMITED",
+			"company": get_test_company(),
 			"enable_edi": 1,
 			"connection_type": "SMTP",
 			"receiver_email": "edi@example.com",
