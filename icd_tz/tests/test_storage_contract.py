@@ -15,6 +15,7 @@ from icd_tz.icd_tz.api.contract import (
 from icd_tz.icd_tz.api.sales_order import get_container_days_to_be_billed
 from icd_tz.icd_tz.api.utils import set_container_cf_company
 from icd_tz.tests.test_transport_charges import make_supplier
+from icd_tz.tests.utils import get_test_company, get_test_icd_setting
 
 DESTINATIONS = ["DRC", "Local", "Other"]
 SETTINGS_DAYS = {"Free": (1, 7), "Single": (8, 14), "Double": (15, 999999)}
@@ -114,7 +115,7 @@ class TestStorageContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		active_contract = get_active_contract(CF_PARTY_TYPE, self.company)
+		active_contract = get_active_contract(CF_PARTY_TYPE, self.company, company=get_test_company())
 		self.assertEqual(active_contract["name"], contract.name)
 		self.assertEqual(active_contract["is_rate_based"], 1)
 		self.assertEqual(active_contract["price_list"], price_list)
@@ -127,22 +128,28 @@ class TestStorageContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		self.assertEqual(get_active_contract(CF_PARTY_TYPE, self.company), {})
+		self.assertEqual(get_active_contract(CF_PARTY_TYPE, self.company, company=get_test_company()), {})
 
 	def test_storage_day_counts_fall_back_to_settings(self):
-		container = frappe._dict({"place_of_destination": "Local", "c_and_f_company": self.company})
+		container = frappe._dict(
+			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+		)
 
 		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
 
 	def test_storage_day_counts_come_from_an_active_storage_days_contract(self):
 		submit_storage_days_contract(self.company)
-		container = frappe._dict({"place_of_destination": "Local", "c_and_f_company": self.company})
+		container = frappe._dict(
+			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+		)
 
 		self.assertEqual(get_storage_day_counts(container), {"Free": 12, "Single": 2, "Double": 2})
 
 	def test_storage_day_counts_ignore_a_contract_of_another_company(self):
 		submit_storage_days_contract(self.company)
-		container = frappe._dict({"place_of_destination": "Local", "c_and_f_company": None})
+		container = frappe._dict(
+			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": None}
+		)
 
 		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
 
@@ -153,15 +160,15 @@ class TestStorageContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		self.assertEqual(get_selling_price_list(self.company), price_list)
+		self.assertEqual(get_selling_price_list(self.company, get_test_company()), price_list)
 
 	def test_selling_price_list_ignores_a_storage_days_only_contract(self):
 		submit_storage_days_contract(self.company)
 
-		self.assertEqual(get_selling_price_list(self.company), DEFAULT_PRICE_LIST)
+		self.assertEqual(get_selling_price_list(self.company, get_test_company()), DEFAULT_PRICE_LIST)
 
 	def test_selling_price_list_falls_back_without_a_contract(self):
-		self.assertEqual(get_selling_price_list(self.company), DEFAULT_PRICE_LIST)
+		self.assertEqual(get_selling_price_list(self.company, get_test_company()), DEFAULT_PRICE_LIST)
 
 	def test_a_supplier_contract_of_the_same_name_leaves_the_cf_contract_alone(self):
 		price_list = create_price_list("_Test ICD Contract Price List")
@@ -174,8 +181,11 @@ class TestStorageContract(FrappeTestCase):
 		supplier_contract.insert()
 		supplier_contract.submit()
 
-		self.assertEqual(get_active_contract(CF_PARTY_TYPE, self.company)["name"], cf_contract.name)
-		self.assertEqual(get_selling_price_list(self.company), price_list)
+		self.assertEqual(
+			get_active_contract(CF_PARTY_TYPE, self.company, company=get_test_company())["name"],
+			cf_contract.name,
+		)
+		self.assertEqual(get_selling_price_list(self.company, get_test_company()), price_list)
 
 	def test_free_window_marks_exactly_the_free_days(self):
 		container = container_with_dates(14)
@@ -257,7 +267,9 @@ class TestStorageContract(FrappeTestCase):
 		self.assertEqual(with_double.has_double_charge, 1)
 
 	def test_settings_windows_count_seven_free_and_seven_single_days(self):
-		container = frappe._dict({"place_of_destination": "Local", "c_and_f_company": self.company})
+		container = frappe._dict(
+			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+		)
 
 		counts = get_storage_day_counts(container)
 
@@ -297,12 +309,14 @@ class TestStorageContract(FrappeTestCase):
 		contract.insert()
 		contract.submit()
 
-		container = frappe._dict({"place_of_destination": "Local", "c_and_f_company": self.company})
+		container = frappe._dict(
+			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+		)
 		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
 
 
 def set_settings_storage_days():
-	settings_doc = frappe.get_doc("ICD TZ Settings")
+	settings_doc = get_test_icd_setting()
 	settings_doc.icd_code = settings_doc.icd_code or "_TEST"
 	settings_doc.default_price_list = create_price_list(DEFAULT_PRICE_LIST)
 	settings_doc.storage_days = []
@@ -314,7 +328,7 @@ def set_settings_storage_days():
 			)
 
 	settings_doc.save(ignore_permissions=True)
-	frappe.clear_document_cache("ICD TZ Settings", "ICD TZ Settings")
+	frappe.clear_document_cache("ICD Setting", get_test_icd_setting().name)
 
 
 def create_cf_company(company_name="_Test ICD C and F Company"):
@@ -342,6 +356,7 @@ def container_with_dates(days, c_and_f_company=None, place_of_destination="Local
 	"""Unsaved Container carrying `days` billable date rows, for update_billed_days()"""
 
 	container = frappe.new_doc("Container")
+	container.company = get_test_company()
 	container.place_of_destination = place_of_destination
 	container.c_and_f_company = c_and_f_company
 	for _ in range(days):
@@ -355,6 +370,7 @@ def billable_container(c_and_f_company, days):
 
 	return frappe._dict(
 		{
+			"company": get_test_company(),
 			"place_of_destination": "Local",
 			"c_and_f_company": c_and_f_company,
 			"has_single_charge": 1,
@@ -391,6 +407,7 @@ def create_container(place_of_destination="Local"):
 	container = frappe.get_doc(
 		{
 			"doctype": "Container",
+			"company": get_test_company(),
 			"container_no": "_TESTCONT0001",
 			"place_of_destination": place_of_destination,
 		}
@@ -423,6 +440,7 @@ def make_contract(c_and_f_company, **kwargs):
 	contract = frappe.get_doc(
 		{
 			"doctype": "Contract",
+			"company": get_test_company(),
 			"party_type": "Clearing and Forwarding Company",
 			"party_name": c_and_f_company,
 			"start_date": nowdate(),
