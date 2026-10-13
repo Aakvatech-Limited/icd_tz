@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form, nowdate
 
@@ -36,6 +37,13 @@ class ContainerInspection(Document):
 			validate_delivered_container(self.container_id, self.container_no)
 
 		self.validate_duplicate_inspection()
+		self.set_container_status()
+
+	def set_container_status(self):
+		"""An HBL container is loose cargo, so its status is always LCL"""
+
+		if self.has_hbl:
+			self.container_status = "LCL"
 
 	def set_additional_inspection(self):
 		"""An inspection raised from an additional booking is itself an additional inspection"""
@@ -79,18 +87,30 @@ class ContainerInspection(Document):
 			"from that Container Inspection record first."
 		)
 
+	def before_submit(self):
+		mandatory_fields = ["inspector_name", "icd_official", "container_status"]
+		if self.is_change_of_status:
+			mandatory_fields += ["volume", "counted_packages"]
+
+		missing = [self.meta.get_label(field) for field in mandatory_fields if not self.get(field)]
+		if missing:
+			frappe.throw(
+				_("Set {0} before you submit the inspection").format(", ".join(map(frappe.bold, missing))),
+				title=_("Missing Inspection Details"),
+			)
+
 	def on_submit(self):
 		self.update_container_doc()
-		if service := self.lcl_service:
-			self.unpack_container(service)
+		if self.is_change_of_status:
+			self.unpack_container()
 
 	@property
-	def lcl_service(self):
-		"""Service row on which the consignee changed the box from FCL to LCL"""
+	def is_change_of_status(self) -> bool:
+		"""The consignee changed an FCL box to LCL, so it is unpacked and charged for the change"""
 
-		return next((row for row in self.services if row.status_changed_to == "LCL"), None)
+		return self.container_status == "LCL" and not self.has_hbl
 
-	def unpack_container(self, service):
+	def unpack_container(self):
 		"""Split the box into the consignee's HBL record and the empty box left for the shipping line"""
 
 		unpacking = frappe.new_doc("Container Unpacking")
@@ -98,7 +118,7 @@ class ContainerInspection(Document):
 			{
 				"container_id": self.container_id,
 				"container_inspection": self.name,
-				"clerk": service.icd_official,
+				"clerk": self.icd_official,
 				"unpacking_location": self.new_container_location,
 			}
 		)
@@ -133,6 +153,9 @@ class ContainerInspection(Document):
 
 		if self.c_and_f_company and not container_doc.c_and_f_company:
 			container_doc.c_and_f_company = self.c_and_f_company
+
+		if self.is_change_of_status:
+			container_doc.has_change_of_status_charge = 1
 
 		container_doc.last_inspection_date = nowdate()
 		container_doc.save(ignore_permissions=True)
