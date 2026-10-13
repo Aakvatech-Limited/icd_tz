@@ -1,9 +1,11 @@
 """Move port expenses from work in progress to cost of goods sold once a container is billed."""
 
 import frappe
+from erpnext import get_company_currency
 from frappe.query_builder.functions import Sum
 from frappe.utils import flt, nowdate
 
+from icd_tz.icd_tz.api.item_accounts import get_wip_cogs_map
 from icd_tz.icd_tz.api.utils import get_container_items, get_icd_setting
 
 RELEASE_REMARK = "Port expenses released from WIP to COGS for Sales Invoice {0}"
@@ -89,18 +91,20 @@ def release_expenses(sales_invoice: str):
 	if invoice.docstatus != 1 or invoice.is_return or not get_container_items(invoice):
 		return
 
-	accounts = get_release_accounts(invoice.company, invoice.name)
+	accounts = get_release_accounts(invoice.company)
 	if not accounts:
 		return
 
 	try:
-		balances = get_balances_to_release(sales_invoice, accounts["wip_account"])
+		balances = get_releasable_balances(
+			invoice, get_balances_to_release(sales_invoice, accounts), accounts
+		)
 		if not balances:
 			return
 
 		entry = post_release_entry(invoice, balances, accounts)
-		for dimensions, _balance in balances:
-			mark_released(dimensions["icd_container"], entry)
+		for container in sorted({dimensions["icd_container"] for dimensions, _wip, _balance in balances}):
+			mark_released(container, entry)
 
 	except Exception:
 		frappe.log_error(title=f"Releasing port expenses of {sales_invoice}", message=frappe.get_traceback())
@@ -137,65 +141,72 @@ def reverse_release(sales_invoice: str):
 		raise
 
 
-def get_release_accounts(company: str, sales_invoice: str | None = None) -> dict:
-	"""The two accounts an expense moves between, or nothing while they cannot be used
+def get_release_accounts(company: str) -> dict:
+	"""Each WIP Account of the company with its COGS Account, or nothing while WIP is not used"""
 
-	Anything that stops a release is written to the error log rather than passed over,
-	so a setting that quietly holds expenses in WIP can be found and corrected.
-	"""
-
-	settings_doc = get_icd_setting(company)
-	if not settings_doc.enable_wip_and_cogs_for_expenses:
+	if not get_icd_setting(company).enable_wip_and_cogs_for_expenses:
 		return {}
 
-	accounts = {
-		"wip_account": settings_doc.get("wip_account"),
-		"cogs_account": settings_doc.get("cogs_account"),
-	}
-	if not all(accounts.values()):
-		return log_release_blocked(
-			company, sales_invoice, "WIP Account and COGS Account must both be set in ICD TZ Settings"
-		)
+	return get_wip_cogs_map(company)
 
-	company_currency = frappe.get_cached_value("Company", company, "default_currency")
-	for account in accounts.values():
+
+def get_releasable_balances(invoice, balances: list, accounts: dict) -> list:
+	"""The balances whose WIP Account has a valid COGS Account
+
+	A balance on any other WIP Account stays in WIP, and the reason goes to the Error
+	Log once, so the pair can be corrected. The other pairs are released.
+	"""
+
+	blocked = set()
+	for wip_account in {wip_account for _dimensions, wip_account, _balance in balances}:
+		reason = get_unusable_reason(invoice.company, wip_account, accounts[wip_account])
+		if reason:
+			log_release_blocked(invoice.company, invoice.name, wip_account, reason)
+			blocked.add(wip_account)
+
+	return [
+		(dimensions, wip_account, balance)
+		for dimensions, wip_account, balance in balances
+		if wip_account not in blocked
+	]
+
+
+def get_unusable_reason(company: str, wip_account: str, cogs_account: str | None) -> str | None:
+	"""Why a WIP Account cannot be released to its COGS Account, or None"""
+
+	if not cogs_account:
+		return f"{wip_account} has no single COGS Account on the Items or Item Groups"
+
+	company_currency = get_company_currency(company)
+	for account in (wip_account, cogs_account):
 		details = frappe.get_cached_value("Account", account, ["company", "account_currency"], as_dict=True)
 		if details.company != company:
-			return log_release_blocked(company, sales_invoice, f"{account} belongs to {details.company}")
+			return f"{account} belongs to {details.company}"
 
 		# the balance is read in company currency, and a journal entry derives that from
 		# the account currency, so another currency needs a rate this cannot invent
 		if details.account_currency and details.account_currency != company_currency:
-			return log_release_blocked(
-				company,
-				sales_invoice,
-				f"{account} is in {details.account_currency}, not {company_currency}",
-			)
+			return f"{account} is in {details.account_currency}, not {company_currency}"
 
-	return accounts
+	return None
 
 
-def log_release_blocked(company: str, sales_invoice: str | None, reason: str) -> dict:
-	"""Record why expenses are staying in WIP, and release nothing
-
-	The invoice is named so the log can be traced back to what was being billed.
-	"""
+def log_release_blocked(company: str, sales_invoice: str, wip_account: str, reason: str):
+	"""Record why a WIP balance stays in WIP, with the invoice that tried to release it"""
 
 	frappe.log_error(
 		title=f"Port expenses cannot be released for {company}",
 		message=(
-			f"Sales Invoice: {sales_invoice or 'not raised from an invoice'}\n"
-			f"{reason}.\nPort expenses will stay in WIP until ICD TZ Settings is corrected."
+			f"Sales Invoice: {sales_invoice}\n{reason}.\n"
+			f"The balance stays in {wip_account} until the WIP and COGS Accounts of its items are corrected."
 		),
-		reference_doctype="Sales Invoice" if sales_invoice else None,
+		reference_doctype="Sales Invoice",
 		reference_name=sales_invoice,
 	)
 
-	return {}
 
-
-def get_balances_to_release(sales_invoice: str, wip_account: str) -> list:
-	"""What each container of this invoice still holds in WIP, locked while it is read
+def get_balances_to_release(sales_invoice: str, accounts: dict) -> list:
+	"""What each container of this invoice still holds in each WIP Account, locked while it is read
 
 	The row is locked in a settled order, so two invoices billing the same container at
 	the same time queue behind one another instead of both posting the same balance.
@@ -204,9 +215,9 @@ def get_balances_to_release(sales_invoice: str, wip_account: str) -> list:
 	balances = []
 	for dimensions in get_invoice_dimensions(sales_invoice):
 		frappe.db.get_value("ICD Container", dimensions["icd_container"], "name", for_update=True)
-		balance = get_wip_balance(dimensions, wip_account)
-		if balance > 0:
-			balances.append((dimensions, balance))
+		for wip_account, balance in sorted(get_wip_balances(dimensions, accounts).items()):
+			if balance > 0:
+				balances.append((dimensions, wip_account, balance))
 
 	return balances
 
@@ -235,8 +246,8 @@ def get_invoice_dimensions(sales_invoice: str) -> list:
 	return [dimensions[container] for container in sorted(dimensions)]
 
 
-def get_wip_balance(dimensions: dict, wip_account: str) -> float:
-	"""What a container still holds in work in progress, read from the ledger
+def get_wip_balances(dimensions: dict, wip_accounts) -> dict:
+	"""What a container still holds in each WIP Account, read from the ledger in one query
 
 	debit and credit are the company currency amounts. The account currency pair only
 	matches them while the account is in the company currency, and the transaction
@@ -248,8 +259,9 @@ def get_wip_balance(dimensions: dict, wip_account: str) -> float:
 	gl_entry = frappe.qb.DocType("GL Entry")
 	query = (
 		frappe.qb.from_(gl_entry)
-		.select(Sum(gl_entry.debit - gl_entry.credit))
-		.where((gl_entry.account == wip_account) & (gl_entry.is_cancelled == 0))
+		.select(gl_entry.account, Sum(gl_entry.debit - gl_entry.credit))
+		.where((gl_entry.account.isin(list(wip_accounts))) & (gl_entry.is_cancelled == 0))
+		.groupby(gl_entry.account)
 		.for_update()
 	)
 	for field, value in dimensions.items():
@@ -260,15 +272,13 @@ def get_wip_balance(dimensions: dict, wip_account: str) -> float:
 		# does name, so it is released rather than left behind
 		query = query.where(gl_entry[field].isnull() | (gl_entry[field] == value))
 
-	balance = query.run()
-
-	return flt(balance[0][0]) if balance else 0.0
+	return {account: flt(balance) for account, balance in query.run()}
 
 
 def post_release_entry(invoice, balances: list, accounts: dict) -> str:
-	"""One journal entry for the invoice, a debit and a credit per container it releases"""
+	"""One journal entry for the invoice, a debit and a credit per container and account pair"""
 
-	company_currency = frappe.get_cached_value("Company", invoice.company, "default_currency")
+	company_currency = get_company_currency(invoice.company)
 
 	journal_entry = frappe.new_doc("Journal Entry")
 	journal_entry.update(
@@ -286,11 +296,11 @@ def post_release_entry(invoice, balances: list, accounts: dict) -> str:
 	# to that currency, so the entry is posted at a rate of one and converts nothing
 	posting = {"account_currency": company_currency, "exchange_rate": 1}
 
-	for dimensions, balance in balances:
+	for dimensions, wip_account, balance in balances:
 		journal_entry.append(
 			"accounts",
 			{
-				"account": accounts["cogs_account"],
+				"account": accounts[wip_account],
 				"debit_in_account_currency": balance,
 				"debit": balance,
 				**posting,
@@ -300,7 +310,7 @@ def post_release_entry(invoice, balances: list, accounts: dict) -> str:
 		journal_entry.append(
 			"accounts",
 			{
-				"account": accounts["wip_account"],
+				"account": wip_account,
 				"credit_in_account_currency": balance,
 				"credit": balance,
 				**posting,
