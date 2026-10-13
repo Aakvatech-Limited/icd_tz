@@ -65,6 +65,7 @@ def get_data(filters):
 			container.cargo_type,
 		)
 		.where(container.freight_indicator == "LCL")
+		.where(container.company == filters.get("company"))
 		.where(container.has_hbl == 1)
 	)
 
