@@ -418,6 +418,16 @@ class Container(Document):
 
 		return frappe.db.count("In Yard Container Booking", filters)
 
+	@property
+	def lift_count(self) -> int:
+		"""An HBL container is lifted at least once, and once for each of its inspections"""
+
+		inspections = frappe.db.count(
+			"Container Inspection",
+			{"container_id": self.name, "h_bl_no": ["is", "set"], "docstatus": ["!=", 2]},
+		)
+		return max(inspections, 1)
+
 	def get_billed_qty(self, invoice_field: str, item_codes: list) -> float:
 		"""Quantity of the items this container was billed on the invoices of a field"""
 
