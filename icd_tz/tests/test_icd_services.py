@@ -19,6 +19,7 @@ from icd_tz.tests.test_container_income_refs import (
 from icd_tz.tests.test_container_income_refs import submit_invoice as submit_invoice_with
 from icd_tz.tests.test_lcl_gross_volume import make_service_order
 from icd_tz.tests.test_service_criteria import criteria, settings
+from icd_tz.tests.utils import get_test_company
 
 test_ignore = ["Company", "Cost Center"]
 
@@ -305,7 +306,13 @@ class TestServiceFlags(FrappeTestCase):
 
 	def test_a_submitted_booking_owes_booking_services(self):
 		container = make_container()
-		booking = frappe.get_doc({"doctype": "In Yard Container Booking", "container_id": container.name})
+		booking = frappe.get_doc(
+			{
+				"doctype": "In Yard Container Booking",
+				"company": get_test_company(),
+				"container_id": container.name,
+			}
+		)
 
 		with patch(
 			"icd_tz.icd_tz.doctype.in_yard_container_booking.in_yard_container_booking.set_container_cf_company"
