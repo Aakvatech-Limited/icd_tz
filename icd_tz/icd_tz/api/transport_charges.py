@@ -5,13 +5,13 @@ from frappe.query_builder.functions import IfNull
 from frappe.utils import get_link_to_form, getdate
 
 from icd_tz.icd_tz.api.contract import SUPPLIER_PARTY_TYPE, get_active_contract
+from icd_tz.icd_tz.api.item_accounts import get_required_wip_accounts
 from icd_tz.icd_tz.api.port_expenses import (
 	TRANSPORT_EXPENSE_TYPE,
 	get_buying_rates,
 	get_container_key,
 	get_default_buying_price_list,
 )
-from icd_tz.icd_tz.api.purchase_order import get_required_wip_account
 from icd_tz.icd_tz.api.utils import get_best_criteria, get_container_items, get_icd_setting
 
 
@@ -58,16 +58,17 @@ def get_transport_services(
 		)
 		items[item_code].rate = rates.get(item_code, 0)
 
-	wip_account = get_required_wip_account(company)
+	wip_accounts = get_required_wip_accounts(item_codes, company)
+	lines = []
+	for container in containers:
+		item_code = container_items[container.icd_container]
+		lines.append(get_transport_line(container, items[item_code], wip_accounts.get(item_code)))
 
 	return {
 		"buying_price_list": price_list,
 		"contract": contract,
 		"unpriced_items": sorted(item_codes - set(rates)),
-		"items": [
-			get_transport_line(container, items[container_items[container.icd_container]], wip_account)
-			for container in containers
-		],
+		"items": lines,
 	}
 
 

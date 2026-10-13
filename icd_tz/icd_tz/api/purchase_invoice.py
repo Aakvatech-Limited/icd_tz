@@ -2,11 +2,11 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from icd_tz.icd_tz.api.item_accounts import get_wip_accounts
 from icd_tz.icd_tz.api.port_expenses import ONE_OFF_BILLED_FIELDS
 from icd_tz.icd_tz.api.purchase_order import (
 	get_expense_coverage,
 	get_expense_items_by_type,
-	get_wip_account,
 	set_rows,
 	validate_not_already_claimed,
 )
@@ -35,13 +35,12 @@ def set_wip_account(doc, method=None):
 	if not container_items:
 		return
 
-	wip_account = get_wip_account(doc.company)
-	if not wip_account:
-		return
-
 	held_items = {*get_expense_items_by_type(doc.company), *get_transport_items(doc.company)}
+	wip_accounts = get_wip_accounts(
+		{item.item_code for item in container_items if item.item_code in held_items}, doc.company
+	)
 	for item in container_items:
-		if item.item_code in held_items:
+		if wip_account := wip_accounts.get(item.item_code):
 			item.expense_account = wip_account
 
 
