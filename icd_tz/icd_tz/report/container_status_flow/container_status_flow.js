@@ -2,5 +2,14 @@
 // For license information, please see license.txt
 
 frappe.query_reports["Container Status Flow"] = {
-  filters: [],
+  filters: [
+    {
+      fieldname: "company",
+      label: __("Company"),
+      fieldtype: "Link",
+      options: "Company",
+      reqd: 1,
+      default: frappe.defaults.get_user_default("Company"),
+    },
+  ],
 };
