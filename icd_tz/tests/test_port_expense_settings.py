@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.port_expenses import EXPENSE_TYPES, FREE_CHARGE, STORAGE_EXPENSE_TYPES
+from icd_tz.tests.utils import get_test_icd_setting
 
 ITEM = "_Test ICD Settings Expense Item"
 
@@ -12,7 +13,7 @@ ITEM = "_Test ICD Settings Expense Item"
 class TestPortExpenseSettings(FrappeTestCase):
 	def setUp(self):
 		make_item(ITEM)
-		self.settings_doc = frappe.get_doc("ICD TZ Settings")
+		self.settings_doc = get_test_icd_setting()
 		self.settings_doc.expense_types = []
 		self.settings_doc.port_storage_days = []
 		self.settings_doc.flags.ignore_mandatory = True
