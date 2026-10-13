@@ -15,6 +15,7 @@ from icd_tz.icd_tz.api.edi.templates import (
 	get_default_template,
 	validate_template,
 )
+from icd_tz.icd_tz.api.utils import get_icd_setting
 
 DEFAULT_FILE_NAME_FORMAT = "<sender ID>_<receiver ID>_<message type>_<message #>"
 FILE_NAME_PLACEHOLDERS = ("<sender ID>", "<receiver ID>", "<message type>", "<control #>", "<message #>")
@@ -47,6 +48,8 @@ class EDIPartner(Document):
 		authentication_key: DF.Password | None
 		authentication_method: DF.Literal["Password", "Key"]
 		connection_type: DF.Literal["", "SFTP", "SMTP"]
+		abbr: DF.Data | None
+		company: DF.Link
 		directory: DF.Data | None
 		enable_edi: DF.Check
 		file_extension: DF.Literal["edi", "txt"]
@@ -65,8 +68,10 @@ class EDIPartner(Document):
 	# end: auto-generated types
 
 	def before_naming(self):
-		# the record is named by the code, so it has to be normalised before the name is set
+		# the record is named by the code and the company abbreviation, and the abbreviation
+		# is fetched only after naming, so both are set here
 		self.normalise_code()
+		self.abbr = frappe.get_cached_value("Company", self.company, "abbr")
 
 	def before_insert(self):
 		self.seed_templates()
@@ -175,7 +180,7 @@ class EDIPartner(Document):
 		if self.sender_id:
 			return self.sender_id
 
-		return frappe.db.get_single_value("ICD TZ Settings", "default_sender_id") or ""
+		return get_icd_setting(self.company).default_sender_id or ""
 
 	@property
 	def is_sftp(self) -> bool:
@@ -222,22 +227,23 @@ def get_default_file_name_format() -> str:
 	return DEFAULT_FILE_NAME_FORMAT
 
 
-def get_partner(shipping_line_code: str | None) -> EDIPartner | None:
-	"""Enabled partner of a TANeSW shipping agent code.
+def get_partner(shipping_line_code: str | None, company: str | None) -> EDIPartner | None:
+	"""Enabled partner of a TANeSW shipping agent code for the company.
 
-	Returns None when EDI is switched off, the code is missing, or the shipping
-	line has no record. A missing partner is not an error: the ICD works with
-	lines that do not exchange EDI at all.
+	Returns None when EDI is switched off for the company, the code is missing, or
+	the shipping line has no record. A missing partner is not an error: the ICD works
+	with lines that do not exchange EDI at all.
 	"""
 
-	if not shipping_line_code:
+	if not shipping_line_code or not company:
 		return None
 
-	if not frappe.db.get_single_value("ICD TZ Settings", "enable_edi"):
+	if not frappe.db.get_value("ICD Setting", {"company": company}, "enable_edi"):
 		return None
 
 	name = frappe.db.get_value(
-		"EDI Partner", {"shipping_line_code": shipping_line_code.strip().upper(), "enable_edi": 1}
+		"EDI Partner",
+		{"shipping_line_code": shipping_line_code.strip().upper(), "company": company, "enable_edi": 1},
 	)
 	if not name:
 		return None
