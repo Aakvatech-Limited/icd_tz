@@ -39,6 +39,7 @@ def get_data(filters):
 			container.last_inspection_date,
 		)
 		.where(inspection.docstatus == 1)
+		.where(container.company == filters.get("company"))
 		.where(container.has_hbl == 0)
 		.orderby(container.last_inspection_date, order=Order.desc)
 	)
