@@ -1,0 +1,20 @@
+[
+ {
+  "name": "Purchase Invoice-is_icd_container_expense",
+  "owner": "Administrator",
+  "creation": "2026-10-13 12:00:00.000000",
+  "modified": "2026-10-13 12:00:00.000000",
+  "modified_by": "Administrator",
+  "docstatus": 0,
+  "is_system_generated": 0,
+  "dt": "Purchase Invoice",
+  "label": "Is ICD Container Expense",
+  "fieldname": "is_icd_container_expense",
+  "insert_after": "supplier",
+  "fieldtype": "Check",
+  "default": "0",
+  "hidden": 1,
+  "read_only": 1,
+  "description": "Set by the ICD when the document carries only container expenses"
+ }
+]

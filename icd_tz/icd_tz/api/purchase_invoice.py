@@ -35,13 +35,19 @@ def set_wip_account(doc, method=None):
 	if not container_items:
 		return
 
-	held_items = {*get_expense_items_by_type(doc.company), *get_transport_items(doc.company)}
+	expense_items = get_container_expense_items(doc.company)
 	wip_accounts = get_wip_accounts(
-		{item.item_code for item in container_items if item.item_code in held_items}, doc.company
+		{item.item_code for item in container_items if item.item_code in expense_items}, doc.company
 	)
 	for item in container_items:
 		if wip_account := wip_accounts.get(item.item_code):
 			item.expense_account = wip_account
+
+
+def get_container_expense_items(company: str) -> set:
+	"""Port expense and transport items, the items a line with a container is a container expense for"""
+
+	return {*get_expense_items_by_type(company), *get_transport_items(company)}
 
 
 def validate_no_zero_rate(doc, method=None):
