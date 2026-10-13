@@ -1,7 +1,11 @@
 import frappe
 from erpnext import get_company_currency
+from erpnext.setup.doctype.item_group.item_group import get_item_group_defaults
+from erpnext.stock.doctype.item.item import get_item_defaults
 from frappe import _
 from frappe.query_builder.functions import Abs, Sum
+
+from icd_tz.icd_tz.api.utils import get_icd_setting
 
 # the Item Default table of each parent that holds container expense accounts
 DEFAULT_TABLES = {"Item": "item_defaults", "Item Group": "item_group_defaults"}
@@ -162,3 +166,57 @@ def has_open_container_balance(wip_account: str) -> bool:
 	).run()
 
 	return bool(open_container)
+
+
+def get_expense_accounts(item_code: str, company: str) -> dict:
+	"""WIP and COGS Account of the item for the company, else of its Item Group, else empty"""
+
+	for defaults in (get_item_defaults(item_code, company), get_item_group_defaults(item_code, company)):
+		if defaults.get("wip_account"):
+			return {"wip_account": defaults.wip_account, "cogs_account": defaults.cogs_account}
+
+	return {}
+
+
+def get_wip_cogs_map(company: str) -> dict:
+	"""Each WIP Account of the company with the one COGS Account it pairs with"""
+
+	rows = frappe.get_all(
+		"Item Default",
+		filters={
+			"parenttype": ("in", list(DEFAULT_TABLES)),
+			"company": company,
+			"wip_account": ("is", "set"),
+		},
+		fields=["wip_account", "cogs_account"],
+		distinct=True,
+	)
+
+	return {row.wip_account: row.cogs_account for row in rows}
+
+
+def get_wip_accounts(item_codes, company: str) -> dict:
+	"""WIP Account of each item, or None, while the company holds expenses in WIP"""
+
+	if not get_icd_setting(company).enable_wip_and_cogs_for_expenses:
+		return {}
+
+	return {
+		item_code: get_expense_accounts(item_code, company).get("wip_account") for item_code in item_codes
+	}
+
+
+def get_required_wip_accounts(item_codes, company: str) -> dict:
+	"""WIP Account of each item while the company holds expenses in WIP, refusing an item without one"""
+
+	wip_accounts = get_wip_accounts(item_codes, company)
+	missing = sorted(item_code for item_code, wip_account in wip_accounts.items() if not wip_account)
+	if missing:
+		frappe.throw(
+			_("Set the WIP and COGS Accounts of {0} for {1} on the Item or its Item Group").format(
+				frappe.bold(", ".join(missing)), frappe.bold(company)
+			),
+			title=_("WIP Account Not Set"),
+		)
+
+	return wip_accounts
