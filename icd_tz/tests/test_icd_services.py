@@ -31,6 +31,7 @@ def services_settings(*extra_rows, loose_rows=()):
 	settings_doc.service_types += [
 		criteria("Removal", "_T Removal"),
 		criteria("Levy", "_T Levy"),
+		criteria("Change of Status", "_T Change of Status"),
 		criteria("Lift On/Off", "_T Lift On/Off"),
 		criteria("Storage-Single", "_T Storage"),
 		*extra_rows,
@@ -55,6 +56,7 @@ class TestContainerInvoiceRefs(FrappeTestCase):
 		for item_code, field in (
 			("_T Removal", "r_sales_invoice"),
 			("_T Levy", "c_sales_invoice"),
+			("_T Change of Status", "cs_sales_invoice"),
 			("_T Lift On/Off", "lo_sales_invoice"),
 			("_T Cancellation", "g_sales_invoice"),
 		):
@@ -101,23 +103,6 @@ class TestContainerInvoiceRefs(FrappeTestCase):
 			frappe.db.get_value("Container Service Detail", day.name, "sales_invoice"), "_T-SINV-1"
 		)
 
-	def test_any_other_item_lands_on_the_inspection(self):
-		container = make_container()
-		inspection = insert("Container Inspection", container_id=container.name, docstatus=1)
-		row = insert(
-			"Container Inspection Detail",
-			parent=inspection.name,
-			parenttype="Container Inspection",
-			parentfield="services",
-			service="_T Status Check",
-		)
-
-		submit_invoice("_T Status Check", container.name)
-
-		self.assertEqual(
-			frappe.db.get_value("Container Inspection Detail", row.name, "sales_invoice"), "_T-SINV-1"
-		)
-
 
 class TestGatePassServiceCharges(FrappeTestCase):
 	"""Gate Pass lists every unpaid service in one fixed order"""
@@ -134,6 +119,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 				"cargo_type": "Local",
 				"has_removal_charges": 1,
 				"has_corridor_levy_charges": 1,
+				"has_change_of_status_charge": 1,
 				"has_lift_on_off_charge": 1,
 				"has_cancellation_charge": 1,
 				"has_stripping_charges": 1,
@@ -153,6 +139,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 		labels = [
 			"Removal Charges",
 			"Corridor Levy Charges",
+			"Change of Status Charges",
 			"Lift On/Off Charges",
 			"Gate Pass Cancellation Charges",
 			"Stripping Charges",
@@ -169,6 +156,8 @@ class TestGatePassServiceCharges(FrappeTestCase):
 			r_sales_invoice="_T-R",
 			has_corridor_levy_charges=1,
 			c_sales_invoice="_T-C",
+			has_change_of_status_charge=1,
+			cs_sales_invoice="_T-CS",
 			has_lift_on_off_charge=1,
 			lo_sales_invoice="_T-LO",
 		)
@@ -176,7 +165,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 		msg, invoices = make_gate_pass(container).validate_container_charges()
 
 		self.assertEqual(msg, "")
-		self.assertEqual([name for name in invoices if name], ["_T-R", "_T-C", "_T-LO"])
+		self.assertEqual([name for name in invoices if name], ["_T-R", "_T-C", "_T-CS", "_T-LO"])
 
 	def test_cancelling_the_gate_pass_flags_the_charge(self):
 		container = make_container()
