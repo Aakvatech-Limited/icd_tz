@@ -136,6 +136,9 @@ REMOVAL = ContainerService(
 CORRIDOR_LEVY = ContainerService(
 	"Corridor Levy", "Levy", "has_corridor_levy_charges", "c_sales_invoice", CONTAINER
 )
+LIFT_ON_OFF = ContainerService(
+	"Lift On/Off", "Lift On/Off", "has_lift_on_off_charge", "lo_sales_invoice", CONTAINER
+)
 GATE_PASS_CANCELLATION = ContainerService(
 	"Gate Pass Cancellation",
 	None,
@@ -155,6 +158,7 @@ SERVICES = (
 	CUSTOM_VERIFICATION,
 	REMOVAL,
 	CORRIDOR_LEVY,
+	LIFT_ON_OFF,
 	GATE_PASS_CANCELLATION,
 )
 
