@@ -30,6 +30,7 @@ from icd_tz.icd_tz.doctype.icd_container.icd_container import (
 	get_containers_for_storage_days,
 	update_port_storage_days,
 )
+from icd_tz.tests.utils import get_test_company, get_test_icd_setting, set_test_icd_setting
 
 PORT = "DP WORLD"
 M_BL_NO = "MAEU777000111"
@@ -77,7 +78,7 @@ class TestPortExpenses(FrappeTestCase):
 		self.assertIsNone(get_cargo_type(""))
 
 	def test_the_most_specific_criteria_row_wins_over_a_wildcard(self):
-		settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+		settings_doc = get_test_icd_setting()
 
 		key = {"size": "20ft", "cargo_type": "Local", "destination": "TZDAR", "port": PORT}
 		winner = get_matching_criteria(settings_doc.expense_types, key)["Shore"]
@@ -118,7 +119,7 @@ class TestPortExpenses(FrappeTestCase):
 		self.assertNotIn(TRANSPORT_EXPENSE_TYPE, {row["expense_type"] for row in rows})
 
 	def test_transport_rows_alone_are_not_a_port_expense_setup(self):
-		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc = get_test_icd_setting()
 		settings_doc.expense_types = []
 		settings_doc.flags.ignore_mandatory = True
 		settings_doc.save()
@@ -171,13 +172,13 @@ class TestPortExpenses(FrappeTestCase):
 	def test_a_day_no_band_covers_is_not_recorded(self):
 		"""A row is never revisited, so an unbanded day must not be written at all"""
 
-		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc = get_test_icd_setting()
 		settings_doc.port_storage_days = []
 		for charge, from_day, to_day in (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 20)):
 			settings_doc.append("port_storage_days", {"charge": charge, "from": from_day, "to": to_day})
 		settings_doc.flags.ignore_mandatory = True
 		settings_doc.save()
-		frappe.clear_cache(doctype="ICD TZ Settings")
+		frappe.clear_cache(doctype="ICD Setting")
 
 		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -29))
 		update_port_storage_days(self.manifest.name)
@@ -633,11 +634,11 @@ class TestPortExpenses(FrappeTestCase):
 	def test_a_site_not_tracking_port_expenses_owes_nothing(self):
 		"""Every flag is unticked on such a site, which must not block the yard"""
 
-		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc = get_test_icd_setting()
 		settings_doc.expense_types = []
 		settings_doc.flags.ignore_mandatory = True
 		settings_doc.save()
-		frappe.clear_cache(doctype="ICD TZ Settings")
+		frappe.clear_cache(doctype="ICD Setting")
 
 		self.assertEqual(get_unpaid_port_charges(self.manifest.name, BOX_20), [])
 
@@ -722,13 +723,13 @@ class TestPortExpenses(FrappeTestCase):
 	def test_the_page_refuses_to_open_until_the_day_ranges_are_set(self):
 		"""A seeded band carries only the charge, and storage cannot be priced from that"""
 
-		settings_doc = frappe.get_doc("ICD TZ Settings")
+		settings_doc = get_test_icd_setting()
 		for row in settings_doc.port_storage_days:
 			row.update({"from": 0, "to": 0})
 		settings_doc.flags.ignore_mandatory = True
 		settings_doc.flags.ignore_validate = True
 		settings_doc.save()
-		frappe.clear_cache(doctype="ICD TZ Settings")
+		frappe.clear_cache(doctype="ICD Setting")
 
 		self.assertRaises(frappe.ValidationError, get_expense_view, self.manifest.name, PRICE_LIST)
 
@@ -779,6 +780,7 @@ class TestPortExpenses(FrappeTestCase):
 		reception = frappe.new_doc("Container Reception")
 		reception.update(
 			{
+				"company": get_test_company(),
 				"manifest": self.manifest.name,
 				"container_no": BOX_20,
 				"posting_date": add_days(nowdate(), -2),
@@ -829,7 +831,7 @@ class TestPortExpenses(FrappeTestCase):
 		self.assertEqual(len(dates), len(set(dates)))
 
 	def test_a_day_is_banded_from_the_discharge_date(self):
-		bands = get_port_storage_bands(frappe.get_cached_doc("ICD TZ Settings"))
+		bands = get_port_storage_bands(get_test_icd_setting())
 		start = getdate_days_ago(0)
 
 		self.assertEqual(get_charge_of_day(start, start, bands), "Free")
@@ -893,6 +895,8 @@ def make_invoice(order, lines):
 				"po_detail": line.name,
 				"container_no": line.container_no,
 				"icd_container": line.icd_container,
+				"icd_master_bl": line.icd_master_bl,
+				"manifest": line.manifest,
 				"container_child_refs": line.container_child_refs,
 			},
 		)
@@ -908,8 +912,8 @@ def get_charge_flag(manifest, container_no, fieldname):
 
 
 def set_movement_order_requires(doctype):
-	frappe.db.set_single_value("ICD TZ Settings", "movement_order_requires", doctype)
-	frappe.clear_cache(doctype="ICD TZ Settings")
+	set_test_icd_setting({"movement_order_requires": doctype})
+	frappe.clear_cache(doctype="ICD Setting")
 
 
 def get_shore_rows():
@@ -917,7 +921,7 @@ def get_shore_rows():
 
 
 def get_criteria_row(expense_type, size):
-	settings_doc = frappe.get_cached_doc("ICD TZ Settings")
+	settings_doc = get_test_icd_setting()
 	for row in settings_doc.expense_types:
 		if row.expense_type == expense_type and (row.size or "") == size:
 			return row.name
@@ -936,7 +940,7 @@ def set_discharge_date(manifest, container_no, discharge_date):
 
 
 def set_expense_settings():
-	settings_doc = frappe.get_doc("ICD TZ Settings")
+	settings_doc = get_test_icd_setting()
 	settings_doc.default_buying_price_list = PRICE_LIST
 	settings_doc.movement_order_requires = "Purchase Order"
 	settings_doc.expense_types = []
@@ -968,15 +972,15 @@ def set_expense_settings():
 
 	settings_doc.flags.ignore_mandatory = True
 	settings_doc.save()
-	frappe.clear_cache(doctype="ICD TZ Settings")
+	frappe.clear_cache(doctype="ICD Setting")
 
 
 def add_transport_row(item_code):
-	settings_doc = frappe.get_doc("ICD TZ Settings")
+	settings_doc = get_test_icd_setting()
 	settings_doc.append("expense_types", {"expense_type": TRANSPORT_EXPENSE_TYPE, "expense_item": item_code})
 	settings_doc.flags.ignore_mandatory = True
 	settings_doc.save()
-	frappe.clear_cache(doctype="ICD TZ Settings")
+	frappe.clear_cache(doctype="ICD Setting")
 
 
 def make_buying_price_list(name=PRICE_LIST):
@@ -1035,6 +1039,7 @@ def make_received_container(manifest, container_no, received_date):
 	frappe.get_doc(
 		{
 			"doctype": "Container",
+			"company": get_test_company(),
 			"container_no": container_no,
 			"manifest": manifest,
 			"m_bl_no": M_BL_NO,
@@ -1108,7 +1113,7 @@ def get_supplier():
 
 
 def get_company():
-	company = frappe.db.get_value("Company", {}, "name")
+	company = get_test_company()
 	if not company:
 		frappe.throw("No Company on the test site")
 
