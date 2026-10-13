@@ -153,8 +153,8 @@ class ContainerUnpacking(Document):
 	def get_inspection_hbl_row(self) -> dict:
 		"""The whole box is one consignee's cargo, counted and measured at its inspection"""
 
-		service = self.inspection.lcl_service
-		if not service:
+		inspection = self.inspection
+		if not inspection.is_change_of_status:
 			frappe.throw(
 				_("Container Inspection {0} does not change the container to LCL").format(
 					frappe.bold(self.container_inspection)
@@ -182,12 +182,12 @@ class ContainerUnpacking(Document):
 			"consignee": container.consignee,
 			"cargo_description": container.cargo_description,
 			"manifest_packages": cint(container.no_of_packages),
-			"counted_packages": service.counted_packages,
+			"counted_packages": inspection.counted_packages,
 			"package_unit": container.package_unit,
-			"consolidator_gross_volume": flt(service.volume),
+			"consolidator_gross_volume": flt(inspection.volume),
 			"gross_volume_unit": container.gross_volume_unit or "CBM",
 			"cargo_condition": "Good",
-			"location": self.inspection.new_container_location,
+			"location": inspection.new_container_location,
 		}
 
 	def validate_container(self):
