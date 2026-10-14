@@ -163,6 +163,8 @@ def save_message(document, filename: str, content: str) -> str:
 			"content": content,
 			"attached_to_doctype": document.doctype,
 			"attached_to_name": document.name,
+			# without the field, Frappe attaches the edi_file value again as a second File
+			"attached_to_field": "edi_file",
 			"is_private": 1,
 		}
 	)
