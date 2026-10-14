@@ -26,6 +26,7 @@ var show_transport_services_dialog = (frm) => {
         options: "Supplier",
         reqd: 1,
         default: frm.doc.supplier,
+        get_query: () => ({ filters: { is_transporter: 1, disabled: 0 } }),
       },
       {
         label: __("From Date"),
