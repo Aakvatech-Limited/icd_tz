@@ -637,7 +637,8 @@ def get_service_order_items(doc_type=None, doc_name=None, m_bl_no=None, h_bl_no=
 def get_service_orders(m_bl_no=None, h_bl_no=None):
 	service_docs = []
 
-	filters = {}
+	# a cancelled order is not billed
+	filters = {"docstatus": ["!=", 2]}
 	if h_bl_no:
 		filters["h_bl_no"] = h_bl_no
 	elif m_bl_no:
