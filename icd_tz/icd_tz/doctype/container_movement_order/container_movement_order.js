@@ -179,7 +179,6 @@ var show_dialog = (frm, data) => {
   if (data.length > 0) {
     let data_html = show_details(data);
     wrapper.html(data_html);
-    attachCheckboxListener(wrapper);
   }
 
   d.fields_dict.apply_filter.$input.click(() => {
@@ -187,8 +186,9 @@ var show_dialog = (frm, data) => {
   });
 
   d.set_primary_action(__("Select"), () => {
-    let container = {};
+    let container = null;
 
+    // one movement order carries one container, so the rows are radio buttons
     wrapper.find("tr:has(input:checked)").each(function () {
       container = {
         container_no: $(this).find("#container_no").attr("data-container_no"),
@@ -253,7 +253,7 @@ var show_dialog = (frm, data) => {
                 .table-container table {
                     width: 100%;
                 }
-                .container-checkbox {
+                .container-radio {
                     transform: scale(1.2);
                     margin: 5px;
                 }
@@ -288,7 +288,7 @@ var show_dialog = (frm, data) => {
         cargo_type = "Transit";
       }
       html += `<tr>
-                    <td><input type="checkbox" class="container-checkbox"/></td>
+                    <td><input type="radio" name="movement_order_container" class="container-radio"/></td>
                     <td id="container_no" data-container_no="${row.container_no}">${row.container_no}</td>
                     <td id="m_bl_no" data-m_bl_no="${row.m_bl_no}">${row.m_bl_no}</td>
                     <td id="container_size" data-container_size="${row.container_size}">${row.container_size}</td>
@@ -316,7 +316,6 @@ var show_dialog = (frm, data) => {
         if (records.length > 0) {
           let html = show_details(records);
           wrapper.html(html);
-          attachCheckboxListener(wrapper);
         } else {
           wrapper.html("");
           wrapper.append(`<div class="multiselect-empty-state"
@@ -329,12 +328,6 @@ var show_dialog = (frm, data) => {
                     </div>`);
         }
       },
-    });
-  }
-
-  function attachCheckboxListener(wrapper) {
-    wrapper.find(".container-checkbox").on("click", function () {
-      wrapper.find(".container-checkbox").not(this).prop("checked", false);
     });
   }
 };
