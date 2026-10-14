@@ -9,6 +9,7 @@ from frappe.utils import get_url_to_form, now_datetime, nowdate
 from icd_tz.icd_tz.api.icd_services import BOOKING, get_scope_services
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
+	get_no_containers_message,
 	set_container_cf_company,
 	validate_delivered_container,
 )
@@ -131,7 +132,7 @@ def create_bulk_bookings(data):
 		msg = f"H BL No: <b>{data.get('h_bl_no')}</b>"
 
 	if len(containers) == 0:
-		frappe.msgprint(f"No Containers found for {msg} or they have already been delivered")
+		frappe.msgprint(get_no_containers_message(data.get("m_bl_no"), data.get("h_bl_no")))
 		return
 
 	booked_containers = set(
