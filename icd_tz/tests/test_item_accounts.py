@@ -100,6 +100,17 @@ class TestItemAccountChecks(ItemAccountsTestCase):
 
 		self.assertRaises(frappe.ValidationError, self.make_item, "_T-ACC-1", self.wip, group)
 
+	def test_a_money_account_cannot_be_the_wip_account(self):
+		money = make_test_account("_Test ICD Money", "Asset")
+		for index, account_type in enumerate(("Bank", "Cash", "Receivable")):
+			frappe.db.set_value("Account", money, "account_type", account_type)
+			frappe.clear_document_cache("Account", money)
+
+			with self.assertRaises(frappe.ValidationError) as context:
+				self.make_item(f"_T-ACC-MONEY-{index}", money, self.cogs)
+
+			self.assertIn("cannot hold container expenses", str(context.exception))
+
 
 class TestWipPairing(ItemAccountsTestCase):
 	def test_items_can_share_one_pair(self):
