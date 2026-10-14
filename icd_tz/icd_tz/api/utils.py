@@ -216,6 +216,28 @@ def get_cargo_container_ids(m_bl_no: str) -> list:
 	)
 
 
+def get_no_containers_message(m_bl_no: str | None, h_bl_no: str | None) -> str:
+	"""Why a bulk action found no container, pointing to the H BL when the M BL holds only house bills"""
+
+	if m_bl_no:
+		has_hbl_containers = frappe.db.exists(
+			"Container",
+			{"m_bl_no": m_bl_no, "has_hbl": 1, "status": ["not in", DELIVERED_CONTAINER_STATUSES]},
+		)
+		if has_hbl_containers:
+			return _(
+				"The containers of M BL No {0} are House BL containers. Enter their H BL No instead."
+			).format(frappe.bold(m_bl_no))
+
+		return _("No Containers found for M BL No {0}, or they have already been delivered").format(
+			frappe.bold(m_bl_no)
+		)
+
+	return _("No Containers found for H BL No {0}, or they have already been delivered").format(
+		frappe.bold(h_bl_no)
+	)
+
+
 def validate_delivered_container(container_id, container_no=None, action="created"):
 	"""Block records that would change a container which has already moved out of the ICD"""
 
