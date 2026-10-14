@@ -77,31 +77,22 @@ class ContainerService:
 		owed_qty = getattr(container, self.count_property) * unit_qty
 		return owed_qty - container.get_billed_qty(self.invoice_field, self.get_items(settings_doc))
 
-	def set_invoice(self, container_id: str, doc):
-		"""Write a submitted Sales Invoice to the Container, or drop it when doc is its return"""
-
-		if self.count_property:
-			invoice_refs = self.get_repeated_invoices(container_id, doc)
-		else:
-			invoice_refs = None if doc.is_return else doc.name
-
-		if self.scope == CONTAINER:
-			self.set_container_invoice(container_id, invoice_refs)
-		else:
-			frappe.db.set_value("Container", container_id, self.invoice_field, invoice_refs)
-
-	def get_repeated_invoices(self, container_id: str, doc) -> str | None:
-		"""Every invoice of a repeated service, a return drops the invoice it reverses"""
+	def set_invoice(self, container_id: str, added: str | None, removed: str | None):
+		"""Write an invoice to the Container, or drop the one that was returned or cancelled"""
 
 		invoices = get_invoice_refs(frappe.db.get_value("Container", container_id, self.invoice_field))
 
 		# TODO: a partial return drops the whole invoice, so its unreturned qty is charged again
-		if doc.is_return:
-			invoices = [name for name in invoices if name != doc.return_against]
-		elif doc.name not in invoices:
-			invoices.append(doc.name)
+		invoices = [name for name in invoices if name != removed]
+		if added and added not in invoices:
+			# a service charged once keeps only its latest invoice
+			invoices = [*invoices, added] if self.count_property else [added]
 
-		return ",".join(invoices) or None
+		invoice_refs = ",".join(invoices) or None
+		if self.scope == CONTAINER:
+			self.set_container_invoice(container_id, invoice_refs)
+		else:
+			frappe.db.set_value("Container", container_id, self.invoice_field, invoice_refs)
 
 	def set_container_invoice(self, container_id: str, invoice_refs: str | None):
 		container_doc = frappe.get_doc("Container", container_id)

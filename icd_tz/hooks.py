@@ -147,7 +147,10 @@ doc_events = {
 			"icd_tz.icd_tz.api.sales_invoice.on_submit",
 			"icd_tz.icd_tz.api.expense_release.on_submit",
 		],
-		"on_cancel": "icd_tz.icd_tz.api.expense_release.on_cancel",
+		"on_cancel": [
+			"icd_tz.icd_tz.api.sales_invoice.on_cancel",
+			"icd_tz.icd_tz.api.expense_release.on_cancel",
+		],
 	},
 	"Journal Entry": {
 		"before_cancel": "icd_tz.icd_tz.api.expense_release.before_journal_entry_cancel",

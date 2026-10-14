@@ -70,7 +70,14 @@ def with_settings(settings_doc):
 
 
 def submit_invoice(
-	item_code, container_id, is_return=0, name="_T-SINV-1", return_against=None, settings_doc=None, **item
+	item_code,
+	container_id,
+	is_return=0,
+	name="_T-SINV-1",
+	return_against=None,
+	settings_doc=None,
+	is_cancelled=False,
+	**item,
 ):
 	invoice = SimpleNamespace(
 		name=name,
@@ -82,7 +89,7 @@ def submit_invoice(
 		items=[frappe._dict(item_code=item_code, container_id=container_id, sales_order=None, **item)],
 	)
 	with with_settings(settings_doc or income_settings()):
-		update_sales_references(invoice)
+		update_sales_references(invoice, is_cancelled)
 
 
 def get_container(name):
@@ -174,6 +181,81 @@ class TestSalesInvoiceRefs(FrappeTestCase):
 		submit_invoice("_T Verification", mbl, is_return=1, name="_T-RET-1", return_against="_T-SINV-1")
 
 		self.assertEqual(get_container(mbl).cv_sales_invoice, "_T-SINV-2")
+
+	def test_a_cancelled_invoice_clears_the_reference(self):
+		mbl, _ = make_reception_containers()
+		submit_invoice("_T Transport", mbl)
+
+		submit_invoice("_T Transport", mbl, is_cancelled=True)
+
+		self.assertIsNone(get_container(mbl).t_sales_invoice)
+
+	def test_a_cancelled_invoice_drops_only_itself(self):
+		mbl, _ = make_reception_containers()
+		submit_invoice("_T Stripping", mbl)
+		submit_invoice("_T Stripping", mbl, name="_T-SINV-2")
+
+		submit_invoice("_T Stripping", mbl, is_cancelled=True)
+
+		self.assertEqual(get_container(mbl).st_sales_invoice, "_T-SINV-2")
+
+	def test_cancelling_an_old_invoice_keeps_the_newer_one(self):
+		mbl, _ = make_reception_containers()
+		submit_invoice("_T Shore", mbl)
+		submit_invoice("_T Shore", mbl, name="_T-SINV-1-1")
+
+		submit_invoice("_T Shore", mbl, is_cancelled=True)
+
+		self.assertEqual(get_container(mbl).sh_sales_invoice, "_T-SINV-1-1")
+
+	def test_a_cancelled_return_restores_the_invoice(self):
+		mbl, _ = make_reception_containers()
+		submit_invoice("_T Verification", mbl)
+		submit_invoice("_T Verification", mbl, is_return=1, name="_T-RET-1", return_against="_T-SINV-1")
+
+		submit_invoice(
+			"_T Verification",
+			mbl,
+			is_return=1,
+			name="_T-RET-1",
+			return_against="_T-SINV-1",
+			is_cancelled=True,
+		)
+
+		self.assertEqual(get_container(mbl).cv_sales_invoice, "_T-SINV-1")
+
+	def test_a_cancelled_invoice_puts_the_container_back_at_payments(self):
+		mbl, _ = make_reception_containers()
+		submit_invoice("_T Transport", mbl)
+		frappe.db.set_value("Container", mbl, "status", "At Gatepass")
+
+		submit_invoice("_T Transport", mbl, is_cancelled=True)
+
+		self.assertEqual(get_container(mbl).status, "At Payments")
+
+	def test_a_cancelled_invoice_leaves_a_container_at_the_gate_alone(self):
+		mbl, _ = make_reception_containers()
+		submit_invoice("_T Transport", mbl)
+		frappe.db.set_value("Container", mbl, "status", "At Gate Confirmation")
+
+		submit_invoice("_T Transport", mbl, is_cancelled=True)
+
+		self.assertEqual(get_container(mbl).status, "At Gate Confirmation")
+
+	def test_a_cancelled_return_does_not_reopen_payment(self):
+		mbl, _ = make_reception_containers()
+		frappe.db.set_value("Container", mbl, "status", "At Gatepass")
+
+		submit_invoice(
+			"_T Transport",
+			mbl,
+			is_return=1,
+			name="_T-RET-1",
+			return_against="_T-SINV-1",
+			is_cancelled=True,
+		)
+
+		self.assertEqual(get_container(mbl).status, "At Gatepass")
 
 
 class TestGatePassIncomeCharges(FrappeTestCase):
