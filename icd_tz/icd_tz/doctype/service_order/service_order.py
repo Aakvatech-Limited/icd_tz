@@ -10,12 +10,17 @@ from icd_tz.icd_tz.api.icd_services import SERVICES
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
 	get_icd_setting,
+	get_no_containers_message,
 	get_service_key,
 	set_container_cf_company,
 	validate_cf_agent,
 	validate_delivered_container,
 	validate_no_draft_container_records,
 )
+
+
+class NothingToOrderError(frappe.ValidationError):
+	pass
 
 
 class ServiceOrder(Document):
@@ -26,6 +31,7 @@ class ServiceOrder(Document):
 		self.set_gross_volume()
 		self.validate_draft_references()
 		self.get_services()
+		self.validate_new_services()
 
 	def after_insert(self):
 		frappe.db.set_value("Container", self.container_id, "status", "At Payments")
@@ -211,6 +217,9 @@ class ServiceOrder(Document):
 		if not service_item or service_item in [row.service for row in self.services]:
 			return
 
+		if self.get_open_order_qty(service.get_items(settings_doc)):
+			return
+
 		row = {"service": service_item, "qty": self.unit_qty}
 		if service.show_criteria:
 			row["remarks"] = (
@@ -220,10 +229,11 @@ class ServiceOrder(Document):
 		self.append("services", row)
 
 	def add_repeated_service(self, settings_doc, container, service):
-		"""A service owed once per booking or inspection, less what was already billed"""
+		"""A service owed once per booking or inspection, less what was billed or is already ordered"""
 
+		unbilled_qty = service.get_unbilled_qty(container, settings_doc, self.unit_qty)
 		qty = flt(
-			service.get_unbilled_qty(container, settings_doc, self.unit_qty),
+			unbilled_qty - self.get_open_order_qty(service.get_items(settings_doc)),
 			self.precision("qty", "services"),
 		)
 		if qty <= 0:
@@ -231,6 +241,50 @@ class ServiceOrder(Document):
 
 		service_item = service.find_item(settings_doc, self.get_criteria_key(container), self.is_loose_cargo)
 		self.append("services", {"service": service_item, "qty": qty})
+
+	def get_open_orders(self) -> list[str]:
+		"""Other Service Orders of the container whose lines no invoice has billed yet"""
+
+		return frappe.get_all(
+			"Service Order",
+			filters={
+				"container_id": self.container_id,
+				"docstatus": ["!=", 2],
+				"sales_invoice": ["is", "not set"],
+				"name": ["!=", self.name or ""],
+			},
+			pluck="name",
+		)
+
+	def get_open_order_qty(self, item_codes: list) -> float:
+		"""Quantity of these items already on the open Service Orders of the container"""
+
+		open_orders = self.get_open_orders()
+		if not open_orders or not item_codes:
+			return 0
+
+		lines = frappe.get_all(
+			"Service Order Detail",
+			filters={"parent": ["in", open_orders], "service": ["in", item_codes]},
+			pluck="qty",
+		)
+		return flt(sum(lines))
+
+	def validate_new_services(self):
+		"""A further order must carry something the open orders do not, so nothing is billed twice"""
+
+		if self.services:
+			return
+
+		open_orders = self.get_open_orders()
+		if open_orders:
+			frappe.throw(
+				_("Container {0} has nothing new to order. Its services are on Service Order {1}").format(
+					frappe.bold(self.container_no), ", ".join(open_orders)
+				),
+				NothingToOrderError,
+				title=_("Nothing To Order"),
+			)
 
 	def create_getpass(self):
 		"""
@@ -297,18 +351,12 @@ def create_bulk_service_orders(data):
 		filters["has_hbl"] = 1
 
 	containers = frappe.db.get_all("Container", filters=filters, fields=["name"])
-
-	msg = ""
-	if data.get("m_bl_no"):
-		msg = f"M BL No: <b>{data.get('m_bl_no')}</b>"
-	elif data.get("h_bl_no"):
-		msg = f"H BL No: <b>{data.get('h_bl_no')}</b>"
-
 	if len(containers) == 0:
-		frappe.msgprint(f"No Containers found for {msg}, or their containers have already been delivered")
+		frappe.msgprint(get_no_containers_message(data.get("m_bl_no"), data.get("h_bl_no")))
 		return
 
 	count = 0
+	skipped = []
 	for container in containers:
 		doc = frappe.new_doc("Service Order")
 		doc.container_id = container.name
@@ -316,10 +364,20 @@ def create_bulk_service_orders(data):
 		doc.h_bl_no = data.get("h_bl_no")
 
 		doc.flags.ignore_permissions = True
-		doc.save()
-		doc.reload()
+		try:
+			doc.save()
+		except NothingToOrderError:
+			frappe.clear_last_message()
+			skipped.append(doc.container_no or container.name)
+			continue
 
-		if doc.get("name"):
-			count += 1
+		count += 1
+
+	if skipped:
+		frappe.msgprint(
+			_("Skipped {0} container(s) with nothing new to order: {1}").format(
+				len(skipped), ", ".join(skipped)
+			)
+		)
 
 	return count
