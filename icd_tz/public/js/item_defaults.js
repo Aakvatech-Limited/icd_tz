@@ -4,6 +4,9 @@ const ICD_ACCOUNT_ROOT_TYPES = {
   cogs_account: "Expense",
 };
 
+// money accounts never hold container expenses, matching EXCLUDED_ACCOUNT_TYPES on the server
+const ICD_EXCLUDED_ACCOUNT_TYPES = ["Receivable", "Payable", "Bank", "Cash"];
+
 const ICD_DEFAULT_TABLES = {
   Item: "item_defaults",
   "Item Group": "item_group_defaults",
@@ -20,6 +23,7 @@ for (const [doctype, table] of Object.entries(ICD_DEFAULT_TABLES)) {
               is_group: 0,
               disabled: 0,
               root_type,
+              account_type: ["not in", ICD_EXCLUDED_ACCOUNT_TYPES],
               company: row.company,
               account_currency: erpnext.get_currency(row.company),
             },

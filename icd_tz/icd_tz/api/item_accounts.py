@@ -13,6 +13,9 @@ DEFAULT_TABLES = {"Item": "item_defaults", "Item Group": "item_group_defaults"}
 # WIP holds the expense until the container is invoiced, then COGS takes it
 ACCOUNT_ROOT_TYPES = {"wip_account": "Asset", "cogs_account": "Expense"}
 
+# money accounts: posting container expenses here would distort cash, bank or party balances
+EXCLUDED_ACCOUNT_TYPES = ("Receivable", "Payable", "Bank", "Cash")
+
 
 def validate(doc, method=None):
 	"""Check the WIP and COGS accounts of each company row of an Item or Item Group"""
@@ -69,7 +72,10 @@ def validate_account_pair(row):
 
 def validate_account(row, account: str, root_type: str):
 	details = frappe.get_cached_value(
-		"Account", account, ["company", "is_group", "root_type", "account_currency"], as_dict=True
+		"Account",
+		account,
+		["company", "is_group", "root_type", "account_type", "account_currency"],
+		as_dict=True,
 	)
 	if details.company != row.company:
 		frappe.throw(
@@ -83,6 +89,14 @@ def validate_account(row, account: str, root_type: str):
 		frappe.throw(
 			_("At Row#: {0}, account {1} must be a ledger {2} account").format(
 				row.idx, frappe.bold(account), _(root_type)
+			),
+			title=_("WIP and COGS Accounts"),
+		)
+
+	if details.account_type in EXCLUDED_ACCOUNT_TYPES:
+		frappe.throw(
+			_("At Row#: {0}, account {1} is a {2} account and cannot hold container expenses").format(
+				row.idx, frappe.bold(account), _(details.account_type)
 			),
 			title=_("WIP and COGS Accounts"),
 		)
