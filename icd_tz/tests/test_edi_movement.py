@@ -2,6 +2,7 @@
 # See license.txt
 
 import frappe
+from frappe.core.doctype.file.utils import attach_files_to_document
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, getdate, nowdate
 
@@ -175,6 +176,14 @@ class TestEDIMovement(FrappeTestCase):
 
 		self.assertTrue(reception.edi_file)
 		self.assertEqual(reception.receiver_email, "edi@example.com")
+
+	def test_saving_the_document_keeps_one_file_for_its_edi_message(self):
+		reception = make_reception()
+		attach_gate_in(reception)
+
+		attach_files_to_document(reception, "on_update")
+
+		self.assertEqual(frappe.db.count("File", {"file_url": reception.edi_file}), 1)
 
 	# --- SMTP recipients --------------------------------------------------
 
