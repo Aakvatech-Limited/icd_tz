@@ -88,11 +88,11 @@ class SFTPConnection:
 	def directory(self) -> str:
 		return self.partner.directory or "/"
 
-	def count_entries(self) -> int:
-		"""Entries in the partner directory, which proves it exists and can be read"""
+	def list_entries(self) -> list[str]:
+		"""Names in the partner directory, which proves it exists and can be read"""
 
 		try:
-			return len(self.sftp.listdir(self.directory))
+			return self.sftp.listdir(self.directory)
 		except OSError as error:
 			frappe.throw(
 				_("Connected, but the directory '{0}' could not be opened: {1}").format(

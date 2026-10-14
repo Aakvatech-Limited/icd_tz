@@ -192,19 +192,19 @@ class EDIPartner(Document):
 
 	@frappe.whitelist()
 	def try_edi_connection(self) -> dict:
-		"""Open an SFTP session with the saved settings and list the target directory"""
+		"""Open an SFTP session with the saved settings and report what the target directory holds"""
 
 		self.check_permission("read")
 
 		with SFTPConnection(self) as connection:
-			entries = connection.count_entries()
+			entries = connection.list_entries()
 
-		return {
-			"success": True,
-			"message": _("Connection successful. Found {0} entries in '{1}'").format(
-				entries, connection.directory
-			),
-		}
+		edi_files = [name for name in entries if name.lower().endswith(f".{self.file_extension}")]
+		message = _("Connection successful. '{0}' holds {1} .{2} file(s), {3} entries in all.").format(
+			connection.directory, len(edi_files), self.file_extension, len(entries)
+		)
+
+		return {"success": True, "message": message}
 
 	def validate_sftp_settings(self):
 		missing = [

@@ -114,8 +114,16 @@ class TestEDISFTP(FrappeTestCase):
 		result = self.partner.try_edi_connection()
 
 		self.assertTrue(result["success"])
-		self.assertIn("2 entries in '/inbox'", result["message"])
+		self.assertIn("'/inbox' holds 2 .edi file(s), 2 entries in all", result["message"])
 		client.close.assert_called_once()
+
+	def test_test_connection_counts_only_the_edi_files(self):
+		client = self.mock_client()
+		client.open_sftp.return_value.listdir.return_value = ["a.edi", "B.EDI", "archive", "notes.txt"]
+
+		message = self.partner.try_edi_connection()["message"]
+
+		self.assertIn("holds 2 .edi file(s), 4 entries in all", message)
 
 	def test_failed_authentication_is_reported_plainly(self):
 		self.mock_client().connect.side_effect = paramiko.AuthenticationException()
