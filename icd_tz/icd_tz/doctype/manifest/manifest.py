@@ -388,8 +388,8 @@ class Manifest(Document):
 			# Empty Container
 			if c.freight_indicator == "EMP" or "MTY" in cno or "EMPTY" in cno:
 				total_empty += 1
-			# LCL Container (has House Bills)
-			elif c.container_no in hbl_container_nos:
+			# LCL Container (marked LCL, or has House Bills)
+			elif c.freight_indicator == "LCL" or c.container_no in hbl_container_nos:
 				total_lcl += 1
 			# FCL Container (Physical container, not empty, no HBLs)
 			elif c.type_of_container == "C":
