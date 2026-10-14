@@ -6,9 +6,12 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from icd_tz.icd_tz.api.sales_order import get_service_orders
 from icd_tz.icd_tz.doctype.gate_pass.test_gate_pass import make_container, make_gate_pass
+from icd_tz.icd_tz.doctype.service_order.service_order import NothingToOrderError
 from icd_tz.tests.test_container_income_refs import (
 	RECEPTION,
+	bill,
 	book,
 	get_container,
 	income_settings,
@@ -291,6 +294,94 @@ class TestServiceOrderServiceLines(FrappeTestCase):
 		mbl = self.charged_container(has_transport_charges=1, t_sales_invoice="_T-T")
 
 		self.assertEqual(self.get_services(mbl, container_status="LCL"), [])
+
+
+def order(container_id, lines, docstatus=1, sales_invoice=None, name=None, **values):
+	"""An existing Service Order of a container with its service lines"""
+
+	service_order = insert(
+		"Service Order",
+		name=name or frappe.generate_hash(length=10),
+		container_id=container_id,
+		docstatus=docstatus,
+		sales_invoice=sales_invoice,
+		**values,
+	)
+	for service, qty in lines:
+		insert(
+			"Service Order Detail",
+			parent=service_order.name,
+			parenttype="Service Order",
+			parentfield="services",
+			docstatus=docstatus,
+			service=service,
+			qty=qty,
+		)
+	return service_order.name
+
+
+class TestFurtherServiceOrders(FrappeTestCase):
+	"""A further Service Order carries only what the open orders of the container do not"""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def booked_container(self, bookings):
+		mbl, _ = make_reception_containers(cargo_type="Local")
+		frappe.db.set_value(
+			"Container",
+			mbl,
+			{"cargo_type": "Local", "has_transport_charges": 1, "has_stripping_charges": 1},
+		)
+		book(mbl, bookings)
+		return mbl
+
+	def get_services(self, container_id):
+		return TestServiceOrderServiceLines.get_services(self, container_id)
+
+	def test_a_second_booking_orders_only_its_own_stripping(self):
+		mbl = self.booked_container(bookings=2)
+		order(mbl, [("_T Transport", 1), ("_T Stripping", 1)])
+
+		self.assertEqual(self.get_services(mbl), [("_T Stripping", 1)])
+
+	def test_an_invoiced_order_is_counted_through_its_invoice(self):
+		mbl = self.booked_container(bookings=2)
+		order(mbl, [("_T Stripping", 1)], sales_invoice="_T-SINV-ST")
+		bill("_T-SINV-ST", mbl, "_T Stripping")
+		frappe.db.set_value("Container", mbl, "st_sales_invoice", "_T-SINV-ST")
+
+		self.assertIn(("_T Stripping", 1), self.get_services(mbl))
+
+	def test_a_cancelled_order_does_not_hold_back_its_services(self):
+		mbl = self.booked_container(bookings=1)
+		order(mbl, [("_T Transport", 1), ("_T Stripping", 1)], docstatus=2)
+
+		self.assertEqual(self.get_services(mbl), [("_T Transport", 1), ("_T Stripping", 1)])
+
+	def test_an_order_with_nothing_new_is_refused(self):
+		mbl = self.booked_container(bookings=1)
+		existing = order(mbl, [("_T Transport", 1), ("_T Stripping", 1)])
+		service_order = make_service_order(container_id=mbl)
+
+		with self.assertRaises(NothingToOrderError) as context:
+			service_order.validate_new_services()
+
+		self.assertIn(existing, str(context.exception))
+
+	def test_the_first_order_of_a_container_may_be_empty(self):
+		mbl = self.booked_container(bookings=0)
+
+		make_service_order(container_id=mbl).validate_new_services()
+
+	def test_a_sales_order_does_not_bill_a_cancelled_service_order(self):
+		mbl = self.booked_container(bookings=1)
+		submitted = order(mbl, [("_T Transport", 1)], m_bl_no="_T-MBL-SO")
+		order(mbl, [("_T Stripping", 1)], docstatus=2, m_bl_no="_T-MBL-SO")
+
+		orders = get_service_orders(m_bl_no="_T-MBL-SO")
+
+		self.assertEqual([doc.name for doc in orders], [submitted])
 
 
 class TestServiceFlags(FrappeTestCase):
