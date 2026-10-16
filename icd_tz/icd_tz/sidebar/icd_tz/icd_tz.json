@@ -1,0 +1,365 @@
+{
+ "app": "icd_tz",
+ "doctype": "Sidebar",
+ "header_icon": "container",
+ "items": [
+  {
+   "icon": "house",
+   "label": "Home",
+   "link_to": "ICD",
+   "link_type": "Workspace",
+   "type": "Link"
+  },
+  {
+   "icon": "chart-column",
+   "label": "Dashboard",
+   "link_to": "ICD TZ Operations",
+   "link_type": "Dashboard",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "ship",
+   "indent": 1,
+   "keep_closed": 0,
+   "label": "Arrival",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Manifest",
+   "link_to": "Manifest",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Movement Order",
+   "link_to": "Container Movement Order",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container Reception",
+   "link_to": "Container Reception",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "container",
+   "indent": 1,
+   "keep_closed": 0,
+   "label": "Yard",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Container",
+   "link_to": "Container",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container Booking",
+   "link_to": "In Yard Container Booking",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container Inspection",
+   "link_to": "Container Inspection",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container Unpacking",
+   "link_to": "Container Unpacking",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "receipt-text",
+   "indent": 1,
+   "keep_closed": 0,
+   "label": "Billing",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Service Order",
+   "link_to": "Service Order",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Sales Order",
+   "link_to": "Sales Order",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Waiver Request",
+   "link_to": "Waiver Request",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "door-open",
+   "indent": 1,
+   "keep_closed": 0,
+   "label": "Gate",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Gate Pass",
+   "link_to": "Gate Pass",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "sheet",
+   "indent": 1,
+   "keep_closed": 1,
+   "label": "Container Reports",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Received Containers",
+   "link_to": "Received Containers",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Current Container Stock",
+   "link_to": "Current Container Stock",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container Status Flow",
+   "link_to": "Container Status Flow",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Exited Containers",
+   "link_to": "Exited Containers",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "sheet",
+   "indent": 1,
+   "keep_closed": 1,
+   "label": "Yard and Gate Reports",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Container Booking",
+   "link_to": "Container Booking",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Daily Stripped Containers",
+   "link_to": "Daily Stripped Containers",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Loose Cargo Tracking",
+   "link_to": "Loose Cargo Tracking",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Gate Out Pass",
+   "link_to": "Gate Out Pass",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "sheet",
+   "indent": 1,
+   "keep_closed": 1,
+   "label": "Billing Reports",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Revenue Summary",
+   "link_to": "Revenue Summary",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Pending Transporter Invoices",
+   "link_to": "Pending Transporter Invoices",
+   "link_type": "Report",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "database",
+   "indent": 1,
+   "keep_closed": 1,
+   "label": "Masters",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "Consignee",
+   "link_to": "Consignee",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "C & F Company",
+   "link_to": "Clearing and Forwarding Company",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Clearing Agent",
+   "link_to": "Clearing Agent",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Pricing Contract",
+   "link_to": "Contract",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
+   "label": "Transporter",
+   "link_to": "Supplier",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Vehicle",
+   "link_to": "Vehicle",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Driver",
+   "link_to": "Driver",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container State",
+   "link_to": "Container State",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Container Location",
+   "link_to": "Container Location",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Security Officer",
+   "link_to": "Security officer",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Employee",
+   "link_to": "Employee",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Item",
+   "link_to": "Item",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Item Price",
+   "link_to": "Item Price",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 1,
+   "keep_closed": 1,
+   "label": "Settings",
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "label": "ICD Setting",
+   "link_to": "ICD Setting",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "EDI Partner",
+   "link_to": "EDI Partner",
+   "link_type": "DocType",
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "label": "Document Type",
+   "link_to": "Document Type",
+   "link_type": "DocType",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-16 18:00:00.000000",
+ "module": "Icd Tz",
+ "name": "ICD TZ",
+ "standard": 1,
+ "title": "ICD TZ"
+}

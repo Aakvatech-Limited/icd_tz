@@ -6,6 +6,15 @@ app_email = "emgani@aakvatech.com"
 app_license = "MIT"
 required_apps = ["erpnext"]
 
+add_to_apps_screen = [
+	{
+		"name": "icd_tz",
+		"logo": "/assets/icd_tz/images/icd_tz.svg",
+		"title": "ICD TZ",
+		"route": "/desk/icd",
+	}
+]
+
 # Includes in <head>
 # ------------------
 
