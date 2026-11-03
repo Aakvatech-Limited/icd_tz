@@ -77,11 +77,12 @@ def get_events(start, end, filters=None, **kwargs):
             {
                 "name": row.name,
                 "start": str(row.inspection_date),
-                "end": str(row.inspection_date),
+                "end": None,
                 "title": label,
                 "all_day": 1,
                 "convert_to_user_tz": 0,
                 "docstatus": row.docstatus,
+                "editable": False,
             }
         )
     return events
