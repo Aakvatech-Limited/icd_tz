@@ -1,0 +1,20 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "is_standard": "Yes",
+ "module": "Icd Tz",
+ "name": "ICD Average Container Occupancy",
+ "prepared_report": 0,
+ "ref_doctype": "Container",
+ "report_name": "ICD Average Container Occupancy",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ]
+}
