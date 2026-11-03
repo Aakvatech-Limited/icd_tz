@@ -8,8 +8,14 @@ frappe.views.calendar["Container"] = {
         title: "title",
         allDay: "all_day",
         status: "status",
+        convertToUserTz: "convert_to_user_tz",
     },
     get_events_method: "icd_tz.icd_tz.doctype.container.container_calendar.get_events",
+    options: {
+        editable: false,
+        selectable: false,
+        droppable: false,
+    },
     filters: [
         {
             fieldname: "company",
