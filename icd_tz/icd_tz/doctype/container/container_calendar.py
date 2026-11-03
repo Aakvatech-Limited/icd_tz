@@ -9,7 +9,7 @@ from frappe.utils import add_days, getdate, today
 
 
 @frappe.whitelist()
-def get_events(start, end, filters=None):
+def get_events(start, end, filters=None, **kwargs):
     """Return all-day stays overlapping the requested calendar window.
 
     Arrival is inclusive and gate-out is exclusive. Open stays are shown
@@ -82,10 +82,12 @@ def get_events(start, end, filters=None):
             {
                 "name": record.name,
                 "start": str(arrival),
-                "end": str(departure),
+                "end": str(getdate(add_days(departure, -1))),
                 "title": title,
                 "status": record.status,
                 "all_day": 1,
+                "convert_to_user_tz": 0,
+                "editable": False,
             }
         )
     return events
