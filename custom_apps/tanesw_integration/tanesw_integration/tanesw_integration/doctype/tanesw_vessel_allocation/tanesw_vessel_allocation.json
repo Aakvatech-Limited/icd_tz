@@ -1,0 +1,209 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:mrn",
+ "creation": "2026-11-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mrn",
+  "vessel_name",
+  "voyage_number",
+  "arrival_date",
+  "facility_code",
+  "column_break_counts",
+  "bl_count",
+  "container_count",
+  "tracking_section",
+  "first_seen",
+  "last_seen",
+  "last_changed",
+  "column_break_tracking",
+  "watcher_account",
+  "last_event",
+  "declaration_section",
+  "landed_count",
+  "declared_count",
+  "column_break_decl",
+  "available_count",
+  "last_landed_change",
+  "manifest_sync_section",
+  "manifest_synced_on",
+  "column_break_msync",
+  "manifest_synced_counts"
+ ],
+ "fields": [
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "label": "MRN",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "label": "Vessel Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "voyage_number",
+   "fieldtype": "Data",
+   "label": "Voyage Number"
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "label": "Arrival Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "facility_code",
+   "fieldtype": "Data",
+   "label": "Facility Code"
+  },
+  {
+   "fieldname": "column_break_counts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bl_count",
+   "fieldtype": "Int",
+   "label": "Allocated B/L Count",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "container_count",
+   "fieldtype": "Int",
+   "label": "Allocated Container Count",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "first_seen",
+   "fieldtype": "Datetime",
+   "label": "First Seen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Seen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_changed",
+   "fieldtype": "Datetime",
+   "label": "Last Changed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tracking",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "watcher_account",
+   "fieldtype": "Data",
+   "label": "Watcher Account",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_event",
+   "fieldtype": "Select",
+   "label": "Last Event",
+   "options": "Baseline\nNew Allocation\nAllocation Changed\nContainers Landed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declaration_section",
+   "fieldtype": "Section Break",
+   "label": "Ready to Declare (TANeSW Expected ICD Transfer)"
+  },
+  {
+   "fieldname": "landed_count",
+   "fieldtype": "Int",
+   "label": "Landed (Target)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "declared_count",
+   "fieldtype": "Int",
+   "label": "Declared"
+  },
+  {
+   "fieldname": "column_break_decl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "available_count",
+   "fieldtype": "Int",
+   "label": "Waiting for Declaration",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "last_landed_change",
+   "fieldtype": "Datetime",
+   "label": "Last New Landing"
+  },
+  {
+   "fieldname": "manifest_sync_section",
+   "fieldtype": "Section Break",
+   "label": "Manifest Sync",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "manifest_synced_on",
+   "fieldtype": "Datetime",
+   "label": "Workbook Last Compared",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_msync",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manifest_synced_counts",
+   "fieldtype": "Data",
+   "label": "B/Ls / Boxes Then",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-11-15 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Vessel Allocation",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "email": 1,
+   "print": 1,
+   "share": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "last_seen",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

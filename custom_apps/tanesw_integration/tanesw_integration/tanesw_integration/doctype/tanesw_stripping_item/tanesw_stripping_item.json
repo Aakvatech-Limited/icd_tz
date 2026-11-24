@@ -1,0 +1,61 @@
+{
+ "creation": "2026-10-31 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "container_no",
+  "package_type",
+  "package_count",
+  "column_break_1",
+  "sound_count",
+  "damaged_count",
+  "discrepancy_remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Container Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "package_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Package Type"
+  },
+  {
+   "fieldname": "package_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Stripped Package Count"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sound_count",
+   "fieldtype": "Int",
+   "label": "Sound Package Count"
+  },
+  {
+   "fieldname": "damaged_count",
+   "fieldtype": "Int",
+   "label": "Damaged Package Count"
+  },
+  {
+   "fieldname": "discrepancy_remarks",
+   "fieldtype": "Small Text",
+   "label": "Discrepancy Remarks"
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-10-31 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Stripping Item",
+ "owner": "Administrator",
+ "permissions": []
+}

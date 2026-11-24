@@ -1,0 +1,459 @@
+{
+ "charts": [
+  {
+   "label": "Containers Received per Day",
+   "chart_name": "TANeSW Containers Received per Day"
+  },
+  {
+   "label": "Containers Declared per Day",
+   "chart_name": "TANeSW Containers Declared per Day"
+  },
+  {
+   "label": "Port Dwell by Vessel",
+   "chart_name": "TANeSW Port Dwell by Vessel"
+  },
+  {
+   "label": "Tracked Containers by Status",
+   "chart_name": "TANeSW Tracked Containers by Status"
+  }
+ ],
+ "content": "[{\"id\": \"tanesw-summary-shortcut\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"TANeSW Summary\", \"col\": 4}}, {\"id\": \"h_now\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Containers now</b></span>\", \"col\": 12}}, {\"id\": \"nc_a0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Still at Port\", \"col\": 3}}, {\"id\": \"nc_a1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"In Transit\", \"col\": 3}}, {\"id\": \"nc_a2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Received This Month\", \"col\": 3}}, {\"id\": \"nc_a3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Diverted This Month\", \"col\": 3}}, {\"id\": \"nc_a4\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delivered This Month\", \"col\": 3}}, {\"id\": \"nc_b0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Allocated This Month\", \"col\": 3}}, {\"id\": \"nc_b1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Declared This Month\", \"col\": 3}}, {\"id\": \"nc_b2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Declared, Not Gated Out\", \"col\": 3}}, {\"id\": \"nc_b3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Avg Port Dwell (days)\", \"col\": 3}}, {\"id\": \"h_attention\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Needs attention</b></span>\", \"col\": 12}}, {\"id\": \"nc_c_pipe\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Landed, To Declare\", \"col\": 4}}, {\"id\": \"nc_c0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Carry-In Exceptions\", \"col\": 4}}, {\"id\": \"nc_c1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Truck/Driver Differs (7d)\", \"col\": 4}}, {\"id\": \"h_anomalies\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Anomalies: TANeSW vs ERP</b></span>\", \"col\": 12}}, {\"id\": \"nc_an0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delivered Unbilled\", \"col\": 4}}, {\"id\": \"nc_an1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delivered Invoiced Unpaid\", \"col\": 4}}, {\"id\": \"nc_an2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delivered on TANeSW Not in ERP\", \"col\": 4}}, {\"id\": \"nc_an3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Ghost Yard Arrival\", \"col\": 4}}, {\"id\": \"nc_an4\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Reception Pending Submit\", \"col\": 4}}, {\"id\": \"nc_an5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Stranded at Port\", \"col\": 4}}, {\"id\": \"nc_an6\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Receptions Posted Late\", \"col\": 4}}, {\"id\": \"nc_an7\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Storage Days Lost (Late Posting)\", \"col\": 4}}, {\"id\": \"h_trends\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Trends</b></span>\", \"col\": 12}}, {\"id\": \"ch_0\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Containers Received per Day\", \"col\": 6}}, {\"id\": \"ch_1\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Containers Declared per Day\", \"col\": 6}}, {\"id\": \"ch_2\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Port Dwell by Vessel\", \"col\": 6}}, {\"id\": \"ch_3\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Tracked Containers by Status\", \"col\": 6}}, {\"id\": \"h_goto\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Go to</b></span>\", \"col\": 12}}, {\"id\": \"sc_0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cargo Management\", \"col\": 3}}, {\"id\": \"sc_1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Joint Inspection\", \"col\": 3}}, {\"id\": \"sc_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Container Allocation\", \"col\": 3}}, {\"id\": \"sc_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Container Dwell\", \"col\": 3}}, {\"id\": \"sp_links\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"cd_0\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}, {\"id\": \"cd_1\", \"type\": \"card\", \"data\": {\"card_name\": \"Records\", \"col\": 4}}, {\"id\": \"cd_2\", \"type\": \"card\", \"data\": {\"card_name\": \"Setup\", \"col\": 4}}]",
+ "creation": "2026-10-24 00:00:00.000000",
+ "doctype": "Workspace",
+ "for_user": "",
+ "icon": "customs",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "TANeSW Integration",
+ "links": [
+  {
+   "doctype": "Workspace Link",
+   "type": "Card Break",
+   "label": "Reports",
+   "link_count": 11,
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "idx": 1
+  },
+  {
+   "doctype": "Workspace Link",
+   "hidden": 0,
+   "is_query_report": 1,
+   "onboard": 0,
+   "type": "Link",
+   "dependencies": "",
+   "link_count": 0,
+   "label": "TANeSW Summary",
+   "link_type": "Report",
+   "link_to": "TANeSW Summary",
+   "idx": 2
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Container Allocation",
+   "link_type": "Report",
+   "link_to": "TANeSW Container Allocation",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 3
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Container Dwell",
+   "link_type": "Report",
+   "link_to": "TANeSW Container Dwell",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 4
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "TANeSW vs ICD Reconciliation",
+   "link_type": "Report",
+   "link_to": "TANeSW ICD Reconciliation",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 5
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Receiving by Manifest & B/L",
+   "link_type": "Report",
+   "link_to": "TANeSW Receiving by Manifest and BL",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 6
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Diverted Containers",
+   "link_type": "Report",
+   "link_to": "TANeSW Diverted Containers",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 7
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Reception Date Check",
+   "link_type": "Report",
+   "link_to": "TANeSW Reception Date Check",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 8
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Container Pipeline",
+   "link_type": "Report",
+   "link_to": "TANeSW Container Pipeline",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "idx": 9
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Anomalies (TANeSW vs ERP)",
+   "link_type": "DocType",
+   "link_to": "Container Allocation Track log",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 10
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Carry-In Links to icd_tz",
+   "link_type": "DocType",
+   "link_to": "TANeSW Carry In Container",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 11
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Tracked Containers",
+   "link_type": "DocType",
+   "link_to": "TANeSW Container",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 12
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Card Break",
+   "label": "Records",
+   "link_count": 8,
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "idx": 13
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Customs Declarations",
+   "link_type": "DocType",
+   "link_to": "TANeSW Declaration",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 14
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Transfer Allocations",
+   "link_type": "DocType",
+   "link_to": "TANeSW Transfer Allocation",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 15
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Vessel Allocations",
+   "link_type": "DocType",
+   "link_to": "TANeSW Vessel Allocation",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 16
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Carry-In Records",
+   "link_type": "DocType",
+   "link_to": "TANeSW Carry In",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 17
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Carry-Out Records",
+   "link_type": "DocType",
+   "link_to": "TANeSW Carry Out",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 18
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Stripping Reports",
+   "link_type": "DocType",
+   "link_to": "TANeSW Stripping Report",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 19
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Inspection Bookings",
+   "link_type": "DocType",
+   "link_to": "TANeSW Inspection Booking",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 20
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "Inspection Agencies",
+   "link_type": "DocType",
+   "link_to": "TANeSW Inspection Agency",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 21
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Card Break",
+   "label": "Setup",
+   "link_count": 2,
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "idx": 22
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "TANeSW Settings",
+   "link_type": "DocType",
+   "link_to": "TANeSW Settings",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 23
+  },
+  {
+   "doctype": "Workspace Link",
+   "type": "Link",
+   "label": "TANeSW User Accounts",
+   "link_type": "DocType",
+   "link_to": "TANeSW User Account",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "link_count": 0,
+   "idx": 24
+  }
+ ],
+ "modified": "2026-11-22 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Integration",
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 100,
+ "shortcuts": [
+  {
+   "doctype": "Workspace Shortcut",
+   "label": "TANeSW Summary",
+   "type": "Report",
+   "link_to": "TANeSW Summary",
+   "report_ref_doctype": "TANeSW Container",
+   "color": "Green",
+   "doc_view": "",
+   "format": "",
+   "stats_filter": "",
+   "url": ""
+  },
+  {
+   "doctype": "Workspace Shortcut",
+   "label": "Cargo Management",
+   "type": "Page",
+   "color": "Blue",
+   "doc_view": "",
+   "stats_filter": "[]",
+   "link_to": "tanesw-cargo"
+  },
+  {
+   "doctype": "Workspace Shortcut",
+   "label": "Joint Inspection",
+   "type": "Page",
+   "color": "Blue",
+   "doc_view": "",
+   "stats_filter": "[]",
+   "link_to": "tanesw-joint-inspection"
+  },
+  {
+   "doctype": "Workspace Shortcut",
+   "label": "Container Allocation",
+   "type": "Report",
+   "link_to": "TANeSW Container Allocation",
+   "report_ref_doctype": "TANeSW Vessel Allocation",
+   "doc_view": "",
+   "color": "Grey",
+   "format": "",
+   "stats_filter": "",
+   "url": ""
+  },
+  {
+   "doctype": "Workspace Shortcut",
+   "label": "Container Dwell",
+   "type": "Report",
+   "link_to": "TANeSW Container Dwell",
+   "color": "Orange",
+   "doc_view": "",
+   "stats_filter": "[]"
+  }
+ ],
+ "title": "TANeSW Integration",
+ "number_cards": [
+  {
+   "label": "Still at Port",
+   "number_card_name": "TANeSW Still at Port"
+  },
+  {
+   "label": "In Transit",
+   "number_card_name": "TANeSW In Transit"
+  },
+  {
+   "label": "Received This Month",
+   "number_card_name": "TANeSW Received This Month"
+  },
+  {
+   "label": "Diverted This Month",
+   "number_card_name": "TANeSW Diverted This Month"
+  },
+  {
+   "label": "Allocated This Month",
+   "number_card_name": "TANeSW Allocated This Month"
+  },
+  {
+   "label": "Declared This Month",
+   "number_card_name": "TANeSW Declared This Month"
+  },
+  {
+   "label": "Declared, Not Gated Out",
+   "number_card_name": "TANeSW Declared Not Gated Out"
+  },
+  {
+   "label": "Avg Port Dwell (days)",
+   "number_card_name": "TANeSW Avg Port Dwell Days"
+  },
+  {
+   "label": "Carry-In Exceptions",
+   "number_card_name": "TANeSW Carry-In Exceptions"
+  },
+  {
+   "label": "Truck/Driver Differs (7d)",
+   "number_card_name": "TANeSW Truck or Driver Differs"
+  },
+  {
+   "label": "Landed, To Declare",
+   "number_card_name": "TANeSW Landed Not Declared"
+  },
+  {
+   "label": "Delivered This Month",
+   "number_card_name": "TANeSW Delivered This Month"
+  },
+  {
+   "label": "Delivered Unbilled",
+   "number_card_name": "TANeSW Delivered Unbilled"
+  },
+  {
+   "label": "Delivered Invoiced Unpaid",
+   "number_card_name": "TANeSW Delivered Invoiced Unpaid"
+  },
+  {
+   "label": "Delivered on TANeSW Not in ERP",
+   "number_card_name": "TANeSW Delivered on TANeSW Not in ERP"
+  },
+  {
+   "label": "Ghost Yard Arrival",
+   "number_card_name": "TANeSW Ghost Yard Arrival"
+  },
+  {
+   "label": "Reception Pending Submit",
+   "number_card_name": "TANeSW Reception Pending Submit"
+  },
+  {
+   "label": "Stranded at Port",
+   "number_card_name": "TANeSW Stranded at Port"
+  },
+  {
+   "label": "Receptions Posted Late",
+   "number_card_name": "TANeSW Receptions Posted Late"
+  },
+  {
+   "label": "Storage Days Lost (Late Posting)",
+   "number_card_name": "TANeSW Storage Days Lost"
+  }
+ ]
+}

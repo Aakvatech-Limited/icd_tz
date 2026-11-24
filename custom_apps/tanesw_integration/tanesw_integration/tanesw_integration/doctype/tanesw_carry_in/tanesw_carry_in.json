@@ -1,0 +1,328 @@
+{
+ "actions": [],
+ "autoname": "field:cri_base_no",
+ "creation": "2026-10-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "cri_base_no",
+  "tansad_no",
+  "status",
+  "column_break_id",
+  "crn",
+  "mrn",
+  "warehouse_code",
+  "carry_in_type",
+  "processing_unit",
+  "report_status",
+  "declaration_no",
+  "process_status_code",
+  "process_datetime",
+  "transfer_end_date",
+  "conveyance_section",
+  "vehicle_no",
+  "trailer_no",
+  "trip_no",
+  "barcode_no",
+  "gate_exit_confirmed",
+  "entry_confirmed",
+  "arrival_date",
+  "column_break_conv",
+  "driver_name",
+  "driver_license",
+  "agent_tin",
+  "agent_name",
+  "container_section",
+  "container_no",
+  "container_size",
+  "seal_no",
+  "seal_no_2",
+  "column_break_cntr",
+  "package_count",
+  "package_type",
+  "weight",
+  "cargo_description",
+  "remarks_section",
+  "discrepancy_remarks",
+  "remarks",
+  "submission_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Carry-In Identity"
+  },
+  {
+   "fieldname": "cri_base_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Carry-In Base Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "tansad_no",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "TANSAD Number",
+   "options": "TANeSW Declaration"
+  },
+  {
+   "default": "NOT REPORT",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "NOT REPORT\nREPORTED\nAPPROVED"
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CRN"
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "MRN"
+  },
+  {
+   "fieldname": "warehouse_code",
+   "fieldtype": "Data",
+   "label": "Warehouse Code"
+  },
+  {
+   "fieldname": "conveyance_section",
+   "fieldtype": "Section Break",
+   "label": "Conveyance & Driver Particulars"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Truck / Vehicle Registration No"
+  },
+  {
+   "fieldname": "trailer_no",
+   "fieldtype": "Data",
+   "label": "Trailer Registration No"
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Arrival Date & Time"
+  },
+  {
+   "fieldname": "column_break_conv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name"
+  },
+  {
+   "fieldname": "driver_license",
+   "fieldtype": "Data",
+   "label": "Driver License No"
+  },
+  {
+   "fieldname": "agent_tin",
+   "fieldtype": "Data",
+   "label": "Transporter / Agent TIN"
+  },
+  {
+   "fieldname": "agent_name",
+   "fieldtype": "Data",
+   "label": "Transporter / Agent Name"
+  },
+  {
+   "fieldname": "container_section",
+   "fieldtype": "Section Break",
+   "label": "Container & Cargo Details"
+  },
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Container Number"
+  },
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Data",
+   "label": "Container Size / Type"
+  },
+  {
+   "fieldname": "seal_no",
+   "fieldtype": "Data",
+   "label": "Seal Number 1"
+  },
+  {
+   "fieldname": "seal_no_2",
+   "fieldtype": "Data",
+   "label": "Seal Number 2"
+  },
+  {
+   "fieldname": "column_break_cntr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "package_count",
+   "fieldtype": "Int",
+   "label": "Package Count"
+  },
+  {
+   "fieldname": "package_type",
+   "fieldtype": "Data",
+   "label": "Package Type (e.g. PK, CTN)"
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "label": "Verified Gross Weight (KG)"
+  },
+  {
+   "fieldname": "cargo_description",
+   "fieldtype": "Small Text",
+   "label": "Cargo Description"
+  },
+  {
+   "fieldname": "remarks_section",
+   "fieldtype": "Section Break",
+   "label": "Discrepancies & Audit"
+  },
+  {
+   "fieldname": "discrepancy_remarks",
+   "fieldtype": "Small Text",
+   "label": "Damage / Discrepancy Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Internal Remarks"
+  },
+  {
+   "fieldname": "submission_response",
+   "fieldtype": "Code",
+   "label": "Submission Response",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carry_in_type",
+   "fieldtype": "Data",
+   "label": "Carry-In Type Code"
+  },
+  {
+   "fieldname": "processing_unit",
+   "fieldtype": "Select",
+   "label": "Processing Unit",
+   "options": "Container\nVehicle\nLoose\nOther\nEmpty Container\nBulk"
+  },
+  {
+   "fieldname": "report_status",
+   "fieldtype": "Data",
+   "label": "Report Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declaration_no",
+   "fieldtype": "Data",
+   "label": "Carry-In Declaration Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "process_status_code",
+   "fieldtype": "Data",
+   "label": "Process Status Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "process_datetime",
+   "fieldtype": "Data",
+   "label": "Process Date & Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transfer_end_date",
+   "fieldtype": "Data",
+   "label": "Transfer Completion Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "trip_no",
+   "fieldtype": "Data",
+   "label": "Trip Number"
+  },
+  {
+   "fieldname": "barcode_no",
+   "fieldtype": "Data",
+   "label": "Barcode Number"
+  },
+  {
+   "fieldname": "gate_exit_confirmed",
+   "fieldtype": "Check",
+   "label": "Gate Exit Confirmed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "entry_confirmed",
+   "fieldtype": "Check",
+   "label": "Warehouse Entry Confirmed",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Carry In",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "cri_base_no",
+ "track_changes": 1
+}

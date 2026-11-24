@@ -1,0 +1,266 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:{mrn}-{container_no}-{change_type}",
+ "creation": "2026-11-13 18:30:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "container_no",
+  "bl_no",
+  "change_type",
+  "detected_on",
+  "column_break_vessel",
+  "mrn",
+  "vessel_name",
+  "manifest",
+  "crn",
+  "where_section",
+  "outcome",
+  "new_place_code",
+  "new_place",
+  "moved_on",
+  "column_break_where",
+  "carried_in_at",
+  "carried_in_on",
+  "back_on",
+  "erp_section",
+  "on_erp_manifest",
+  "manifest_action",
+  "column_break_erp",
+  "movement_order",
+  "container",
+  "reception",
+  "trace_section",
+  "trace_complete",
+  "last_traced"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "label": "Container No",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "bl_no",
+   "fieldtype": "Data",
+   "label": "B/L No",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "change_type",
+   "fieldtype": "Select",
+   "label": "Change",
+   "read_only": 1,
+   "options": "Removed\nAdded",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "detected_on",
+   "fieldtype": "Datetime",
+   "label": "Detected On",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_vessel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "label": "MRN",
+   "read_only": 1,
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "label": "Vessel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manifest",
+   "fieldtype": "Link",
+   "label": "Manifest",
+   "read_only": 1,
+   "options": "Manifest",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "label": "Cargo Reference No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "where_section",
+   "fieldtype": "Section Break",
+   "label": "Where It Went"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "read_only": 1,
+   "options": "Not traced yet\nDiverted to another ICD\nMoved to a port facility\nMoved elsewhere\nSimple Transfer (still ours)\nBack on our allocation\nAdded to our allocation",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "new_place_code",
+   "fieldtype": "Data",
+   "label": "New Place of Delivery Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_place",
+   "fieldtype": "Data",
+   "label": "New Place of Delivery",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "moved_on",
+   "fieldtype": "Datetime",
+   "label": "Move Approved On",
+   "read_only": 1,
+   "description": "TANeSW 'Change of Delivery Place Approved'. TANeSW has the releasing ICD submit the change and the receiving facility approve it, so it does not say who asked for it."
+  },
+  {
+   "fieldname": "column_break_where",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "carried_in_at",
+   "fieldtype": "Data",
+   "label": "Carried In At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carried_in_on",
+   "fieldtype": "Datetime",
+   "label": "Carried In On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "back_on",
+   "fieldtype": "Datetime",
+   "label": "Back On Our Allocation On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erp_section",
+   "fieldtype": "Section Break",
+   "label": "ERP"
+  },
+  {
+   "fieldname": "on_erp_manifest",
+   "fieldtype": "Check",
+   "label": "Was On The ERP Manifest",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manifest_action",
+   "fieldtype": "Select",
+   "label": "ERP Manifest",
+   "read_only": 1,
+   "options": "\nTaken off the Manifest\nKept: Movement Order, Container or Reception exists\nKept: Apply TANeSW Changes is off\nAdded to the Manifest\nNo ERP Manifest\nLeft before the ERP Manifest was made\nKept: received at our ICD"
+  },
+  {
+   "fieldname": "column_break_erp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "movement_order",
+   "fieldtype": "Link",
+   "label": "Movement Order",
+   "read_only": 1,
+   "options": "Container Movement Order"
+  },
+  {
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "label": "Container",
+   "read_only": 1,
+   "options": "Container"
+  },
+  {
+   "fieldname": "reception",
+   "fieldtype": "Link",
+   "label": "Container Reception",
+   "read_only": 1,
+   "options": "Container Reception"
+  },
+  {
+   "fieldname": "trace_section",
+   "fieldtype": "Section Break",
+   "label": "Tracing",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "trace_complete",
+   "fieldtype": "Check",
+   "label": "Trace Complete",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_traced",
+   "fieldtype": "Datetime",
+   "label": "Last Traced",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-15 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Allocation Change",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "detected_on",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "container_no",
+ "track_changes": 0,
+ "search_fields": "mrn,vessel_name,bl_no,new_place"
+}

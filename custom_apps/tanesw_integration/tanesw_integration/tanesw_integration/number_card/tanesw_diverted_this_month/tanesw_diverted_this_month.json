@@ -1,0 +1,22 @@
+{
+ "color": "#c0392b",
+ "creation": "2026-11-11 15:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "TANeSW Allocation Change",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"TANeSW Allocation Change\", \"change_type\", \"=\", \"Removed\", false], [\"TANeSW Allocation Change\", \"outcome\", \"in\", [\"Diverted to another ICD\", \"Moved to a port facility\", \"Moved elsewhere\"], false], [\"TANeSW Allocation Change\", \"moved_on\", \"Timespan\", \"this month\", false]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Diverted This Month",
+ "modified": "2026-11-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Diverted This Month",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

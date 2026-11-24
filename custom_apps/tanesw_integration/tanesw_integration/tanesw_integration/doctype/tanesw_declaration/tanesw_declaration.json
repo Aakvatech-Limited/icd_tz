@@ -1,0 +1,352 @@
+{
+ "actions": [],
+ "autoname": "field:tansad_no",
+ "creation": "2026-10-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "tansad_no",
+  "declaration_no",
+  "declaration_date",
+  "column_break_id",
+  "crn",
+  "mrn",
+  "customs_office_code",
+  "bl_section",
+  "master_bl_no",
+  "house_bl_no",
+  "cargo_classification",
+  "goods_description",
+  "column_break_bl",
+  "package_count",
+  "package_unit",
+  "gross_weight",
+  "net_weight",
+  "commercial_section",
+  "consignee_tin",
+  "consignee_name",
+  "clearing_agent_name",
+  "column_break_comm",
+  "warehouse_code",
+  "warehouse_name",
+  "containers_section",
+  "containers",
+  "lifecycle_section",
+  "cargo_tracking_status",
+  "booking_status",
+  "booking_date",
+  "column_break_life",
+  "inspection_status",
+  "carry_in_status",
+  "carry_out_status",
+  "delivery_order_status",
+  "sync_section",
+  "last_sync_time",
+  "last_sync_status",
+  "raw_payload_snapshot",
+  "declaration_mode",
+  "selectivity_channel",
+  "vessel_name",
+  "voyage_no",
+  "discharge_port",
+  "discharge_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "TANSAD & Declaration Identity"
+  },
+  {
+   "fieldname": "tansad_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "TANSAD Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "declaration_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Declaration Number"
+  },
+  {
+   "fieldname": "declaration_date",
+   "fieldtype": "Date",
+   "label": "Declaration Date"
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CRN"
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "MRN"
+  },
+  {
+   "fieldname": "customs_office_code",
+   "fieldtype": "Data",
+   "label": "Customs Office Code"
+  },
+  {
+   "fieldname": "bl_section",
+   "fieldtype": "Section Break",
+   "label": "Bill of Lading & Cargo Information"
+  },
+  {
+   "fieldname": "master_bl_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Master B/L No"
+  },
+  {
+   "fieldname": "house_bl_no",
+   "fieldtype": "Data",
+   "label": "House B/L No"
+  },
+  {
+   "fieldname": "cargo_classification",
+   "fieldtype": "Data",
+   "label": "Cargo Classification"
+  },
+  {
+   "fieldname": "goods_description",
+   "fieldtype": "Small Text",
+   "label": "Goods Description"
+  },
+  {
+   "fieldname": "column_break_bl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "package_count",
+   "fieldtype": "Int",
+   "label": "Package Count"
+  },
+  {
+   "fieldname": "package_unit",
+   "fieldtype": "Data",
+   "label": "Package Unit"
+  },
+  {
+   "fieldname": "gross_weight",
+   "fieldtype": "Float",
+   "label": "Gross Weight (KG)"
+  },
+  {
+   "fieldname": "net_weight",
+   "fieldtype": "Float",
+   "label": "Net Weight (KG)"
+  },
+  {
+   "fieldname": "commercial_section",
+   "fieldtype": "Section Break",
+   "label": "Commercial Parties & Warehouse"
+  },
+  {
+   "fieldname": "consignee_tin",
+   "fieldtype": "Data",
+   "label": "Consignee TIN"
+  },
+  {
+   "fieldname": "consignee_name",
+   "fieldtype": "Data",
+   "label": "Consignee Name"
+  },
+  {
+   "fieldname": "clearing_agent_name",
+   "fieldtype": "Data",
+   "label": "Declarant / Clearing Agent"
+  },
+  {
+   "fieldname": "column_break_comm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warehouse_code",
+   "fieldtype": "Data",
+   "label": "Warehouse Code"
+  },
+  {
+   "fieldname": "warehouse_name",
+   "fieldtype": "Data",
+   "label": "Warehouse Name"
+  },
+  {
+   "fieldname": "containers_section",
+   "fieldtype": "Section Break",
+   "label": "Declaration Containers"
+  },
+  {
+   "fieldname": "containers",
+   "fieldtype": "Table",
+   "label": "Containers",
+   "options": "TANeSW Declaration Container"
+  },
+  {
+   "fieldname": "lifecycle_section",
+   "fieldtype": "Section Break",
+   "label": "Lifecycle & Operational Status"
+  },
+  {
+   "fieldname": "cargo_tracking_status",
+   "fieldtype": "Data",
+   "label": "Tracking Status"
+  },
+  {
+   "default": "Not Booked",
+   "fieldname": "booking_status",
+   "fieldtype": "Select",
+   "label": "Booking Status",
+   "options": "Not Booked\nBooked\nApproved\nRejected\nCompleted"
+  },
+  {
+   "fieldname": "booking_date",
+   "fieldtype": "Date",
+   "label": "Booking Date"
+  },
+  {
+   "fieldname": "column_break_life",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "inspection_status",
+   "fieldtype": "Select",
+   "label": "Inspection Status",
+   "options": "Pending\nIn Progress\nSatisfactory\nDiscrepancy\nReleased"
+  },
+  {
+   "default": "Not Reported",
+   "fieldname": "carry_in_status",
+   "fieldtype": "Select",
+   "label": "Carry-In Status",
+   "options": "Not Reported\nReported\nApproved"
+  },
+  {
+   "default": "Not Reported",
+   "fieldname": "carry_out_status",
+   "fieldtype": "Select",
+   "label": "Carry-Out Status",
+   "options": "Not Reported\nReported\nApproved"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "delivery_order_status",
+   "fieldtype": "Select",
+   "label": "DO Status",
+   "options": "Pending\nIssued\nReleased"
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Audit & Synchronization"
+  },
+  {
+   "fieldname": "last_sync_time",
+   "fieldtype": "Datetime",
+   "label": "Last Sync Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_sync_status",
+   "fieldtype": "Data",
+   "label": "Last Sync Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raw_payload_snapshot",
+   "fieldtype": "Code",
+   "label": "Raw TANeSW Snapshot",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declaration_mode",
+   "fieldtype": "Data",
+   "label": "Declaration Mode (e.g. IM7, IM4)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "selectivity_channel",
+   "fieldtype": "Data",
+   "label": "Selectivity Channel (Red/Yellow/Green)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "label": "Vessel Name"
+  },
+  {
+   "fieldname": "voyage_no",
+   "fieldtype": "Data",
+   "label": "Voyage Number"
+  },
+  {
+   "fieldname": "discharge_port",
+   "fieldtype": "Data",
+   "label": "Discharge Port"
+  },
+  {
+   "fieldname": "discharge_date",
+   "fieldtype": "Data",
+   "label": "Discharge Date"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Declaration",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "tansad_no",
+ "track_changes": 1
+}

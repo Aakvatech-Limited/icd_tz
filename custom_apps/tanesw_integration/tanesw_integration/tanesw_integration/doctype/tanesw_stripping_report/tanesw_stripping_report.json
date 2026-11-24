@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "autoname": "field:report_no",
+ "creation": "2026-10-31 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "report_no",
+  "tansad_no",
+  "stripping_date",
+  "column_break_id",
+  "mrn",
+  "warehouse_code",
+  "status",
+  "process_status_code",
+  "operation_section",
+  "stripping_type",
+  "supervisor_name",
+  "column_break_op",
+  "officer_name",
+  "remarks",
+  "items_section",
+  "items",
+  "audit_section",
+  "submission_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Stripping Report Identity"
+  },
+  {
+   "fieldname": "report_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stripping Report Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "tansad_no",
+   "fieldtype": "Link",
+   "label": "Linked TANSAD",
+   "options": "TANeSW Declaration"
+  },
+  {
+   "fieldname": "stripping_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Stripping Date"
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "MRN"
+  },
+  {
+   "fieldname": "warehouse_code",
+   "fieldtype": "Data",
+   "label": "Warehouse Code"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status"
+  },
+  {
+   "fieldname": "process_status_code",
+   "fieldtype": "Data",
+   "label": "Process Status Code"
+  },
+  {
+   "fieldname": "operation_section",
+   "fieldtype": "Section Break",
+   "label": "Operation Particulars"
+  },
+  {
+   "fieldname": "stripping_type",
+   "fieldtype": "Data",
+   "label": "Stripping Result Type"
+  },
+  {
+   "fieldname": "supervisor_name",
+   "fieldtype": "Data",
+   "label": "Supervisor Name"
+  },
+  {
+   "fieldname": "column_break_op",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "officer_name",
+   "fieldtype": "Data",
+   "label": "Customs Officer Name"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Stripped Cargo Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "TANeSW Stripping Item"
+  },
+  {
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Submission Audit"
+  },
+  {
+   "fieldname": "submission_response",
+   "fieldtype": "Code",
+   "label": "Submission Response",
+   "options": "JSON"
+  }
+ ],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Stripping Report",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "report_no",
+ "track_changes": 1
+}
