@@ -67,14 +67,17 @@ def get_matching_criteria(criteria_rows, key: dict) -> dict:
 	return winners
 
 
-def get_port_storage_bands(settings_doc) -> dict:
-	"""Port storage day bands, as {charge: {"from": int, "to": int}}"""
+def get_port_storage_bands(settings_doc, cargo_type: str) -> dict:
+	"""Port storage day bands of a cargo type, as {charge: {"from": int, "to": int}}
+
+	A row without a cargo type applies to both.
+	"""
 
 	# a seeded row carries only the charge until the day range is confirmed
 	return {
 		row.charge: {"from": row.get("from"), "to": row.get("to")}
 		for row in settings_doc.port_storage_days
-		if is_band_configured(row)
+		if is_band_configured(row) and row.get("cargo_type") in (None, "", cargo_type)
 	}
 
 
