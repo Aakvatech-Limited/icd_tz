@@ -59,6 +59,13 @@ def get_container_length(size: str | None) -> int | None:
 	return LENGTH_CODES.get(digits[:1]) if digits else None
 
 
+def get_country_of_destination(abbr_for_destination: str | None) -> str | None:
+	"""Country of a place of destination code, from its first two letters, such as RW for RWKGL"""
+
+	country_code = str(abbr_for_destination or "")[:2].lower()
+	return frappe.get_cached_value("Country", {"code": country_code}, "name") if country_code else None
+
+
 def get_size_bucket(size: str | None) -> str | None:
 	"""Pricing size of a container: the largest size its length reaches
 
