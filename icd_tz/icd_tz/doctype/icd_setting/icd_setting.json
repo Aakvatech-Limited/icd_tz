@@ -251,7 +251,7 @@
   {
    "fieldname": "port_storage_example",
    "fieldtype": "HTML",
-   "options": "<h2>Example</h2>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\">\n    <th>Charge</th>\n    <th>From</th>\n    <th>To</th>\n  </tr>\n  <tr>\n    <td>Single</td>\n    <td>1</td>\n    <td>7</td>\n  </tr>\n  <tr>\n    <td>Double</td>\n    <td>8</td>\n    <td>9999999</td>\n  </tr>\n</tbody></table>\n"
+   "options": "<h2>Example</h2>\n<ul>\n  <li>Days are counted from the discharge date (Ship D/C Date) until the container is received at the ICD.</li>\n  <li>Each Cargo Type needs a Free, Single and Double row, starting at day 1 with no gap: 2 x 3 = 6 rows.</li>\n  <li>A container takes the Cargo Type of its bill of lading: IM is Local, TR is Transit.</li>\n</ul>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\"><th>Cargo Type</th><th>Charge</th><th>From</th><th>To</th></tr>\n  <tr><td>Local</td><td>Free</td><td>1</td><td>5</td></tr>\n  <tr><td>Local</td><td>Single</td><td>6</td><td>12</td></tr>\n  <tr><td>Local</td><td>Double</td><td>13</td><td>9999999</td></tr>\n  <tr><td>Transit</td><td>Free</td><td>1</td><td>15</td></tr>\n  <tr><td>Transit</td><td>Single</td><td>16</td><td>22</td></tr>\n  <tr><td>Transit</td><td>Double</td><td>23</td><td>9999999</td></tr>\n</tbody></table>\n"
   },
   {
    "fieldname": "section_break_qvvx",
@@ -319,7 +319,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-26 15:00:00.000000",
+ "modified": "2026-11-26 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Setting",
