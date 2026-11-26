@@ -2,12 +2,14 @@ from time import sleep
 
 import frappe
 from frappe import _
+from frappe.query_builder.functions import Max
 from frappe.utils import cint, flt, get_link_to_form, getdate, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
 from icd_tz.icd_tz.api.icd_services import GATE_PASS_CANCELLATION, REMOVAL
 from icd_tz.icd_tz.api.utils import (
+	DELIVERED_CONTAINER_STATUSES,
 	get_icd_setting,
 	get_service_item,
 	get_service_key,
@@ -36,6 +38,7 @@ def validate_storage_delivery_date(doc):
 
 def before_submit(doc, method):
 	validate_empty_containers_are_billed_apart(doc)
+	validate_storage_billed_to_today(doc)
 
 	if doc.waiver_status == "Pending":
 		frappe.throw(
@@ -43,6 +46,57 @@ def before_submit(doc, method):
 				"This Sales Order has a pending Waiver Request. Please wait for it to be Approved or Rejected before submitting."
 			)
 		)
+
+
+def validate_storage_billed_to_today(doc):
+	"""A submitted order bills storage up to today, so the invoice never charges a day not yet stayed
+
+	A future delivery date only prices a proforma while the order is a draft. The consignee
+	may come before that date, and nobody rolling it back would bill the days they never stayed.
+	"""
+
+	if not doc.m_bl_no and not doc.h_bl_no:
+		return
+
+	today = getdate(nowdate())
+	if getdate(doc.delivery_date) != today:
+		frappe.throw(
+			_(
+				"Delivery Date {0} is not today. Set it to today and click Update Items before submitting"
+			).format(frappe.bold(frappe.format(doc.delivery_date, "Date"))),
+			title=_("Storage Not Billed To Today"),
+		)
+
+	containers = [
+		row for row in get_last_storage_days(get_order_container_ids(doc)) if getdate(row.last_day) != today
+	]
+	if containers:
+		frappe.throw(
+			_("The storage of {0} does not end today. Click Update Items before submitting").format(
+				frappe.bold(", ".join(sorted(row.container_no for row in containers)))
+			),
+			title=_("Storage Not Billed To Today"),
+		)
+
+
+def get_last_storage_days(container_ids: set) -> list:
+	"""Last storage day of each container still in the yard"""
+
+	if not container_ids:
+		return []
+
+	container = frappe.qb.DocType("Container")
+	storage_day = frappe.qb.DocType("Container Service Detail")
+	return (
+		frappe.qb.from_(container)
+		.join(storage_day)
+		.on(storage_day.parent == container.name)
+		.select(container.container_no, Max(storage_day.date).as_("last_day"))
+		.where(container.name.isin(list(container_ids)))
+		.where(container.status.isnull() | container.status.notin(DELIVERED_CONTAINER_STATUSES))
+		.where(storage_day.parenttype == "Container")
+		.groupby(container.name)
+	).run(as_dict=True)
 
 
 def on_trash(doc, method):
