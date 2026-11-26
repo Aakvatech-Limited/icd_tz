@@ -45,7 +45,10 @@ class TestStorageContract(FrappeTestCase):
 
 	def test_storage_days_based_contract_needs_every_destination_and_charge(self):
 		contract = make_contract(self.company, is_storage_days_based=1)
-		contract.append("storage_days", {"destination": "Local", "charge": "Free", "from": 1, "to": 5})
+		contract.append(
+			"storage_days",
+			{"destination": "Local", "cargo_category": "Normal", "charge": "Free", "from": 1, "to": 5},
+		)
 
 		self.assertRaises(frappe.ValidationError, contract.insert)
 
@@ -72,9 +75,43 @@ class TestStorageContract(FrappeTestCase):
 	def test_storage_days_rejects_a_duplicate_destination_and_charge(self):
 		contract = make_contract(self.company, is_storage_days_based=1)
 		add_storage_days(contract)
-		contract.append("storage_days", {"destination": "Local", "charge": "Free", "from": 1, "to": 5})
+		contract.append(
+			"storage_days",
+			{"destination": "Local", "cargo_category": "Normal", "charge": "Free", "from": 1, "to": 5},
+		)
 
 		self.assertRaises(frappe.ValidationError, contract.insert)
+
+	def test_storage_days_based_contract_needs_every_cargo_category_of_the_settings(self):
+		add_settings_category_storage_days("Reefer")
+		contract = make_contract(self.company, is_storage_days_based=1)
+		add_storage_days(contract)
+
+		self.assertRaises(frappe.ValidationError, contract.insert)
+
+		add_storage_days(contract, destinations=["Local"], cargo_category="Reefer")
+		contract.insert()
+
+	def test_storage_day_counts_come_from_the_contract_rows_of_the_container_category(self):
+		add_settings_category_storage_days("Reefer")
+		contract = make_contract(self.company, is_storage_days_based=1)
+		add_storage_days(contract)
+		add_storage_days(contract, destinations=["Local"], days=SETTINGS_DAYS, cargo_category="Reefer")
+		contract.insert()
+		contract.submit()
+		container = frappe._dict(
+			company=get_test_company(),
+			place_of_destination="Local",
+			cargo_category="Reefer",
+			c_and_f_company=self.company,
+		)
+
+		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
+
+		container.cargo_category = "Dangerous"
+		with self.assertRaises(frappe.ValidationError) as error:
+			get_storage_day_counts(container)
+		self.assertIn(contract.name, str(error.exception))
 
 	def test_unticked_billing_basis_inputs_are_cleared(self):
 		contract = make_contract(self.company, is_storage_days_based=1)
@@ -132,7 +169,12 @@ class TestStorageContract(FrappeTestCase):
 
 	def test_storage_day_counts_fall_back_to_settings(self):
 		container = frappe._dict(
-			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+			{
+				"company": get_test_company(),
+				"place_of_destination": "Local",
+				"cargo_category": "Normal",
+				"c_and_f_company": self.company,
+			}
 		)
 
 		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
@@ -140,7 +182,12 @@ class TestStorageContract(FrappeTestCase):
 	def test_storage_day_counts_come_from_an_active_storage_days_contract(self):
 		submit_storage_days_contract(self.company)
 		container = frappe._dict(
-			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+			{
+				"company": get_test_company(),
+				"place_of_destination": "Local",
+				"cargo_category": "Normal",
+				"c_and_f_company": self.company,
+			}
 		)
 
 		self.assertEqual(get_storage_day_counts(container), {"Free": 12, "Single": 2, "Double": 2})
@@ -148,7 +195,12 @@ class TestStorageContract(FrappeTestCase):
 	def test_storage_day_counts_ignore_a_contract_of_another_company(self):
 		submit_storage_days_contract(self.company)
 		container = frappe._dict(
-			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": None}
+			{
+				"company": get_test_company(),
+				"place_of_destination": "Local",
+				"cargo_category": "Normal",
+				"c_and_f_company": None,
+			}
 		)
 
 		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
@@ -268,7 +320,12 @@ class TestStorageContract(FrappeTestCase):
 
 	def test_settings_windows_count_seven_free_and_seven_single_days(self):
 		container = frappe._dict(
-			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+			{
+				"company": get_test_company(),
+				"place_of_destination": "Local",
+				"cargo_category": "Normal",
+				"c_and_f_company": self.company,
+			}
 		)
 
 		counts = get_storage_day_counts(container)
@@ -310,7 +367,12 @@ class TestStorageContract(FrappeTestCase):
 		contract.submit()
 
 		container = frappe._dict(
-			{"company": get_test_company(), "place_of_destination": "Local", "c_and_f_company": self.company}
+			{
+				"company": get_test_company(),
+				"place_of_destination": "Local",
+				"cargo_category": "Normal",
+				"c_and_f_company": self.company,
+			}
 		)
 		self.assertEqual(get_storage_day_counts(container), SETTINGS_COUNTS)
 
@@ -324,7 +386,13 @@ def set_settings_storage_days():
 		for charge, (day_from, day_to) in SETTINGS_DAYS.items():
 			settings_doc.append(
 				"storage_days",
-				{"destination": destination, "charge": charge, "from": day_from, "to": day_to},
+				{
+					"destination": destination,
+					"cargo_category": "Normal",
+					"charge": charge,
+					"from": day_from,
+					"to": day_to,
+				},
 			)
 
 	settings_doc.save(ignore_permissions=True)
@@ -358,6 +426,7 @@ def container_with_dates(days, c_and_f_company=None, place_of_destination="Local
 	container = frappe.new_doc("Container")
 	container.company = get_test_company()
 	container.place_of_destination = place_of_destination
+	container.cargo_category = "Normal"
 	container.c_and_f_company = c_and_f_company
 	for _ in range(days):
 		container.append("container_dates", {"is_billable": 1, "is_free": 0})
@@ -372,6 +441,7 @@ def billable_container(c_and_f_company, days):
 		{
 			"company": get_test_company(),
 			"place_of_destination": "Local",
+			"cargo_category": "Normal",
 			"c_and_f_company": c_and_f_company,
 			"has_single_charge": 1,
 			"has_double_charge": 1,
@@ -410,6 +480,7 @@ def create_container(place_of_destination="Local"):
 			"company": get_test_company(),
 			"container_no": "_TESTCONT0001",
 			"place_of_destination": place_of_destination,
+			"cargo_category": "Normal",
 		}
 	)
 	container.name = "_TESTCONT0001"
@@ -453,13 +524,37 @@ def make_contract(c_and_f_company, **kwargs):
 	return contract
 
 
-def add_storage_days(contract, destinations=None, days=None):
+def add_settings_category_storage_days(cargo_category: str, destination: str = "Local"):
+	settings_doc = get_test_icd_setting()
+	for charge, (day_from, day_to) in SETTINGS_DAYS.items():
+		settings_doc.append(
+			"storage_days",
+			{
+				"destination": destination,
+				"cargo_category": cargo_category,
+				"charge": charge,
+				"from": day_from,
+				"to": day_to,
+			},
+		)
+
+	settings_doc.save(ignore_permissions=True)
+	frappe.clear_document_cache("ICD Setting", settings_doc.name)
+
+
+def add_storage_days(contract, destinations=None, days=None, cargo_category="Normal"):
 	for destination in destinations or DESTINATIONS:
 		for charge in STORAGE_CHARGES:
 			day_from, day_to = (days or CONTRACT_DAYS)[charge]
 			contract.append(
 				"storage_days",
-				{"destination": destination, "charge": charge, "from": day_from, "to": day_to},
+				{
+					"destination": destination,
+					"cargo_category": cargo_category,
+					"charge": charge,
+					"from": day_from,
+					"to": day_to,
+				},
 			)
 
 
