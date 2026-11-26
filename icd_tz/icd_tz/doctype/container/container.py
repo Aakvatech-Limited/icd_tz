@@ -31,6 +31,7 @@ class Container(Document):
 	def before_save(self):
 		self.validate_place_of_destination()
 		self.update_container_reception()
+		self.cargo_category = get_cargo_category(self)
 		self.update_billed_days()
 		self.update_billed_details()
 		self.set_reception_charge_flags()
@@ -106,11 +107,20 @@ class Container(Document):
 				"package_unit",
 				"volume_unit",
 				"weight_unit",
+				"plug_type_of_reefer",
+				"minimum_temperature",
+				"maximum_temperature",
 			],
 			as_dict=True,
 		)
 
 		if container_info:
+			if not self.plug_type_of_reefer:
+				self.plug_type_of_reefer = container_info.plug_type_of_reefer
+			if not self.minimum_temperature:
+				self.minimum_temperature = container_info.minimum_temperature
+			if not self.maximum_temperature:
+				self.maximum_temperature = container_info.maximum_temperature
 			if not self.type_of_container:
 				self.type_of_container = container_info.type_of_container
 			if not self.m_bl_no:
@@ -152,6 +162,7 @@ class Container(Document):
 
 				self.update(master_bl_info)
 
+				self.imdg_code = master_bl_info.imdg_code
 				self.abbr_for_destination = master_bl_info.place_of_destination
 				self.place_of_destination = place_of_destination
 				self.place_of_delivery = master_bl_info.place_of_delivery
@@ -169,7 +180,7 @@ class Container(Document):
 			self.append(
 				"container_dates",
 				{
-					"date": self.recieved_date,
+					"date": self.received_date,
 				},
 			)
 
@@ -264,8 +275,11 @@ class Container(Document):
 				del house_bl_info["modified"]
 				del house_bl_info["modified_by"]
 
+				master_bl_imdg_code = self.imdg_code
 				self.update(house_bl_info)
 
+				# the House BL code, else the code of the Master BL it is shipped under
+				self.imdg_code = house_bl_info.imdg_code or master_bl_imdg_code
 				country_code = str(house_bl_info.place_of_destination)[:2]
 				country_of_destination = frappe.db.get_value(
 					"Country", {"code": country_code.lower()}, "name"
@@ -307,7 +321,7 @@ class Container(Document):
 			self.append(
 				"container_dates",
 				{
-					"date": self.recieved_date,
+					"date": self.received_date,
 				},
 			)
 
@@ -514,6 +528,23 @@ class Container(Document):
 			row for row in self.container_dates if getdate(row.date) <= end_date or row.sales_invoice
 		]
 		self.update_container_stay(up_to_date=end_date)
+
+
+def get_cargo_category(container) -> str:
+	"""Dangerous when it has an IMDG Code, Reefer when it is plugged, otherwise Normal
+
+	The IMDG class is not read: every Dangerous container shares one set of prices and storage days.
+	"""
+
+	if (container.get("imdg_code") or "").strip():
+		return "Dangerous"
+
+	# TODO: identify OOG (out of gauge) cargo once its source on the manifest is known
+
+	if container.get("plug_type_of_reefer") == "Y":
+		return "Reefer"
+
+	return "Normal"
 
 
 @frappe.whitelist()

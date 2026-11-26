@@ -185,7 +185,12 @@ class ServiceOrder(Document):
 	def get_criteria_key(self, container) -> dict:
 		"""Criteria this container is matched on when a service is priced"""
 
-		return get_service_key(size=self.container_size, cargo_type=container.cargo_type, port=self.port)
+		return get_service_key(
+			size=self.container_size,
+			cargo_type=container.cargo_type,
+			port=self.port,
+			cargo_category=container.cargo_category,
+		)
 
 	@property
 	def unit_qty(self) -> float:

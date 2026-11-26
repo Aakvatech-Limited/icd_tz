@@ -392,6 +392,7 @@ def get_empty_container_services(m_bl_no: str) -> list:
 			size=container_doc.size,
 			cargo_type=container_doc.cargo_type,
 			port=container_doc.port_of_destination,
+			cargo_category=container_doc.cargo_category,
 		)
 
 		for service_type, days in (("Storage-Single", single_days), ("Storage-Double", double_days)):
@@ -562,6 +563,7 @@ def get_charged_item(container_doc, settings_doc, service_type: str) -> str:
 		size=container_doc.size,
 		cargo_type=container_doc.cargo_type,
 		port=container_doc.port_of_destination,
+		cargo_category=container_doc.cargo_category,
 	)
 	item_code = get_service_item(
 		settings_doc,
