@@ -8,6 +8,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint
 
+from icd_tz.icd_tz.api.contract import EMPTY_CARGO_CATEGORY
 from icd_tz.icd_tz.api.port_expenses import (
 	CRITERIA_FIELDS,
 	STORAGE_EXPENSE_TYPES,
@@ -24,6 +25,13 @@ class ICDSetting(Document):
 	def validate_storage_days(self):
 		storage_days = []
 		for row in self.storage_days:
+			if row.cargo_category == EMPTY_CARGO_CATEGORY and row.charge == "Double":
+				frappe.throw(
+					_(
+						"At Row#: {0}, Empty containers are charged one daily rate, set Free and Single only"
+					).format(row.idx)
+				)
+
 			d = {"destination": row.destination, "cargo_category": row.cargo_category, "charge": row.charge}
 			if d in storage_days:
 				frappe.throw(
