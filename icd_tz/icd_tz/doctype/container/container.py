@@ -506,6 +506,15 @@ class Container(Document):
 
 		self.save(ignore_permissions=True)
 
+	def set_container_stay_end(self, end_date):
+		"""Keep storage days up to end_date, dropping the uninvoiced days requested after it"""
+
+		end_date = getdate(end_date)
+		self.container_dates = [
+			row for row in self.container_dates if getdate(row.date) <= end_date or row.sales_invoice
+		]
+		self.update_container_stay(up_to_date=end_date)
+
 
 @frappe.whitelist()
 def get_place_of_destination(company: str | None = None) -> set:
