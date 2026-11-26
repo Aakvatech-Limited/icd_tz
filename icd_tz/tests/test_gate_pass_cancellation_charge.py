@@ -5,7 +5,14 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.sales_order import get_gatepass_cancellation_service
-from icd_tz.tests.test_container_income_refs import bill, get_container, insert, make_reception_containers
+from icd_tz.icd_tz.doctype.gate_pass.test_gate_pass import make_gate_pass
+from icd_tz.tests.test_container_income_refs import (
+	bill,
+	get_container,
+	insert,
+	make_reception_containers,
+	with_settings,
+)
 from icd_tz.tests.test_icd_services import services_settings, submit_invoice
 
 test_ignore = ["Company", "Cost Center"]
@@ -61,3 +68,30 @@ class TestGatePassCancellationCharge(FrappeTestCase):
 		submit_invoice(CANCELLATION_ITEM, container_id, name="_T-G-2")
 
 		self.assertEqual(get_container(container_id).g_sales_invoice, "_T-G-1,_T-G-2")
+
+
+class TestGatePassCancellationCheck(FrappeTestCase):
+	"""A Gate Pass waits for every cancellation charge to be invoiced"""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def pending_message(self, cancellations: int, billed_qty: int = 0) -> str:
+		container_id = TestGatePassCancellationCharge.cancelled_container(self, cancellations)
+		if billed_qty:
+			frappe.db.set_value("Container", container_id, "g_sales_invoice", "_T-G-1")
+			bill("_T-G-1", container_id, CANCELLATION_ITEM, qty=billed_qty)
+
+		gate_pass = make_gate_pass(frappe.get_doc("Container", container_id))
+		with with_settings(services_settings()):
+			msg, _ = gate_pass.validate_container_charges()
+		return msg
+
+	def test_an_uninvoiced_cancellation_holds_the_gate_pass(self):
+		self.assertIn("Gate Pass Cancellation Charges", self.pending_message(1))
+
+	def test_a_second_cancellation_is_owed_after_the_first_is_invoiced(self):
+		self.assertIn("Gate Pass Cancellation Charges", self.pending_message(2, billed_qty=1))
+
+	def test_every_cancellation_invoiced_lets_the_gate_pass_through(self):
+		self.assertNotIn("Gate Pass Cancellation Charges", self.pending_message(2, billed_qty=2))
