@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "destination",
+  "cargo_category",
   "charge",
   "from",
   "to"
@@ -17,6 +18,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Place of Destination"
+  },
+  {
+   "fieldname": "cargo_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cargo Category",
+   "mandatory_depends_on": "eval: doc.destination",
+   "options": "\nNormal\nDangerous\nOOG\nReefer"
   },
   {
    "fieldname": "from",
@@ -44,7 +53,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-03 15:00:14.492784",
+ "modified": "2026-11-26 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Settings Detail",
