@@ -2,7 +2,7 @@ from time import sleep
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, get_link_to_form, nowdate
+from frappe.utils import cint, flt, get_link_to_form, getdate, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import get_container_dimensions
 from icd_tz.icd_tz.api.contract import get_selling_price_list, get_storage_day_counts
@@ -20,6 +20,18 @@ from icd_tz.icd_tz.doctype.waiver_request.waiver_request import apply_approved_w
 def before_save(doc, method):
 	validate_lcl_gross_volume(doc)
 	validate_qty_storage_item(doc)
+	if doc.has_value_changed("delivery_date"):
+		validate_storage_delivery_date(doc)
+
+
+def validate_storage_delivery_date(doc):
+	"""Storage days are billed up to the delivery date, which cannot be in the past"""
+
+	if not doc.m_bl_no and not doc.h_bl_no:
+		return
+
+	if getdate(doc.delivery_date) < getdate(nowdate()):
+		frappe.throw(_("Delivery Date cannot be before today, Change it back to Current Date"))
 
 
 def before_submit(doc, method):
@@ -147,6 +159,7 @@ def unlink_sales_order(doc):
 @frappe.whitelist()
 def update_items_on_sales_order(doc_name: str):
 	doc = frappe.get_doc("Sales Order", doc_name)
+	validate_storage_delivery_date(doc)
 
 	items = []
 	unique_containers = []
@@ -156,7 +169,7 @@ def update_items_on_sales_order(doc_name: str):
 
 	for container_id in unique_containers:
 		container_doc = frappe.get_doc("Container", container_id)
-		container_doc.update_container_stay(up_to_date=doc.delivery_date)
+		container_doc.set_container_stay_end(doc.delivery_date)
 		container_doc.reload()
 
 	sleep(10)
