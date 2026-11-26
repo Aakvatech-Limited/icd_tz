@@ -11,6 +11,7 @@ from frappe.utils import add_days, create_batch, getdate, nowdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import build_dimension_name
 from icd_tz.icd_tz.api.port_expenses import (
+	get_cargo_type,
 	get_charge_of_day,
 	get_port_storage_bands,
 	is_band_configured,
@@ -182,14 +183,24 @@ def update_port_storage_days(manifest=None):
 		containers_by_company[container.company].append(container)
 
 	receipt_dates = get_icd_receipt_dates({container.manifest for container in containers})
+	cargo_types = get_bill_cargo_types({container.master_bl for container in containers})
 	for company, company_containers in containers_by_company.items():
-		bands = get_configured_port_storage_bands(company)
-		if bands:
-			append_company_storage_days(company_containers, bands, receipt_dates)
+		settings_doc = get_port_storage_setting(company)
+		if settings_doc:
+			append_company_storage_days(company_containers, settings_doc, receipt_dates, cargo_types)
 
 
-def get_configured_port_storage_bands(company: str | None) -> dict:
-	"""Port storage bands of the company, or nothing while its days cannot be counted
+def get_bill_cargo_types(master_bls: set) -> dict:
+	"""Local or Transit of each ICD Master BL, from its cargo classification"""
+
+	rows = frappe.get_all(
+		"ICD Master BL", filters={"name": ("in", list(master_bls))}, fields=["name", "cargo_classification"]
+	)
+	return {row.name: get_cargo_type(row.cargo_classification) for row in rows}
+
+
+def get_port_storage_setting(company: str | None):
+	"""ICD Setting of the company, or nothing while its port storage days cannot be counted
 
 	Counting against a half configured band set would leave the uncovered days out, and
 	the page refuses to price in the same state. One company is skipped, not the run.
@@ -202,25 +213,35 @@ def get_configured_port_storage_bands(company: str | None) -> dict:
 			reference_doctype="Company" if company else None,
 			reference_name=company,
 		)
-		return {}
+		return None
 
 	settings_doc = get_icd_setting(company)
-	bands = get_port_storage_bands(settings_doc)
-	if not bands or not all(is_band_configured(row) for row in settings_doc.port_storage_days):
+	if not settings_doc.port_storage_days or not all(
+		is_band_configured(row) for row in settings_doc.port_storage_days
+	):
 		frappe.log_error(
 			title="Port storage days not counted",
 			message=f"Set the From and To days of the Port Storage Days on the Expenses tab of the ICD Setting of {company}.",
 			reference_doctype="ICD Setting",
 			reference_name=settings_doc.name,
 		)
-		return {}
+		return None
 
-	return bands
+	return settings_doc
 
 
-def append_company_storage_days(containers: list, bands: dict, receipt_dates: dict):
+def append_company_storage_days(containers: list, settings_doc, receipt_dates: dict, cargo_types: dict):
+	"""Count each container on the bands of its cargo type, a cargo type without bands is skipped"""
+
+	unbanded = defaultdict(list)
 	for batch in create_batch(containers, BATCH_SIZE):
 		for container in batch:
+			cargo_type = cargo_types.get(container.master_bl)
+			bands = get_port_storage_bands(settings_doc, cargo_type) if cargo_type else {}
+			if not bands:
+				unbanded[cargo_type].append(container.name)
+				continue
+
 			try:
 				end_date = receipt_dates.get((container.manifest, container.container_no)) or nowdate()
 				append_storage_days(container.name, bands, container.ship_dc_date, end_date)
@@ -229,6 +250,25 @@ def append_company_storage_days(containers: list, bands: dict, receipt_dates: di
 				frappe.log_error(title=f"{container.name}: Port Storage Days", message=frappe.get_traceback())
 
 		commit_progress()
+
+	log_unbanded_containers(settings_doc, unbanded)
+
+
+def log_unbanded_containers(settings_doc, unbanded: dict):
+	"""One Error Log per cargo type the run could not count, naming its containers"""
+
+	for cargo_type, names in unbanded.items():
+		reason = (
+			f"Set the {cargo_type} Port Storage Days on the Expenses tab of the ICD Setting of {settings_doc.company}."
+			if cargo_type
+			else "Their bill of lading has no IM or TR cargo classification."
+		)
+		frappe.log_error(
+			title="Port storage days not counted",
+			message=f"{reason} Containers: {', '.join(names)}",
+			reference_doctype="ICD Setting",
+			reference_name=settings_doc.name,
+		)
 
 
 def get_containers_for_storage_days(manifest=None) -> list:
@@ -251,7 +291,7 @@ def get_containers_for_storage_days(manifest=None) -> list:
 	return frappe.get_all(
 		"ICD Container",
 		filters=filters,
-		fields=["name", "company", "manifest", "container_no", "ship_dc_date"],
+		fields=["name", "company", "manifest", "container_no", "ship_dc_date", "master_bl"],
 		order_by="creation asc",
 	)
 
