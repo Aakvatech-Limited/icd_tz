@@ -162,6 +162,7 @@ GATE_PASS_CANCELLATION = ContainerService(
 	CONTAINER,
 	settings_item_field="gatepass_cancellation_item",
 	on_service_order=False,
+	count_property="cancelled_gate_pass_count",
 )
 
 # Order matters: an item set on two services goes to the first, and Service Order lines follow it
