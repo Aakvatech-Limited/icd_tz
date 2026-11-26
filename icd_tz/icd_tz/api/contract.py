@@ -132,15 +132,37 @@ def get_storage_day_counts(container_doc) -> dict:
 	)
 	if contract.get("is_storage_days_based"):
 		source = frappe.get_cached_doc("Contract", contract["name"])
+		source_label = _("Contract {0}").format(contract["name"])
 	else:
 		source = get_icd_setting(container_doc.company)
+		source_label = _("the ICD Setting")
 
 	counts = dict.fromkeys(STORAGE_CHARGES, 0)
-	for row in source.storage_days:
-		if row.destination == container_doc.place_of_destination and row.charge in counts:
+	for row in get_category_storage_rows(source, container_doc, source_label):
+		if row.charge in counts:
 			counts[row.charge] = row.get("to") - row.get("from") + 1
 
 	return counts
+
+
+def get_category_storage_rows(source, container_doc, source_label: str) -> list:
+	"""Storage rows of the container destination for its cargo category, a blank category matches any
+
+	A destination set up only for other cargo categories stops here, so its missing rows get added.
+	"""
+
+	rows = [row for row in source.storage_days if row.destination == container_doc.place_of_destination]
+	category = container_doc.get("cargo_category")
+	category_rows = [row for row in rows if not row.get("cargo_category") or row.cargo_category == category]
+	if rows and not category_rows:
+		frappe.throw(
+			_("Storage Days for {0} cargo to {1} is not set in {2}, Please set it to continue").format(
+				frappe.bold(category), frappe.bold(container_doc.place_of_destination), source_label
+			),
+			title=_("Storage Days Not Configured"),
+		)
+
+	return category_rows
 
 
 def validate_contract_period(doc):
@@ -204,8 +226,12 @@ def validate_storage_days(doc):
 	defined_rows = set()
 	for row in doc.storage_days:
 		# this runs before the framework mandatory check, so report an empty row plainly
-		if not row.destination or not row.charge:
-			frappe.throw(_("At Row#: {0}, Place of Destination and Charge are mandatory").format(row.idx))
+		if not row.destination or not row.cargo_category or not row.charge:
+			frappe.throw(
+				_("At Row#: {0}, Place of Destination, Cargo Category and Charge are mandatory").format(
+					row.idx
+				)
+			)
 
 		if row.destination not in destinations:
 			frappe.throw(
@@ -219,20 +245,24 @@ def validate_storage_days(doc):
 				_("At Row#: {0}, From must be 1 or more and To must not be less than From").format(row.idx)
 			)
 
-		if (row.destination, row.charge) in defined_rows:
+		if (row.destination, row.cargo_category, row.charge) in defined_rows:
 			frappe.throw(
-				_("At Row#: {0}, {1} with charge {2} already exists").format(
-					row.idx, frappe.bold(row.destination), frappe.bold(row.charge)
+				_("At Row#: {0}, {1} for {2} cargo with charge {3} already exists").format(
+					row.idx,
+					frappe.bold(row.destination),
+					frappe.bold(row.cargo_category),
+					frappe.bold(row.charge),
 				)
 			)
 
-		defined_rows.add((row.destination, row.charge))
+		defined_rows.add((row.destination, row.cargo_category, row.charge))
 
+	# the contract covers every destination and cargo category the ICD Setting stores
 	missing_rows = [
-		f"{destination} ({charge})"
-		for destination in sorted(destinations)
+		f"{destination} {category or ''} ({charge})"
+		for destination, category in sorted(get_settings_storage_keys(doc.company), key=str)
 		for charge in STORAGE_CHARGES
-		if (destination, charge) not in defined_rows
+		if (destination, category, charge) not in defined_rows
 	]
 	if missing_rows:
 		frappe.throw(
@@ -242,6 +272,11 @@ def validate_storage_days(doc):
 
 
 def get_settings_destinations(company: str) -> set:
-	settings_doc = get_icd_setting(company)
+	return {destination for destination, _category in get_settings_storage_keys(company)}
 
-	return {row.destination for row in settings_doc.storage_days if row.destination}
+
+def get_settings_storage_keys(company: str) -> set:
+	"""Destination and cargo category pairs the ICD Setting stores storage days for"""
+
+	settings_doc = get_icd_setting(company)
+	return {(row.destination, row.cargo_category) for row in settings_doc.storage_days if row.destination}
