@@ -133,6 +133,7 @@ class TestGatePassServiceCharges(FrappeTestCase):
 			},
 		)
 		book(mbl)
+		insert("Gate Pass", container_id=mbl, docstatus=2)
 		gate_pass = make_gate_pass(frappe.get_doc("Container", mbl))
 
 		with self.assertRaises(frappe.ValidationError) as error:

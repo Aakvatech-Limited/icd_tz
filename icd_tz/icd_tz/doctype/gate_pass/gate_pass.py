@@ -196,12 +196,29 @@ class GatePass(Document):
 		msg = ""
 		invoices = []
 		for service in get_scope_services(scope):
-			if service.is_payment_pending(self.container_charges, cargo_type):
+			if service is GATE_PASS_CANCELLATION:
+				is_pending = self.has_unbilled_cancellation
+			else:
+				is_pending = service.is_payment_pending(self.container_charges, cargo_type)
+
+			if is_pending:
 				msg += f"<li>{service.label} Charges</li>"
 
 			invoices += service.get_invoices(self.container_charges)
 
 		return msg, invoices
+
+	@cached_property
+	def has_unbilled_cancellation(self) -> bool:
+		"""A cancelled Gate Pass of the container whose charge no invoice has billed yet
+
+		Its invoice field keeps the earlier paid invoices, so it cannot tell a second cancellation apart.
+		"""
+
+		container = frappe.get_doc("Container", self.container_id)
+		return (
+			GATE_PASS_CANCELLATION.get_unbilled_qty(container, get_icd_setting(self.company), unit_qty=1) > 0
+		)
 
 	def update_container_status(self, status="Delivered"):
 		if not self.container_id:
