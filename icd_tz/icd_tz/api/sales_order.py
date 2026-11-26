@@ -563,9 +563,10 @@ def get_charged_item(container_doc, settings_doc, service_type: str) -> str:
 
 
 def get_gatepass_cancellation_service(container_doc, settings_doc, container_refs: dict):
-	"""Charge row for a container whose Gate Pass was cancelled and is not yet invoiced"""
+	"""Charge row for each cancelled Gate Pass of a container that is not yet invoiced"""
 
-	if not GATE_PASS_CANCELLATION.is_payment_pending(container_doc):
+	qty = GATE_PASS_CANCELLATION.get_unbilled_qty(container_doc, settings_doc, unit_qty=1)
+	if qty <= 0:
 		return {}
 
 	if not settings_doc.gatepass_cancellation_item:
@@ -573,7 +574,7 @@ def get_gatepass_cancellation_service(container_doc, settings_doc, container_ref
 
 	return {
 		"item_code": settings_doc.gatepass_cancellation_item,
-		"qty": 1,
+		"qty": qty,
 		**container_refs,
 	}
 

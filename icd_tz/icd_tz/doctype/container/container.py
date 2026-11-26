@@ -428,6 +428,12 @@ class Container(Document):
 		)
 		return max(inspections, 1)
 
+	@property
+	def cancelled_gate_pass_count(self) -> int:
+		"""Each cancelled Gate Pass of this container is charged once"""
+
+		return frappe.db.count("Gate Pass", {"container_id": self.name, "docstatus": 2})
+
 	def get_billed_qty(self, invoice_field: str, item_codes: list) -> float:
 		"""Quantity of the items this container was billed on the invoices of a field"""
 
