@@ -29,10 +29,12 @@
   "column_break_gwgiu",
   "size",
   "cargo_type",
+  "cargo_category",
+  "imdg_code",
   "container_count",
+  "minimum_temperature",
   "is_empty_container",
   "has_hbl",
-  "minimum_temperature",
   "cargo_details_section",
   "consignee",
   "sline",
@@ -698,6 +700,20 @@
    "search_index": 1
   },
   {
+   "fieldname": "cargo_category",
+   "fieldtype": "Select",
+   "label": "Cargo Category",
+   "options": "\nNormal\nDangerous\nOOG\nReefer",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "imdg_code",
+   "fieldtype": "Data",
+   "label": "IMDG Code",
+   "read_only": 1
+  },
+  {
    "fieldname": "container_count",
    "fieldtype": "Data",
    "label": "Container Count",
@@ -898,7 +914,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-14 18:12:38.346794",
+ "modified": "2026-11-26 13:28:51.744216",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",

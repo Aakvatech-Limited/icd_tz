@@ -9,6 +9,7 @@
   "service_type",
   "service_name",
   "column_break_uskn",
+  "cargo_category",
   "size",
   "cargo_type",
   "port"
@@ -35,6 +36,15 @@
   {
    "fieldname": "column_break_uskn",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cargo_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cargo Category",
+   "options": "\nNormal\nDangerous\nOOG\nReefer",
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "size",
@@ -65,7 +75,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-13 17:46:47.270706",
+ "modified": "2026-11-26 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Loose Detail",
