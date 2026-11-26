@@ -8,6 +8,8 @@ from icd_tz.icd_tz.api.utils import get_icd_setting
 CF_PARTY_TYPE = "Clearing and Forwarding Company"
 SUPPLIER_PARTY_TYPE = "Supplier"
 STORAGE_CHARGES = ("Free", "Single", "Double")
+# an unpacked empty box, billed to its shipping line at one daily storage rate
+EMPTY_CARGO_CATEGORY = "Empty"
 
 
 def before_validate(doc, method):
@@ -124,12 +126,15 @@ def get_storage_day_counts(container_doc) -> dict:
 	"""Free, Single and Double day counts for the container place of destination
 
 	An active storage days based contract of the container C&F company wins over the ICD Setting of
-	the container company.
+	the container company. An empty box is billed to its shipping line, so no C&F contract applies.
 	"""
 
-	contract = get_active_contract(
-		CF_PARTY_TYPE, container_doc.get("c_and_f_company"), company=container_doc.company
-	)
+	contract = {}
+	if not container_doc.get("is_empty_container"):
+		contract = get_active_contract(
+			CF_PARTY_TYPE, container_doc.get("c_and_f_company"), company=container_doc.company
+		)
+
 	if contract.get("is_storage_days_based"):
 		source = frappe.get_cached_doc("Contract", contract["name"])
 		source_label = _("Contract {0}").format(contract["name"])
@@ -272,11 +277,17 @@ def validate_storage_days(doc):
 
 
 def get_settings_destinations(company: str) -> set:
-	return {destination for destination, _category in get_settings_storage_keys(company)}
+	settings_doc = get_icd_setting(company)
+
+	return {row.destination for row in settings_doc.storage_days if row.destination}
 
 
 def get_settings_storage_keys(company: str) -> set:
-	"""Destination and cargo category pairs the ICD Setting stores storage days for"""
+	"""Destination and cargo category pairs a C&F contract covers, the empty box category is never one"""
 
 	settings_doc = get_icd_setting(company)
-	return {(row.destination, row.cargo_category) for row in settings_doc.storage_days if row.destination}
+	return {
+		(row.destination, row.cargo_category)
+		for row in settings_doc.storage_days
+		if row.destination and row.cargo_category != EMPTY_CARGO_CATEGORY
+	}
