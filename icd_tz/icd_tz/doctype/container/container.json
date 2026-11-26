@@ -703,7 +703,7 @@
    "fieldname": "cargo_category",
    "fieldtype": "Select",
    "label": "Cargo Category",
-   "options": "\nNormal\nDangerous\nOOG\nReefer",
+   "options": "\nNormal\nDangerous\nOOG\nReefer\nEmpty",
    "read_only": 1,
    "search_index": 1
   },
@@ -914,7 +914,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-26 13:28:51.744216",
+ "modified": "2026-11-26 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "Container",
