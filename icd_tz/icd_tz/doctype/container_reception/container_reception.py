@@ -11,7 +11,11 @@ from frappe.utils.background_jobs import enqueue
 from icd_tz.icd_tz.api.edi.codeco import attach_gate_in
 from icd_tz.icd_tz.api.edi.delivery import queue_delivery
 from icd_tz.icd_tz.api.transport_charges import validate_reception_transport_unpaid
-from icd_tz.icd_tz.api.utils import get_icd_setting, validate_delivered_containers
+from icd_tz.icd_tz.api.utils import (
+	get_country_of_destination,
+	get_icd_setting,
+	validate_delivered_containers,
+)
 from icd_tz.icd_tz.doctype.container.container import daily_update_date_container_stay
 from icd_tz.icd_tz.doctype.icd_container.icd_container import PENDING_STATUS, RECEIVED_STATUS
 
@@ -450,6 +454,6 @@ def get_destination_details(abbr_for_destination: str | None) -> dict:
 
 	return {
 		"abbr_for_destination": abbr_for_destination,
-		"country_of_destination": frappe.get_cached_value("Country", {"code": country_code.lower()}, "name"),
+		"country_of_destination": get_country_of_destination(abbr_for_destination),
 		"place_of_destination": place_of_destination,
 	}
