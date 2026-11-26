@@ -8,7 +8,11 @@ from erpnext import get_default_company
 from frappe.model.document import Document
 from frappe.utils import add_days, create_batch, getdate, nowdate
 
-from icd_tz.icd_tz.api.contract import get_settings_destinations, get_storage_day_counts
+from icd_tz.icd_tz.api.contract import (
+	EMPTY_CARGO_CATEGORY,
+	get_settings_destinations,
+	get_storage_day_counts,
+)
 from icd_tz.icd_tz.api.icd_services import RECEPTION, get_scope_services
 from icd_tz.icd_tz.api.utils import (
 	DELIVERED_CONTAINER_STATUSES,
@@ -531,10 +535,14 @@ class Container(Document):
 
 
 def get_cargo_category(container) -> str:
-	"""Dangerous when it has an IMDG Code, Reefer when it is plugged, otherwise Normal
+	"""Empty for an unpacked box, Dangerous when it has an IMDG Code, Reefer when plugged, else Normal
 
+	An empty box keeps the IMDG Code of its bill of lading but carries no goods, so Empty wins.
 	The IMDG class is not read: every Dangerous container shares one set of prices and storage days.
 	"""
+
+	if container.get("is_empty_container"):
+		return EMPTY_CARGO_CATEGORY
 
 	if (container.get("imdg_code") or "").strip():
 		return "Dangerous"
