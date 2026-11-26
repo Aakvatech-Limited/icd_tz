@@ -6,11 +6,20 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "cargo_type",
   "charge",
   "from",
   "to"
  ],
  "fields": [
+  {
+   "fieldname": "cargo_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cargo Type",
+   "options": "\nLocal\nTransit",
+   "reqd": 1
+  },
   {
    "fieldname": "charge",
    "fieldtype": "Select",
@@ -37,7 +46,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-22 09:00:00.000000",
+ "modified": "2026-11-26 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD TZ Port Storage Detail",
