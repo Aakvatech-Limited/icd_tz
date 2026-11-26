@@ -208,6 +208,7 @@ class TestServiceOrderServiceLines(FrappeTestCase):
 			has_cancellation_charge=1,
 		)
 		book(mbl)
+		insert("Gate Pass", container_id=mbl, docstatus=2)
 
 		services = [service for service, _ in self.get_services(mbl)]
 
