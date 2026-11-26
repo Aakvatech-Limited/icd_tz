@@ -5,7 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, getdate, nowdate
 
-from icd_tz.icd_tz.api.sales_order import validate_storage_delivery_date
+from icd_tz.icd_tz.api.sales_order import validate_storage_billed_to_today, validate_storage_delivery_date
 from icd_tz.tests.test_container_income_refs import make_reception_containers, with_settings
 from icd_tz.tests.test_icd_services import services_settings
 
@@ -72,3 +72,56 @@ class TestStorageDeliveryDate(FrappeTestCase):
 
 	def test_an_order_without_a_bill_of_lading_is_not_checked(self):
 		validate_storage_delivery_date(self.order(-1))
+
+
+class TestStorageBilledToToday(FrappeTestCase):
+	"""A Sales Order is submitted only with its storage billed up to today"""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def container(self, last_offset: int, **values):
+		mbl, _ = make_reception_containers(cargo_type="Local")
+		container = frappe.get_doc("Container", mbl)
+		container.container_dates = []
+		for offset in range(-2, last_offset + 1):
+			container.append("container_dates", {"date": day(offset)})
+
+		with with_settings(services_settings()):
+			container.save(ignore_permissions=True)
+		if values:
+			frappe.db.set_value("Container", mbl, values)
+		return container.name
+
+	def order(self, delivery_offset: int, *container_ids, **values):
+		order = frappe.new_doc("Sales Order")
+		order.update({"m_bl_no": "_T-MBL", "h_bl_no": None, "delivery_date": day(delivery_offset), **values})
+		for container_id in container_ids:
+			order.append("items", {"container_id": container_id})
+		return order
+
+	def test_storage_ending_today_is_submitted(self):
+		validate_storage_billed_to_today(self.order(0, self.container(0)))
+
+	def test_a_delivery_date_other_than_today_is_refused(self):
+		container_id = self.container(0)
+		for offset in (2, -1):
+			with self.assertRaises(frappe.ValidationError, msg=offset):
+				validate_storage_billed_to_today(self.order(offset, container_id))
+
+	def test_future_storage_days_on_the_container_are_refused(self):
+		with self.assertRaises(frappe.ValidationError) as error:
+			validate_storage_billed_to_today(self.order(0, self.container(3)))
+
+		self.assertIn("Update Items", str(error.exception))
+
+	def test_storage_not_counted_up_to_today_is_refused(self):
+		self.assertRaises(
+			frappe.ValidationError, validate_storage_billed_to_today, self.order(0, self.container(-1))
+		)
+
+	def test_a_delivered_container_is_not_checked(self):
+		validate_storage_billed_to_today(self.order(0, self.container(3, status="Delivered")))
+
+	def test_an_order_without_a_bill_of_lading_is_not_checked(self):
+		validate_storage_billed_to_today(self.order(5, self.container(3), m_bl_no=None))
