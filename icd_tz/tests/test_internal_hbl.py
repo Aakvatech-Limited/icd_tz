@@ -21,6 +21,7 @@ from icd_tz.tests.test_port_expenses import (
 	make_buying_price_list,
 	make_expense_item,
 	set_expense_settings,
+	set_levy_countries,
 )
 from icd_tz.tests.test_port_expenses import M_BL_NO as EXPENSE_M_BL_NO
 from icd_tz.tests.test_port_expenses import make_manifest as make_expense_manifest
@@ -291,10 +292,21 @@ class TestSharedBoxPortExpenses(FrappeTestCase):
 			make_expense_item(item_code, RATES[expense_type])
 
 		set_expense_settings()
+		set_levy_countries(["Rwanda"])
 		manifest = make_expense_manifest()
 		manifest.containers[0].freight_indicator = "LCL"
-		for m_bl_no, cargo_classification in (("SHARED-BL-T", "TR"), ("SHARED-BL-L", "IM")):
-			manifest.append("master_bl", {"m_bl_no": m_bl_no, "cargo_classification": cargo_classification})
+		for m_bl_no, cargo_classification, place_of_destination in (
+			("SHARED-BL-T", "TR", "RWKGL"),
+			("SHARED-BL-L", "IM", "TZDAR"),
+		):
+			manifest.append(
+				"master_bl",
+				{
+					"m_bl_no": m_bl_no,
+					"cargo_classification": cargo_classification,
+					"place_of_destination": place_of_destination,
+				},
+			)
 			manifest.append(
 				"containers",
 				{

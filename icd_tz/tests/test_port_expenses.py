@@ -111,6 +111,25 @@ class TestPortExpenses(FrappeTestCase):
 		self.assertEqual(levy["qty"], 0)
 		self.assertEqual(levy["amount"], 0)
 
+	def get_levy_qty(self, place_of_destination):
+		frappe.db.set_value(
+			"ICD Master BL", {"manifest": self.manifest.name}, "place_of_destination", place_of_destination
+		)
+		return get_row(get_expense_rows(self.manifest.name, PRICE_LIST), "Levy")["qty"]
+
+	def test_the_levy_is_charged_only_for_a_corridor_levy_country(self):
+		set_levy_countries(["Rwanda"])
+		set_cargo_classification(self.manifest.name, "TR")
+
+		for place_of_destination, qty in (("RWKGL", 2), ("MWLLW", 0), ("TZDAR", 0)):
+			self.assertEqual(self.get_levy_qty(place_of_destination), qty, place_of_destination)
+
+	def test_no_levy_is_charged_without_corridor_levy_countries(self):
+		set_levy_countries([])
+		set_cargo_classification(self.manifest.name, "TR")
+
+		self.assertEqual(self.get_levy_qty("RWKGL"), 0)
+
 	def test_a_transport_row_never_reaches_the_page(self):
 		"""The transporter bills transport, the port does not"""
 
@@ -973,6 +992,16 @@ def set_discharge_date(manifest, container_no, discharge_date):
 	frappe.db.set_value(
 		"ICD Container", get_container(manifest, container_no), "ship_dc_date", discharge_date
 	)
+
+
+def set_levy_countries(countries: list):
+	settings_doc = get_test_icd_setting()
+	settings_doc.countries = []
+	for country in countries:
+		settings_doc.append("countries", {"country": country})
+	settings_doc.flags.ignore_mandatory = True
+	settings_doc.save()
+	frappe.clear_cache(doctype="ICD Setting")
 
 
 def set_cargo_classification(manifest, cargo_classification):
