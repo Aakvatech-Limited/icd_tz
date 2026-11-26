@@ -7,12 +7,24 @@ from icd_tz.icd_tz.doctype.container.container import get_cargo_category
 
 
 def execute():
-	"""Fill the IMDG Code and reefer plug of every container not Delivered, then their Cargo Category"""
+	"""Fill the IMDG Code and reefer plug of every container not Delivered, then their Cargo Category
+
+	Safe to run again: an unpacked empty box becomes Empty, the rest are worked out afresh.
+	"""
 
 	containers = frappe.get_all(
 		"Container",
 		filters={"status": ["!=", "Delivered"]},
-		fields=["name", "manifest", "m_bl_no", "h_bl_no", "has_hbl", "container_no", "plug_type_of_reefer"],
+		fields=[
+			"name",
+			"manifest",
+			"m_bl_no",
+			"h_bl_no",
+			"has_hbl",
+			"container_no",
+			"plug_type_of_reefer",
+			"is_empty_container",
+		],
 	)
 	master_codes = get_imdg_codes("Master BL", "m_bl_no")
 	house_codes = get_imdg_codes("House BL", "h_bl_no")
