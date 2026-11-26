@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from icd_tz.icd_tz.api.port_expenses import EXPENSE_TYPES, FREE_CHARGE, STORAGE_EXPENSE_TYPES
+from icd_tz.patches import set_port_storage_cargo_type
 from icd_tz.tests.utils import get_test_icd_setting
 
 ITEM = "_Test ICD Settings Expense Item"
@@ -109,6 +110,44 @@ class TestPortExpenseSettings(FrappeTestCase):
 		self.settings_doc.save()
 
 		self.assertEqual(len(self.settings_doc.port_storage_days), 3)
+
+	def append_cargo_bands(self, cargo_type, bands):
+		for charge, from_day, to_day in bands:
+			self.settings_doc.append(
+				"port_storage_days",
+				{"cargo_type": cargo_type, "charge": charge, "from": from_day, "to": to_day},
+			)
+
+	def test_local_and_transit_each_have_their_own_bands(self):
+		self.append_cargo_bands("Local", (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 999999)))
+		self.append_cargo_bands("Transit", (("Free", 1, 15), ("Single", 16, 22), ("Double", 23, 999999)))
+
+		self.settings_doc.save()
+
+	def test_a_charge_repeated_within_one_cargo_type_is_rejected(self):
+		self.append_cargo_bands("Local", (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 999999)))
+		self.append_cargo_bands("Local", (("Single", 13, 20),))
+
+		self.assertRaises(frappe.ValidationError, self.settings_doc.save)
+
+	def test_a_gap_in_the_transit_bands_is_rejected(self):
+		self.append_cargo_bands("Local", (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 999999)))
+		self.append_cargo_bands("Transit", (("Free", 1, 15), ("Single", 18, 22), ("Double", 23, 999999)))
+
+		self.assertRaises(frappe.ValidationError, self.settings_doc.save)
+
+	def test_the_patch_makes_the_existing_bands_local(self):
+		add_bands(self.settings_doc)
+		self.settings_doc.save()
+
+		set_port_storage_cargo_type.execute()
+
+		self.assertEqual(
+			frappe.get_all(
+				"ICD TZ Port Storage Detail", {"parent": self.settings_doc.name}, pluck="cargo_type"
+			),
+			["Local"] * 3,
+		)
 
 
 def add_bands(settings_doc):
