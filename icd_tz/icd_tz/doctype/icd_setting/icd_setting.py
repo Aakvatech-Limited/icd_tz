@@ -1,6 +1,7 @@
 # Copyright (c) 2024, elius mgani and contributors
 # For license information, please see license.txt
 
+from collections import defaultdict
 from itertools import pairwise
 
 import frappe
@@ -56,74 +57,85 @@ class ICDSetting(Document):
 			defined_keys.add(key)
 
 	def validate_port_storage_days(self):
-		"""One band per charge, each covering a real range of days"""
+		"""Each cargo type has its own band set, checked on its own"""
 
-		defined_bands = set()
+		rows_by_cargo_type = defaultdict(list)
 		for row in self.port_storage_days:
-			# a seeded row carries only the charge until its days are confirmed, and
-			# must not hold every other setting on this page hostage meanwhile
-			if not row.get("from") and not row.get("to"):
-				defined_bands.add(row.charge)
-				continue
+			rows_by_cargo_type[row.get("cargo_type") or ""].append(row)
 
-			if cint(row.get("from")) < 1 or cint(row.get("to")) < cint(row.get("from")):
-				frappe.throw(
-					_("At Row#: {0}, From must be 1 or more and To must not be less than From").format(
-						row.idx
-					)
-				)
+		for cargo_type, rows in rows_by_cargo_type.items():
+			validate_port_storage_band_set(cargo_type, rows)
+			validate_port_storage_bands_cover_every_day(cargo_type, rows)
 
-			if row.charge in defined_bands:
-				frappe.throw(
-					_("At Row#: {0}, charge {1} already exists").format(row.idx, frappe.bold(row.charge))
-				)
 
+def validate_port_storage_band_set(cargo_type: str, rows: list):
+	"""One band per charge, each covering a real range of days"""
+
+	defined_bands = set()
+	for row in rows:
+		# a seeded row carries only the charge until its days are confirmed, and
+		# must not hold every other setting on this page hostage meanwhile
+		if not row.get("from") and not row.get("to"):
 			defined_bands.add(row.charge)
+			continue
 
-		# only one band set would silently price the other charge at zero days
-		missing = [charge for charge in STORAGE_EXPENSE_TYPES.values() if charge not in defined_bands]
-		if defined_bands and missing:
+		if cint(row.get("from")) < 1 or cint(row.get("to")) < cint(row.get("from")):
 			frappe.throw(
-				_("Port Storage Days is missing a row for: {0}").format(frappe.bold(", ".join(missing))),
-				title=_("Incomplete Port Storage Days"),
+				_("At Row#: {0}, From must be 1 or more and To must not be less than From").format(row.idx)
 			)
 
-		self.validate_port_storage_bands_cover_every_day()
+		if row.charge in defined_bands:
+			frappe.throw(
+				_("At Row#: {0}, {1} charge {2} already exists").format(
+					row.idx, cargo_type, frappe.bold(row.charge)
+				)
+			)
 
-	def validate_port_storage_bands_cover_every_day(self):
-		"""The bands must run from day one without a gap or an overlap
+		defined_bands.add(row.charge)
 
-		A day two bands cover would be charged whichever was read first, and a day
-		no band covers is never recorded at all, so the stay would quietly lose it.
-		"""
-
-		bands = sorted(
-			(row for row in self.port_storage_days if is_band_configured(row)),
-			key=lambda row: cint(row.get("from")),
+	# only one band set would silently price the other charge at zero days
+	missing = [charge for charge in STORAGE_EXPENSE_TYPES.values() if charge not in defined_bands]
+	if defined_bands and missing:
+		frappe.throw(
+			_("{0} Port Storage Days is missing a row for: {1}").format(
+				cargo_type, frappe.bold(", ".join(missing))
+			),
+			title=_("Incomplete Port Storage Days"),
 		)
-		if not bands:
-			return
 
-		if cint(bands[0].get("from")) != 1:
-			frappe.throw(
-				_("Port Storage Days must start at day 1, {0} starts at day {1}").format(
-					frappe.bold(bands[0].charge), frappe.bold(bands[0].get("from"))
-				),
-				title=_("Incomplete Port Storage Days"),
-			)
 
-		for earlier, later in pairwise(bands):
-			if cint(later.get("from")) == cint(earlier.get("to")) + 1:
-				continue
+def validate_port_storage_bands_cover_every_day(cargo_type: str, rows: list):
+	"""The bands must run from day one without a gap or an overlap
 
-			frappe.throw(
-				_("Port Storage Days {0} ends on day {1} and {2} starts on day {3}").format(
-					frappe.bold(earlier.charge),
-					frappe.bold(earlier.get("to")),
-					frappe.bold(later.charge),
-					frappe.bold(later.get("from")),
-				),
-				title=_("Overlapping Port Storage Days")
-				if cint(later.get("from")) <= cint(earlier.get("to"))
-				else _("Gap In Port Storage Days"),
-			)
+	A day two bands cover would be charged whichever was read first, and a day
+	no band covers is never recorded at all, so the stay would quietly lose it.
+	"""
+
+	bands = sorted((row for row in rows if is_band_configured(row)), key=lambda row: cint(row.get("from")))
+	if not bands:
+		return
+
+	if cint(bands[0].get("from")) != 1:
+		frappe.throw(
+			_("{0} Port Storage Days must start at day 1, {1} starts at day {2}").format(
+				cargo_type, frappe.bold(bands[0].charge), frappe.bold(bands[0].get("from"))
+			),
+			title=_("Incomplete Port Storage Days"),
+		)
+
+	for earlier, later in pairwise(bands):
+		if cint(later.get("from")) == cint(earlier.get("to")) + 1:
+			continue
+
+		frappe.throw(
+			_("{0} Port Storage Days {1} ends on day {2} and {3} starts on day {4}").format(
+				cargo_type,
+				frappe.bold(earlier.charge),
+				frappe.bold(earlier.get("to")),
+				frappe.bold(later.charge),
+				frappe.bold(later.get("from")),
+			),
+			title=_("Overlapping Port Storage Days")
+			if cint(later.get("from")) <= cint(earlier.get("to"))
+			else _("Gap In Port Storage Days"),
+		)

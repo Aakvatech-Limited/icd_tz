@@ -1,5 +1,6 @@
 import frappe
 
+CARGO_TYPES = ("Local", "Transit")
 CHARGES = ("Free", "Single", "Double")
 
 
@@ -20,12 +21,15 @@ def execute():
 		if settings_doc.port_storage_days:
 			continue
 
-		for charge in CHARGES:
-			settings_doc.append("port_storage_days", {"charge": charge})
+		for cargo_type in CARGO_TYPES:
+			for charge in CHARGES:
+				settings_doc.append("port_storage_days", {"cargo_type": cargo_type, "charge": charge})
 
 		settings_doc.flags.ignore_permissions = True
 		settings_doc.flags.ignore_mandatory = True
 		settings_doc.flags.ignore_validate = True
 		settings_doc.save()
 
-		print(f"Added {len(CHARGES)} Port Storage Day charge(s) to the ICD Setting of {settings_doc.company}")
+		print(
+			f"Added {len(CARGO_TYPES) * len(CHARGES)} Port Storage Day charge(s) to the ICD Setting of {settings_doc.company}"
+		)

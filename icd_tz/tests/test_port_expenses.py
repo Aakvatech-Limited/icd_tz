@@ -1,6 +1,8 @@
 # Copyright (c) 2026, elius mgani and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, getdate, nowdate
@@ -175,7 +177,9 @@ class TestPortExpenses(FrappeTestCase):
 		settings_doc = get_test_icd_setting()
 		settings_doc.port_storage_days = []
 		for charge, from_day, to_day in (("Free", 1, 5), ("Single", 6, 12), ("Double", 13, 20)):
-			settings_doc.append("port_storage_days", {"charge": charge, "from": from_day, "to": to_day})
+			settings_doc.append(
+				"port_storage_days", {"cargo_type": "Local", "charge": charge, "from": from_day, "to": to_day}
+			)
 		settings_doc.flags.ignore_mandatory = True
 		settings_doc.save()
 		frappe.clear_cache(doctype="ICD Setting")
@@ -830,8 +834,40 @@ class TestPortExpenses(FrappeTestCase):
 
 		self.assertEqual(len(dates), len(set(dates)))
 
+	def test_a_transit_container_is_counted_on_the_transit_bands(self):
+		add_transit_bands()
+		set_cargo_classification(self.manifest.name, "TR")
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -16))
+
+		update_port_storage_days(self.manifest.name)
+
+		charges = [row.charge for row in get_storage_dates(self.manifest.name, BOX_20)]
+		self.assertEqual((charges.count("Free"), charges.count("Single")), (15, 2))
+
+	def test_a_transit_container_without_transit_bands_is_skipped_and_logged(self):
+		set_cargo_classification(self.manifest.name, "TR")
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+
+		with patch("frappe.log_error") as log_error:
+			update_port_storage_days(self.manifest.name)
+
+		self.assertEqual(get_storage_dates(self.manifest.name, BOX_20), [])
+		messages = [call.kwargs["message"] for call in log_error.call_args_list]
+		self.assertTrue(any("Set the Transit Port Storage Days" in message for message in messages))
+
+	def test_days_already_counted_keep_their_band(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+		add_transit_bands()
+		set_cargo_classification(self.manifest.name, "TR")
+
+		update_port_storage_days(self.manifest.name)
+
+		charges = [row.charge for row in get_storage_dates(self.manifest.name, BOX_20)]
+		self.assertEqual((charges.count("Free"), charges.count("Single")), (5, 5))
+
 	def test_a_day_is_banded_from_the_discharge_date(self):
-		bands = get_port_storage_bands(get_test_icd_setting())
+		bands = get_port_storage_bands(get_test_icd_setting(), "Local")
 		start = getdate_days_ago(0)
 
 		self.assertEqual(get_charge_of_day(start, start, bands), "Free")
@@ -939,6 +975,24 @@ def set_discharge_date(manifest, container_no, discharge_date):
 	)
 
 
+def set_cargo_classification(manifest, cargo_classification):
+	frappe.db.set_value("ICD Master BL", {"manifest": manifest}, "cargo_classification", cargo_classification)
+
+
+def add_transit_bands():
+	settings_doc = get_test_icd_setting()
+	for charge, from_day, to_day in (("Free", 1, 15), ("Single", 16, 22), ("Double", 23, 999999)):
+		settings_doc.append(
+			"port_storage_days", {"cargo_type": "Transit", "charge": charge, "from": from_day, "to": to_day}
+		)
+	settings_doc.save()
+	frappe.clear_cache(doctype="ICD Setting")
+
+
+def get_storage_dates(manifest, container_no):
+	return frappe.get_doc("ICD Container", get_container(manifest, container_no)).storage_dates
+
+
 def set_expense_settings():
 	settings_doc = get_test_icd_setting()
 	settings_doc.default_buying_price_list = PRICE_LIST
@@ -968,7 +1022,9 @@ def set_expense_settings():
 		)
 
 	for charge, from_day, to_day in BANDS:
-		settings_doc.append("port_storage_days", {"charge": charge, "from": from_day, "to": to_day})
+		settings_doc.append(
+			"port_storage_days", {"cargo_type": "Local", "charge": charge, "from": from_day, "to": to_day}
+		)
 
 	settings_doc.flags.ignore_mandatory = True
 	settings_doc.save()
