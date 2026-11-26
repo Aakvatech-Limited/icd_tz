@@ -4,16 +4,22 @@ from frappe.query_builder.functions import Count
 from frappe.utils import date_diff, flt, getdate
 
 from icd_tz.icd_tz.api.accounting_dimensions import build_dimension_name
-from icd_tz.icd_tz.api.utils import get_best_criteria, get_icd_setting, get_size_bucket
+from icd_tz.icd_tz.api.utils import (
+	get_best_criteria,
+	get_country_of_destination,
+	get_icd_setting,
+	get_size_bucket,
+)
 
+LEVY_EXPENSE_TYPE = "Levy"
 ONE_OFF_EXPENSE_TYPES = {
 	"Shore": "is_shore_booked",
-	"Levy": "is_levy_booked",
+	LEVY_EXPENSE_TYPE: "is_levy_booked",
 	"Removal": "is_removal_booked",
 }
 ONE_OFF_BILLED_FIELDS = {
 	"Shore": "is_shore_billed",
-	"Levy": "is_levy_billed",
+	LEVY_EXPENSE_TYPE: "is_levy_billed",
 	"Removal": "is_removal_billed",
 }
 # the flags each document ticks, its storage day column is its scrubbed name
@@ -153,11 +159,12 @@ def get_expense_rows(manifest: str, buying_price_list: str, with_day_rows: bool 
 	buckets = {row.name: get_expense_bucket(row) for row in criteria_rows}
 
 	shared_bills = get_shared_container_bills(manifest)
+	levy_countries = {row.country for row in settings_doc.countries}
 	for container in get_manifest_containers(manifest):
 		charge_keys = get_container_charge_keys(
 			container, shared_bills.get(container.container_no, []), master_bls, header.port
 		)
-		add_container_charges(buckets, criteria_rows, charge_keys, unbilled_days)
+		add_container_charges(buckets, criteria_rows, charge_keys, unbilled_days, levy_countries)
 
 	return price_expense_rows(list(buckets.values()), buying_price_list)
 
@@ -182,12 +189,15 @@ def get_container_charge_keys(container, other_bills: list, master_bls: dict, po
 	return keys
 
 
-def add_container_charges(buckets: dict, criteria_rows: list, charge_keys: list, unbilled_days: dict):
+def add_container_charges(
+	buckets: dict, criteria_rows: list, charge_keys: list, unbilled_days: dict, levy_countries: set
+):
 	"""Every charge of the first key, then each one off charge a further cargo type
 	prices on another criteria row
 
 	The port charges a shared box once per cargo type only where the rate differs, and
-	storage stays on the first bill, its day rows belong to the box.
+	storage stays on the first bill, its day rows belong to the box. The levy is owed only
+	for a bill bound for a Corridor Levy Country of the ICD Setting, as on the sales side.
 	"""
 
 	charged_rows = set()
@@ -196,8 +206,17 @@ def add_container_charges(buckets: dict, criteria_rows: list, charge_keys: list,
 			if index and (expense_type not in ONE_OFF_EXPENSE_TYPES or criteria_row.name in charged_rows):
 				continue
 
+			if expense_type == LEVY_EXPENSE_TYPE and not is_levy_destination(
+				key["destination"], levy_countries
+			):
+				continue
+
 			charged_rows.add(criteria_row.name)
 			add_container_to_bucket(buckets[criteria_row.name], container, expense_type, unbilled_days)
+
+
+def is_levy_destination(abbr_for_destination: str | None, levy_countries: set) -> bool:
+	return get_country_of_destination(abbr_for_destination) in levy_countries
 
 
 def validate_storage_bands_configured(settings_doc, criteria_rows: list):
