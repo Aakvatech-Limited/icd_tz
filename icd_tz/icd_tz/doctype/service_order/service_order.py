@@ -204,9 +204,12 @@ class ServiceOrder(Document):
 
 		container = frappe.get_doc("Container", self.container_id)
 		for service in SERVICES:
+			if not service.on_service_order:
+				continue
+
 			if service.count_property:
 				self.add_repeated_service(settings_doc, container, service)
-			elif service.on_service_order:
+			else:
 				self.add_charged_service(settings_doc, container, service)
 
 	def add_charged_service(self, settings_doc, container, service):
