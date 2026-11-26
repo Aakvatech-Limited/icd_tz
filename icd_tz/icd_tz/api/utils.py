@@ -77,7 +77,12 @@ def get_size_bucket(size: str | None) -> str | None:
 	return None
 
 
-def get_service_key(size: str | None = None, cargo_type: str | None = None, port: str | None = None) -> dict:
+def get_service_key(
+	size: str | None = None,
+	cargo_type: str | None = None,
+	port: str | None = None,
+	cargo_category: str | None = None,
+) -> dict:
 	"""Criteria values a container is matched on
 
 	Filling one of these in on a criteria row in the ICD Setting narrows that row, with
@@ -86,7 +91,12 @@ def get_service_key(size: str | None = None, cargo_type: str | None = None, port
 	from on a container.
 	"""
 
-	return {"size": get_size_bucket(size), "cargo_type": cargo_type, "port": port}
+	return {
+		"size": get_size_bucket(size),
+		"cargo_type": cargo_type,
+		"port": port,
+		"cargo_category": cargo_category,
+	}
 
 
 def is_criteria_match(row, key: dict) -> bool:
