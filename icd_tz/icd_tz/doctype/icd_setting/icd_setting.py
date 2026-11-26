@@ -24,9 +24,11 @@ class ICDSetting(Document):
 	def validate_storage_days(self):
 		storage_days = []
 		for row in self.storage_days:
-			d = {"destination": row.destination, "charge": row.charge}
+			d = {"destination": row.destination, "cargo_category": row.cargo_category, "charge": row.charge}
 			if d in storage_days:
-				frappe.throw(f"At Row#: {row.idx}, {row.destination} with charge {row.charge} already exists")
+				frappe.throw(
+					f"At Row#: {row.idx}, {row.destination} for {row.cargo_category} cargo with charge {row.charge} already exists"
+				)
 			else:
 				storage_days.append(d)
 
