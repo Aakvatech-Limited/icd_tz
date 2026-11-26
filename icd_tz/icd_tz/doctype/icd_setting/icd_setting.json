@@ -19,15 +19,24 @@
   "countries",
   "column_break_ixzw",
   "gatepass_cancellation_item",
-  "services_tab",
+  "fcl_services_tab",
+  "fcl_example_sec",
+  "column_break_omji",
+  "fcl_example",
   "service_pricing_criteria_section",
   "service_types",
+  "lcl_services_tab",
+  "lcl_example_sec",
+  "column_break_njvl",
+  "lcl_example",
   "lcl_service_pricing_criteria_section",
   "loose_types",
   "storages_tab",
+  "storage_example_sec",
+  "column_break_hvch",
+  "storage_example",
   "no_of_days_for_container_storage_charges_section",
   "storage_days",
-  "example",
   "expenses_tab",
   "expense_defaults_section",
   "default_buying_price_list",
@@ -83,11 +92,6 @@
    "fieldtype": "Table",
    "label": "Storage Days",
    "options": "ICD TZ Settings Detail"
-  },
-  {
-   "fieldname": "example",
-   "fieldtype": "HTML",
-   "options": "<h2>Example</h2>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\">\n    <th>Destination</th>\n    <th>Charge</th>\n    <th>From</th>\n    <th>To</th>\n  </tr>\n  <tr>\n    <td>Local</td>\n    <td>Free</td>\n    <td>1</td>\n    <td>7</td>\n  </tr>\n  <tr>\n    <td>Local</td>\n    <td>Single</td>\n    <td>8</td>\n    <td>14</td>\n  </tr>\n  <tr>\n    <td>Local</td>\n    <td>Double</td>\n    <td>15</td>\n    <td>9999999</td>\n  </tr>\n  <tr>\n    <td>DRC</td>\n    <td>Free</td>\n    <td>1</td>\n    <td>30</td>\n  </tr>\n  <tr>\n    <td>DRC</td>\n    <td>Single</td>\n    <td>31</td>\n    <td>37</td>\n  </tr>\n  <tr>\n    <td>DRC</td>\n    <td>Double</td>\n    <td>38</td>\n    <td>9999999</td>\n  </tr>\n  <tr>\n    <td>Other</td>\n    <td>Free</td>\n    <td>1</td>\n    <td>14</td>\n  </tr>\n  <tr>\n    <td>Other</td>\n    <td>Single</td>\n    <td>15</td>\n    <td>21</td>\n  </tr>\n  <tr>\n    <td>Other</td>\n    <td>Double</td>\n    <td>22</td>\n    <td>9999999</td>\n  </tr>\n</tbody></table>\n"
   },
   {
    "fieldname": "column_break_8yjq8",
@@ -183,11 +187,6 @@
    "label": "ICD UN/LOCODE"
   },
   {
-   "fieldname": "services_tab",
-   "fieldtype": "Tab Break",
-   "label": "Services"
-  },
-  {
    "fieldname": "storages_tab",
    "fieldtype": "Tab Break",
    "label": "Storages"
@@ -261,12 +260,66 @@
   {
    "fieldname": "column_break_blvn",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fcl_services_tab",
+   "fieldtype": "Tab Break",
+   "label": "FCL Services"
+  },
+  {
+   "fieldname": "lcl_services_tab",
+   "fieldtype": "Tab Break",
+   "label": "LCL Services"
+  },
+  {
+   "fieldname": "column_break_omji",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_njvl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_hvch",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "fcl_example_sec",
+   "fieldtype": "Section Break",
+   "label": "FCL Example"
+  },
+  {
+   "fieldname": "fcl_example",
+   "fieldtype": "HTML",
+   "options": "<h2>Example</h2>\n<ul>\n  <li>A service needs one row for every combination of the criteria it is priced on:</li>\n  <li>Cargo Category (Normal, Dangerous, Reefer): 3 rows</li>\n  <li>Cargo Category and Size (20ft, 40ft): 3 x 2 = 6 rows</li>\n  <li>Cargo Category, Size and Cargo Type (Local, Transit): 3 x 2 x 2 = 12 rows</li>\n  <li>Cargo Category, Size, Cargo Type and Port (TEAGTL, DP WORLD): 3 x 2 x 2 x 2 = 24 rows</li>\n  <li>Keep a criteria empty when it does not apply to the service.</li>\n  <li>A category may use the same item as another when the price is the same: below, Reefer uses the ICD Handling items of Normal, and every category uses the same Corridor Levy items.</li>\n  <li>Add the OOG rows once OOG containers can be identified.</li>\n  <li>This example shows two services, each priced on Cargo Category and Size.</li>\n</ul>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\"><th>Service Type</th><th>Service Name</th><th>Cargo Category</th><th>Size</th><th>Cargo Type</th><th>Port</th></tr>\n  <tr><td>ICD Handling</td><td>ICD Handling 20ft</td><td>Normal</td><td>20ft</td><td></td><td></td></tr>\n  <tr><td>ICD Handling</td><td>ICD Handling 40ft</td><td>Normal</td><td>40ft</td><td></td><td></td></tr>\n  <tr><td>ICD Handling</td><td>ICD Handling Dangerous 20ft</td><td>Dangerous</td><td>20ft</td><td></td><td></td></tr>\n  <tr><td>ICD Handling</td><td>ICD Handling Dangerous 40ft</td><td>Dangerous</td><td>40ft</td><td></td><td></td></tr>\n  <tr><td>ICD Handling</td><td>ICD Handling 20ft</td><td>Reefer</td><td>20ft</td><td></td><td></td></tr>\n  <tr><td>ICD Handling</td><td>ICD Handling 40ft</td><td>Reefer</td><td>40ft</td><td></td><td></td></tr>\n  <tr><td>Levy</td><td>Corridor Levy 20ft</td><td>Normal</td><td>20ft</td><td></td><td></td></tr>\n  <tr><td>Levy</td><td>Corridor Levy 40ft</td><td>Normal</td><td>40ft</td><td></td><td></td></tr>\n  <tr><td>Levy</td><td>Corridor Levy 20ft</td><td>Dangerous</td><td>20ft</td><td></td><td></td></tr>\n  <tr><td>Levy</td><td>Corridor Levy 40ft</td><td>Dangerous</td><td>40ft</td><td></td><td></td></tr>\n  <tr><td>Levy</td><td>Corridor Levy 20ft</td><td>Reefer</td><td>20ft</td><td></td><td></td></tr>\n  <tr><td>Levy</td><td>Corridor Levy 40ft</td><td>Reefer</td><td>40ft</td><td></td><td></td></tr>\n</tbody></table>\n"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "lcl_example_sec",
+   "fieldtype": "Section Break",
+   "label": "LCL Example"
+  },
+  {
+   "fieldname": "lcl_example",
+   "fieldtype": "HTML",
+   "options": "<h2>Example</h2>\n<ul>\n  <li>Loose cargo is charged per CBM.</li>\n  <li>A service needs one row for every combination of the criteria it is priced on:</li>\n  <li>Cargo Category (Normal, Dangerous, Reefer): 3 rows</li>\n  <li>Cargo Category and Cargo Type (Local, Transit): 3 x 2 = 6 rows</li>\n  <li>Cargo Category, Cargo Type and Port (TEAGTL, DP WORLD): 3 x 2 x 2 = 12 rows</li>\n  <li>Keep a criteria empty when it does not apply to the service.</li>\n  <li>Add the OOG rows once OOG containers can be identified.</li>\n  <li>This example shows Stripping priced on Cargo Category, and Storage-Single priced on Cargo Category and Cargo Type.</li>\n</ul>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\"><th>Service Type</th><th>Service Name</th><th>Cargo Category</th><th>Size</th><th>Cargo Type</th><th>Port</th></tr>\n  <tr><td>Stripping</td><td>Stripping LCL</td><td>Normal</td><td></td><td></td><td></td></tr>\n  <tr><td>Stripping</td><td>Stripping LCL</td><td>Dangerous</td><td></td><td></td><td></td></tr>\n  <tr><td>Stripping</td><td>Stripping LCL</td><td>Reefer</td><td></td><td></td><td></td></tr>\n  <tr><td>Storage-Single</td><td>Storage Charges LCL (single)</td><td>Normal</td><td></td><td>Local</td><td></td></tr>\n  <tr><td>Storage-Single</td><td>Storage Charges LCL (single)</td><td>Normal</td><td></td><td>Transit</td><td></td></tr>\n  <tr><td>Storage-Single</td><td>Storage Charges LCL (single) Dangerous</td><td>Dangerous</td><td></td><td>Local</td><td></td></tr>\n  <tr><td>Storage-Single</td><td>Storage Charges LCL (single) Dangerous</td><td>Dangerous</td><td></td><td>Transit</td><td></td></tr>\n  <tr><td>Storage-Single</td><td>Storage Charges LCL (single) Reefer</td><td>Reefer</td><td></td><td>Local</td><td></td></tr>\n  <tr><td>Storage-Single</td><td>Storage Charges LCL (single) Reefer</td><td>Reefer</td><td></td><td>Transit</td><td></td></tr>\n</tbody></table>\n"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "storage_example_sec",
+   "fieldtype": "Section Break",
+   "label": "Storage Example"
+  },
+  {
+   "fieldname": "storage_example",
+   "fieldtype": "HTML",
+   "options": "<h2>Example</h2>\n<ul>\n  <li>Each Place of Destination needs a Free, Single and Double row for every Cargo Category: 3 x 3 = 9 rows per destination.</li>\n  <li>Add the OOG rows once OOG containers can be identified.</li>\n</ul>\n<style>\ntable {\n  font-family: arial, sans-serif;\n  border-collapse: collapse;\n  width: 100%;\n}\n\ntd, th {\n  border: 1px solid #dddddd;\n  text-align: left;\n  padding: 8px;\n}\n</style>\n\n<table>\n  <tbody>\n  <tr style=\"background-color: #dddddd;\"><th>Destination</th><th>Cargo Category</th><th>Charge</th><th>From</th><th>To</th></tr>\n  <tr><td>Local</td><td>Normal</td><td>Free</td><td>1</td><td>7</td></tr>\n  <tr><td>Local</td><td>Normal</td><td>Single</td><td>8</td><td>14</td></tr>\n  <tr><td>Local</td><td>Normal</td><td>Double</td><td>15</td><td>9999999</td></tr>\n  <tr><td>Local</td><td>Dangerous</td><td>Free</td><td>1</td><td>2</td></tr>\n  <tr><td>Local</td><td>Dangerous</td><td>Single</td><td>3</td><td>10</td></tr>\n  <tr><td>Local</td><td>Dangerous</td><td>Double</td><td>11</td><td>9999999</td></tr>\n  <tr><td>Local</td><td>Reefer</td><td>Free</td><td>1</td><td>2</td></tr>\n  <tr><td>Local</td><td>Reefer</td><td>Single</td><td>3</td><td>9</td></tr>\n  <tr><td>Local</td><td>Reefer</td><td>Double</td><td>10</td><td>9999999</td></tr>\n  <tr><td>DRC</td><td>Normal</td><td>Free</td><td>1</td><td>30</td></tr>\n  <tr><td>DRC</td><td>Normal</td><td>Single</td><td>31</td><td>37</td></tr>\n  <tr><td>DRC</td><td>Normal</td><td>Double</td><td>38</td><td>9999999</td></tr>\n  <tr><td>DRC</td><td>Dangerous</td><td>Free</td><td>1</td><td>2</td></tr>\n  <tr><td>DRC</td><td>Dangerous</td><td>Single</td><td>3</td><td>10</td></tr>\n  <tr><td>DRC</td><td>Dangerous</td><td>Double</td><td>11</td><td>9999999</td></tr>\n  <tr><td>DRC</td><td>Reefer</td><td>Free</td><td>1</td><td>2</td></tr>\n  <tr><td>DRC</td><td>Reefer</td><td>Single</td><td>3</td><td>9</td></tr>\n  <tr><td>DRC</td><td>Reefer</td><td>Double</td><td>10</td><td>9999999</td></tr>\n</tbody></table>\n"
   }
  ],
  "index_web_pages_for_search": 1,
- "issingle": 0,
  "links": [],
- "modified": "2026-10-12 12:00:00.000000",
+ "modified": "2026-11-26 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Icd Tz",
  "name": "ICD Setting",
