@@ -32,6 +32,7 @@ from icd_tz.icd_tz.doctype.icd_container.icd_container import (
 	get_containers_for_storage_days,
 	update_port_storage_days,
 )
+from icd_tz.patches import reset_transit_port_storage_days
 from icd_tz.tests.utils import get_test_company, get_test_icd_setting, set_test_icd_setting
 
 PORT = "DP WORLD"
@@ -884,6 +885,48 @@ class TestPortExpenses(FrappeTestCase):
 
 		charges = [row.charge for row in get_storage_dates(self.manifest.name, BOX_20)]
 		self.assertEqual((charges.count("Free"), charges.count("Single")), (5, 5))
+
+	def count_local_then_switch_to_transit(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+		add_transit_bands()
+		set_cargo_classification(self.manifest.name, "TR")
+
+	def test_the_reset_patch_recounts_transit_days_on_the_transit_bands(self):
+		self.count_local_then_switch_to_transit()
+
+		reset_transit_port_storage_days.execute()
+		self.assertEqual(get_storage_dates(self.manifest.name, BOX_20), [])
+
+		update_port_storage_days(self.manifest.name)
+		charges = [row.charge for row in get_storage_dates(self.manifest.name, BOX_20)]
+		self.assertEqual((charges.count("Free"), charges.count("Single")), (10, 0))
+
+	def test_the_reset_patch_keeps_the_days_on_a_purchase_order(self):
+		self.count_local_then_switch_to_transit()
+		billed_row = get_storage_dates(self.manifest.name, BOX_20)[-1]
+		frappe.db.set_value("ICD Container Storage Date", billed_row.name, "purchase_order", "PO-TEST")
+
+		reset_transit_port_storage_days.execute()
+
+		rows = get_storage_dates(self.manifest.name, BOX_20)
+		self.assertEqual([row.name for row in rows], [billed_row.name])
+
+	def test_the_reset_patch_leaves_local_and_received_containers(self):
+		set_discharge_date(self.manifest.name, BOX_20, add_days(nowdate(), -9))
+		update_port_storage_days(self.manifest.name)
+		local_count = len(get_storage_dates(self.manifest.name, BOX_20))
+
+		reset_transit_port_storage_days.execute()
+		self.assertEqual(len(get_storage_dates(self.manifest.name, BOX_20)), local_count)
+
+		set_cargo_classification(self.manifest.name, "TR")
+		frappe.db.set_value(
+			"ICD Container", get_container(self.manifest.name, BOX_20), "status", RECEIVED_STATUS
+		)
+
+		reset_transit_port_storage_days.execute()
+		self.assertEqual(len(get_storage_dates(self.manifest.name, BOX_20)), local_count)
 
 	def test_a_day_is_banded_from_the_discharge_date(self):
 		bands = get_port_storage_bands(get_test_icd_setting(), "Local")
