@@ -18,3 +18,4 @@ icd_tz.patches.move_inspection_services_to_container
 icd_tz.patches.set_pricing_rows_cargo_category
 icd_tz.patches.set_container_cargo_category #2026-11-26 empty boxes
 icd_tz.patches.set_port_storage_cargo_type
+icd_tz.patches.reset_transit_port_storage_days
