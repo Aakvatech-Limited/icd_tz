@@ -1,0 +1,22 @@
+{
+ "color": "#f39c12",
+ "creation": "2026-11-13 21:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "TANeSW Container",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"TANeSW Container\", \"status\", \"=\", \"At Terminal\", false], [\"TANeSW Container\", \"declared_on\", \"is\", \"not set\", false], [\"TANeSW Container\", \"discharged_on\", \"is\", \"set\", false], [\"TANeSW Container\", \"removed_from_allocation_on\", \"is\", \"not set\", false]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Landed, To Declare",
+ "modified": "2026-11-13 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Landed Not Declared",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

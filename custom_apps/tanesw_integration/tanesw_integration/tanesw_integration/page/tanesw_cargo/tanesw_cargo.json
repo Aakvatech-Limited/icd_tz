@@ -1,0 +1,25 @@
+{
+ "content": null,
+ "creation": "2026-10-28 00:00:00.000000",
+ "doctype": "Page",
+ "icon": "truck",
+ "idx": 0,
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "tanesw-cargo",
+ "owner": "Administrator",
+ "page_name": "tanesw-cargo",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "TANeSW User"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Cargo Management"
+}

@@ -1,0 +1,293 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:link_key",
+ "creation": "2026-11-10 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "container_no",
+  "mrn",
+  "bl_no",
+  "crn",
+  "link_key",
+  "column_break_ids",
+  "carry_in_no",
+  "handover_no",
+  "carry_in_status",
+  "carry_in_on",
+  "truck_section",
+  "truck",
+  "trailer",
+  "driver_name",
+  "driver_license",
+  "column_break_truck",
+  "container_size",
+  "seal_no",
+  "gate_exit_confirmed",
+  "entry_confirmed",
+  "link_section",
+  "link_status",
+  "link_message",
+  "transport_check",
+  "transport_note",
+  "last_processed",
+  "column_break_link",
+  "manifest",
+  "movement_order",
+  "container_reception",
+  "receive_section",
+  "clerk",
+  "container_location",
+  "received_at_gate"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "label": "Container No",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "label": "MRN",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "bl_no",
+   "fieldtype": "Data",
+   "label": "B/L No (TANeSW)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "label": "CRN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "link_key",
+   "fieldtype": "Data",
+   "label": "Link Key",
+   "read_only": 1,
+   "unique": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "column_break_ids",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "carry_in_no",
+   "fieldtype": "Data",
+   "label": "Carry-In Report No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_no",
+   "fieldtype": "Data",
+   "label": "Handover Report No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carry_in_status",
+   "fieldtype": "Data",
+   "label": "Carry-In Status Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carry_in_on",
+   "fieldtype": "Datetime",
+   "label": "Carry-In Processed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "truck_section",
+   "fieldtype": "Section Break",
+   "label": "Truck (from TANeSW)"
+  },
+  {
+   "fieldname": "truck",
+   "fieldtype": "Data",
+   "label": "Truck",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "trailer",
+   "fieldtype": "Data",
+   "label": "Trailer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver",
+   "read_only": 1
+  },
+  {
+   "fieldname": "driver_license",
+   "fieldtype": "Data",
+   "label": "Driver Licence",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_truck",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Data",
+   "label": "Container Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seal_no",
+   "fieldtype": "Data",
+   "label": "Seal No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gate_exit_confirmed",
+   "fieldtype": "Check",
+   "label": "Left the Port (Gate Exit Confirmed)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "entry_confirmed",
+   "fieldtype": "Check",
+   "label": "Entered Our ICD (Entry Confirmed)",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "link_section",
+   "fieldtype": "Section Break",
+   "label": "icd_tz Link"
+  },
+  {
+   "fieldname": "link_status",
+   "fieldtype": "Select",
+   "label": "Link Status",
+   "options": "Waiting for Order\nOrder Linked\nAwaiting Reception\nReception Drafted\nReception Submitted\nException",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "link_message",
+   "fieldtype": "Small Text",
+   "label": "Link Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_check",
+   "fieldtype": "Select",
+   "label": "Truck / Trailer / Driver vs Order",
+   "options": "\nMatches\nDiffers",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "transport_note",
+   "fieldtype": "Small Text",
+   "label": "Transport Differences",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_processed",
+   "fieldtype": "Datetime",
+   "label": "Last Processed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_link",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "manifest",
+   "fieldtype": "Data",
+   "label": "Manifest",
+   "read_only": 1
+  },
+  {
+   "fieldname": "movement_order",
+   "fieldtype": "Data",
+   "label": "Movement Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_reception",
+   "fieldtype": "Data",
+   "label": "Container Reception",
+   "read_only": 1
+  },
+  {
+   "fieldname": "receive_section",
+   "fieldtype": "Section Break",
+   "label": "Given at the Gate (Carry-In Screen)"
+  },
+  {
+   "fieldname": "clerk",
+   "fieldtype": "Data",
+   "label": "Clerk (Employee)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_location",
+   "fieldtype": "Data",
+   "label": "Yard Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_at_gate",
+   "fieldtype": "Check",
+   "label": "Received from Our Carry-In Screen",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Carry In Container",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "search_fields": "mrn,truck,link_status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "container_no",
+ "track_changes": 1
+}

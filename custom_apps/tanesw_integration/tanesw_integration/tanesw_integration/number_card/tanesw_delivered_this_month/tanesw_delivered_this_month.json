@@ -1,0 +1,20 @@
+{
+ "color": "#27ae60",
+ "creation": "2026-11-15 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "dynamic_filters_json": "[]",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Delivered This Month",
+ "modified": "2026-11-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Delivered This Month",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Custom",
+ "method": "tanesw_integration.dashboard.delivered_this_month"
+}

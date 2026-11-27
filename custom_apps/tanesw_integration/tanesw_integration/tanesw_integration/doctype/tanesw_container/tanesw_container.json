@@ -1,0 +1,325 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:{mrn}-{container_no}",
+ "creation": "2026-11-08 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "container_no",
+  "bl_no",
+  "hbl_no",
+  "crn",
+  "mrn",
+  "vessel_allocation",
+  "column_break_ids",
+  "vessel_name",
+  "voyage_number",
+  "arrival_date",
+  "container_size",
+  "freight_indicator",
+  "seal_no",
+  "status_section",
+  "status",
+  "terminal",
+  "dwell_days",
+  "column_break_status",
+  "last_event_code",
+  "last_event",
+  "last_event_on",
+  "dates_section",
+  "discharged_on",
+  "declared_on",
+  "icd_declaration_no",
+  "column_break_dates",
+  "gate_out_on",
+  "received_on",
+  "carry_in_report_no",
+  "left_icd_on",
+  "left_icd_event",
+  "lcl_lots",
+  "diverted_to",
+  "diverted_on",
+  "removed_from_allocation_on",
+  "sync_section",
+  "last_synced",
+  "tracking_complete"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "label": "Container No",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "bl_no",
+   "fieldtype": "Data",
+   "label": "B/L No",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "hbl_no",
+   "fieldtype": "Data",
+   "label": "House B/L No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "label": "Cargo Reference No",
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "label": "MRN",
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "vessel_allocation",
+   "fieldtype": "Link",
+   "label": "Vessel Allocation",
+   "options": "TANeSW Vessel Allocation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ids",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "label": "Vessel",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "voyage_number",
+   "fieldtype": "Data",
+   "label": "Voyage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "label": "Vessel Arrival",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Data",
+   "label": "Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freight_indicator",
+   "fieldtype": "Data",
+   "label": "Freight Indicator",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seal_no",
+   "fieldtype": "Data",
+   "label": "Seal No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Not Discharged\nAt Terminal\nIn Transit\nReceived at ICD\nDiverted",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "terminal",
+   "fieldtype": "Data",
+   "label": "Terminal / Last Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dwell_days",
+   "fieldtype": "Float",
+   "label": "Port Dwell Days",
+   "precision": "1",
+   "in_list_view": 1,
+   "description": "Days from Discharge Result Report Approved to Gate Out at the terminal (or until the last sync if still at the terminal).",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_event_code",
+   "fieldtype": "Data",
+   "label": "Last TANeSW Event Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_event",
+   "fieldtype": "Data",
+   "label": "Last TANeSW Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_event_on",
+   "fieldtype": "Datetime",
+   "label": "Last Event On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Milestones"
+  },
+  {
+   "fieldname": "discharged_on",
+   "fieldtype": "Datetime",
+   "label": "Discharged (Discharge Result Report Approved)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declared_on",
+   "fieldtype": "Datetime",
+   "label": "ICD Transfer Declaration Approved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "icd_declaration_no",
+   "fieldtype": "Data",
+   "label": "ICD Declaration No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gate_out_on",
+   "fieldtype": "Datetime",
+   "label": "Gate Out at Terminal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_on",
+   "fieldtype": "Datetime",
+   "label": "Carry-In Approved at ICD",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carry_in_report_no",
+   "fieldtype": "Data",
+   "label": "Carry-In Report No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "left_icd_on",
+   "fieldtype": "Datetime",
+   "label": "Left Our ICD (TANeSW)",
+   "read_only": 1,
+   "description": "First exit event at our warehouse on TANeSW (gate out / carry out), after it was received."
+  },
+  {
+   "fieldname": "left_icd_event",
+   "fieldtype": "Data",
+   "label": "Exit Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lcl_lots",
+   "fieldtype": "Long Text",
+   "label": "LCL Cargo Lots (TANeSW)",
+   "read_only": 1,
+   "description": "Per House B/L: CRN and when the cargo left our ICD on TANeSW (LCL boxes stripped here)."
+  },
+  {
+   "fieldname": "diverted_to",
+   "fieldtype": "Data",
+   "label": "Diverted To (Other ICD)",
+   "read_only": 1,
+   "description": "Set when TANeSW shows this container carried in at another ICD."
+  },
+  {
+   "fieldname": "diverted_on",
+   "fieldtype": "Datetime",
+   "label": "Diverted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "removed_from_allocation_on",
+   "fieldtype": "Datetime",
+   "label": "Removed From Our Allocation On",
+   "read_only": 1,
+   "description": "Set when TANeSW stopped listing this box on our B/Ls (the allocation was reduced): it is not ours any more, but no other ICD has carried it in yet. Becomes Diverted once one does; cleared if the box comes back to our allocation."
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Sync"
+  },
+  {
+   "fieldname": "last_synced",
+   "fieldtype": "Datetime",
+   "label": "Last Synced",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tracking_complete",
+   "fieldtype": "Check",
+   "label": "Tracking Complete",
+   "read_only": 1,
+   "description": "Received at our ICD: no longer polled."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-12 22:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Container",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "container_no",
+ "track_changes": 0,
+ "search_fields": "bl_no,mrn,vessel_name,status"
+}

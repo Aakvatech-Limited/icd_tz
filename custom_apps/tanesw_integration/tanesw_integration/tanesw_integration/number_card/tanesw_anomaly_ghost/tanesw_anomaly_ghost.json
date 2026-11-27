@@ -1,0 +1,22 @@
+{
+ "color": "#8e44ad",
+ "creation": "2026-11-15 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "dynamic_filters_json": "[]",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Ghost Yard Arrival",
+ "modified": "2026-11-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Ghost Yard Arrival",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type",
+ "document_type": "Container Allocation Track log",
+ "function": "Count",
+ "filters_json": "[[\"Container Allocation Track log\", \"anomaly_type\", \"=\", \"Ghost Yard Arrival\", false]]"
+}

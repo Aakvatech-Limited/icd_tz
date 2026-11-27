@@ -1,0 +1,545 @@
+/* Theme-aware accent.
+   Frappe ships --primary as #171717 in BOTH themes, so using it as a text colour
+   renders links/headings near-black on the dark card (#232323) — invisible.
+   Text and accent borders use the variable below; it flips per theme. */
+.tanesw-operations-page,
+.modal-dialog {
+	--tanesw-accent: var(--primary);
+}
+[data-theme="dark"] .tanesw-operations-page,
+[data-theme="dark"] .modal-dialog {
+	--tanesw-accent: #7aa2f7;
+}
+
+/* TANeSW Operations Page Styles */
+.tanesw-operations-page {
+	padding: 8px 0;
+	color: var(--text-color);
+}
+.tanesw-nav-tabs {
+	border-bottom: 1px solid var(--border-color);
+	margin-bottom: 16px;
+}
+.tanesw-nav-tabs .nav-link {
+	cursor: pointer;
+	font-weight: 500;
+	font-size: 13px;
+	color: var(--text-muted);
+	border: none;
+	border-bottom: 2px solid transparent;
+	padding: 8px 16px;
+	background: none;
+	transition: color 0.15s ease, background-color 0.15s ease;
+}
+.tanesw-nav-tabs .nav-link:hover {
+	color: var(--text-color);
+	background-color: var(--bg-light-gray);
+}
+.tanesw-nav-tabs .nav-link.active {
+	color: var(--tanesw-accent);
+	border-bottom-color: var(--tanesw-accent);
+	font-weight: 600;
+	background: transparent;
+}
+.tanesw-filter-card {
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-md, 4px);
+	padding: 14px 16px;
+	margin-bottom: 16px;
+}
+.tanesw-filter-bar {
+	display: flex;
+	gap: 12px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+.tanesw-filter-bar .frappe-control,
+.tanesw-filter-bar .form-group {
+	margin-bottom: 0 !important;
+}
+.tanesw-field-wrap {
+	min-width: 170px;
+	flex: 1;
+	max-width: 250px;
+}
+.tanesw-card,
+.tanesw-panel,
+.tanesw-table-panel,
+.tanesw-manifest-page-wrap {
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-md, 4px);
+	margin-bottom: 16px;
+	overflow: hidden;
+}
+.tanesw-manifest-page-wrap {
+	padding: 16px;
+}
+.tanesw-card-header,
+.tanesw-panel-header {
+	padding: 10px 16px;
+	background: var(--bg-light-gray);
+	border-bottom: 1px solid var(--border-color);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.tanesw-card-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--heading-color);
+	margin: 0;
+}
+.tanesw-card-body {
+	padding: 16px;
+	background: var(--card-bg);
+	color: var(--text-color);
+}
+.tanesw-breadcrumb {
+	font-size: 11px;
+	color: var(--text-muted);
+	font-weight: 500;
+}
+.tanesw-stat-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 12px;
+}
+.tanesw-stat-item {
+	background: var(--bg-light-gray);
+	padding: 10px 14px;
+	border-radius: var(--border-radius, 4px);
+	border: 1px solid var(--border-color);
+}
+.tanesw-stat-label {
+	font-size: 11px;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+.tanesw-stat-value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--heading-color);
+	word-break: break-all;
+}
+.tanesw-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+	color: var(--text-color);
+}
+.tanesw-table th {
+	font-size: 11px;
+	text-transform: uppercase;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	color: var(--text-muted);
+	background: var(--subtle-fg);
+	border-bottom: 1px solid var(--border-color);
+	padding: 10px 12px;
+	white-space: nowrap;
+}
+.tanesw-table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--border-color);
+	color: var(--text-color);
+	vertical-align: middle;
+}
+.tanesw-table tr:hover td {
+	background: var(--fg-hover-color, var(--bg-light-gray));
+}
+.tanesw-clickable {
+	color: var(--tanesw-accent);
+	cursor: pointer;
+	font-weight: 500;
+}
+.tanesw-clickable:hover {
+	text-decoration: underline;
+}
+.tanesw-empty {
+	text-align: center;
+	padding: 40px 20px;
+	color: var(--text-muted);
+}
+.tanesw-empty .message {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+.tanesw-empty .hint {
+	font-size: 12px;
+	margin-top: 4px;
+	color: var(--text-muted);
+}
+
+/* Sub-Tabs */
+.tanesw-subtabs {
+	display: flex;
+	gap: 4px;
+	border-bottom: 1px solid var(--border-color);
+	margin-bottom: 14px;
+}
+.tanesw-subtab-btn {
+	padding: 8px 14px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+.tanesw-subtab-btn:hover {
+	color: var(--tanesw-accent);
+	background: var(--bg-light-gray);
+}
+.tanesw-subtab-btn.active {
+	color: var(--tanesw-accent);
+	border-bottom: 2px solid var(--primary);
+	background: transparent;
+}
+.tanesw-detail-section {
+	margin-bottom: 18px;
+}
+.tanesw-section-heading {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--tanesw-accent);
+	border-bottom: 1px solid var(--border-color);
+	padding-bottom: 4px;
+	margin-bottom: 10px;
+}
+
+/* Manifest Screen Tabs */
+.tanesw-manifest-tabs {
+	display: flex;
+	gap: 4px;
+	border-bottom: 2px solid var(--primary);
+	padding-bottom: 0px;
+}
+.tanesw-mtab-btn {
+	background: var(--bg-light-gray);
+	border: 1px solid var(--border-color);
+	border-bottom: none;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	padding: 6px 14px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+.tanesw-mtab-btn:hover {
+	background: var(--subtle-fg);
+	color: var(--text-color);
+}
+.tanesw-mtab-btn.active {
+	background: var(--primary);
+	color: #ffffff;
+	border-color: var(--tanesw-accent);
+}
+
+/* Bordered tables & Bootstrap table overrides */
+.tanesw-table-bordered,
+.tanesw-operations-page .table-bordered,
+.tanesw-booking-detail-view .table-bordered,
+.tanesw-carry-detail .table-bordered {
+	border: 1px solid var(--border-color) !important;
+	font-size: 12px;
+	color: var(--text-color);
+	background: var(--card-bg);
+}
+.tanesw-table-bordered thead th,
+.tanesw-operations-page .table-bordered thead th,
+.tanesw-booking-detail-view .table-bordered thead th,
+.tanesw-carry-detail .table-bordered thead th {
+	background: var(--subtle-fg);
+	color: var(--text-muted);
+	font-weight: 600;
+	border: 1px solid var(--border-color) !important;
+	padding: 7px 10px;
+}
+.tanesw-table-bordered tbody td,
+.tanesw-operations-page .table-bordered tbody td,
+.tanesw-booking-detail-view .table-bordered tbody td,
+.tanesw-carry-detail .table-bordered tbody td {
+	border: 1px solid var(--border-color) !important;
+	padding: 6px 10px;
+	vertical-align: middle;
+	color: var(--text-color);
+	background: var(--card-bg);
+}
+.tanesw-table-bordered tbody tr:hover td,
+.tanesw-operations-page .table-bordered tbody tr:hover td,
+.tanesw-booking-detail-view .table-bordered tbody tr:hover td,
+.tanesw-carry-detail .table-bordered tbody tr:hover td {
+	background: var(--fg-hover-color, var(--bg-light-gray));
+}
+.tanesw-operations-page .table-active,
+.tanesw-operations-page .table thead tr.table-active th,
+.tanesw-booking-detail-view .table-active,
+.tanesw-booking-detail-view .table thead tr.table-active th {
+	background-color: var(--subtle-fg) !important;
+	color: var(--heading-color) !important;
+}
+
+/* Summary Grid */
+.tanesw-summary-grid {
+	display: grid;
+	grid-template-columns: 180px minmax(220px, 1fr) 180px minmax(220px, 1fr);
+	background: var(--card-bg);
+}
+.tanesw-summary-grid > div {
+	padding: 9px 12px;
+	border-right: 1px solid var(--border-color);
+	border-bottom: 1px solid var(--border-color);
+	min-width: 0;
+	color: var(--text-color);
+}
+.tanesw-summary-grid > .label {
+	background: var(--subtle-fg);
+	font-weight: 600;
+	color: var(--text-muted);
+}
+@media (max-width: 900px) {
+	.tanesw-summary-grid { grid-template-columns: 140px 1fr; }
+}
+
+/* Grid Tables */
+.tanesw-grid-table,
+.tanesw-table-grid {
+	display: table;
+	width: 100%;
+	border-collapse: collapse;
+	background: var(--card-bg);
+}
+.tanesw-grid-row {
+	display: table-row;
+}
+.tanesw-grid-cell {
+	display: table-cell;
+	padding: 6px 12px;
+	font-size: 12px;
+	border: 1px solid var(--border-color);
+	vertical-align: middle;
+	color: var(--text-color);
+}
+.tanesw-grid-cell.label {
+	background: var(--subtle-fg);
+	color: var(--text-muted);
+	font-weight: 600;
+	width: 18%;
+}
+.tanesw-grid-cell.value {
+	background: var(--card-bg);
+	color: var(--text-color);
+	width: 32%;
+}
+
+/* Pagination & Section Details */
+.tanesw-pagination,
+.tanesw-booking-pagination {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	border-top: 1px solid var(--border-color);
+	color: var(--text-muted);
+	font-size: 12px;
+	background: var(--card-bg);
+}
+.tanesw-booking-pagination .booking-pages {
+	display: flex;
+	gap: 4px;
+}
+.tanesw-booking-pagination label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 0;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+.tanesw-booking-pagination select.booking-size {
+	display: inline-block;
+	width: auto;
+	height: 26px;
+	padding: 2px 8px;
+	font-size: 12px;
+	background-color: var(--control-bg);
+	color: var(--text-color);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-sm, 4px);
+}
+.tanesw-detail-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 0;
+	margin-bottom: 14px;
+	border-bottom: 1px solid var(--border-color);
+}
+.tanesw-section-title {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--heading-color);
+	margin-top: 16px;
+	margin-bottom: 8px;
+}
+.tanesw-action-row {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--border-color);
+}
+.tanesw-reg-modal .form-control {
+	background-color: var(--control-bg);
+	color: var(--text-color);
+	border: 1px solid var(--border-color);
+}
+.tanesw-reg-modal .form-control:focus {
+	border-color: var(--tanesw-accent);
+	box-shadow: 0 0 0 2px var(--primary-light, rgba(37, 99, 235, 0.2));
+}
+
+/* Badges */
+.tanesw-operations-page .badge,
+.tanesw-booking-detail-view .badge,
+.tanesw-carry-detail .badge,
+.modal-dialog .badge {
+	font-weight: 500;
+	border-radius: var(--border-radius-sm, 3px);
+}
+.tanesw-operations-page .badge-info,
+.tanesw-booking-detail-view .badge-info,
+.tanesw-carry-detail .badge-info,
+.modal-dialog .badge-info {
+	background-color: var(--alert-bg-info);
+	color: var(--alert-text-info);
+}
+.tanesw-operations-page .badge-success,
+.tanesw-booking-detail-view .badge-success,
+.tanesw-carry-detail .badge-success,
+.modal-dialog .badge-success {
+	background-color: var(--alert-bg-success);
+	color: var(--alert-text-success);
+}
+.tanesw-operations-page .badge-warning,
+.tanesw-booking-detail-view .badge-warning,
+.tanesw-carry-detail .badge-warning,
+.modal-dialog .badge-warning {
+	background-color: var(--alert-bg-warning);
+	color: var(--alert-text-warning);
+}
+.tanesw-operations-page .badge-danger,
+.tanesw-booking-detail-view .badge-danger,
+.tanesw-carry-detail .badge-danger,
+.modal-dialog .badge-danger {
+	background-color: var(--alert-bg-danger);
+	color: var(--alert-text-danger);
+}
+.tanesw-operations-page .badge-secondary,
+.tanesw-booking-detail-view .badge-secondary,
+.tanesw-carry-detail .badge-secondary,
+.modal-dialog .badge-secondary {
+	background-color: var(--subtle-fg);
+	color: var(--text-muted);
+}
+.tanesw-operations-page .badge-light,
+.tanesw-booking-detail-view .badge-light,
+.tanesw-carry-detail .badge-light,
+.modal-dialog .badge-light {
+	background-color: var(--bg-light-gray);
+	color: var(--text-color);
+	border-color: var(--border-color) !important;
+}
+.tanesw-operations-page .badge-primary,
+.tanesw-booking-detail-view .badge-primary,
+.tanesw-carry-detail .badge-primary,
+.modal-dialog .badge-primary {
+	background-color: var(--tanesw-accent);
+	color: #ffffff;
+}
+
+/* Specific Contrast Rules for Dark Mode */
+[data-theme="dark"] .tanesw-grid-cell.label,
+[data-theme="dark"] .tanesw-summary-grid > .label {
+	background: var(--subtle-fg);
+	color: var(--text-light, var(--gray-300));
+}
+[data-theme="dark"] .tanesw-table th,
+[data-theme="dark"] .tanesw-table-bordered thead th,
+[data-theme="dark"] .table tr.table-active th {
+	background: var(--subtle-fg) !important;
+	color: var(--gray-300) !important;
+}
+[data-theme="dark"] .tanesw-table tr:hover td,
+[data-theme="dark"] .tanesw-table-bordered tbody tr:hover td,
+[data-theme="dark"] .table tbody tr:hover td {
+	background: var(--gray-800) !important;
+}
+[data-theme="dark"] .tanesw-breadcrumb {
+	color: var(--gray-400);
+}
+
+/* Specific Contrast Rules for Light Mode */
+[data-theme="light"] .tanesw-grid-cell.label,
+[data-theme="light"] .tanesw-summary-grid > .label {
+	background: var(--subtle-fg);
+	color: var(--text-muted);
+}
+[data-theme="light"] .tanesw-table th,
+[data-theme="light"] .tanesw-table-bordered thead th,
+[data-theme="light"] .table tr.table-active th {
+	background: var(--subtle-fg);
+	color: var(--text-muted);
+}
+[data-theme="light"] .tanesw-table tr:hover td,
+[data-theme="light"] .tanesw-table-bordered tbody tr:hover td,
+[data-theme="light"] .table tbody tr:hover td {
+	background: var(--bg-light-gray);
+}
+[data-theme="light"] .tanesw-breadcrumb {
+	color: var(--text-muted);
+}
+
+/* Dark-mode body cells: headers were protected, tbody was not, so rows rendered
+   dark-on-dark. Force both, and make the active tab unmistakable. */
+[data-theme="dark"] .tanesw-table tbody td,
+[data-theme="dark"] .tanesw-table-bordered tbody td,
+[data-theme="dark"] .tanesw-operations-page .table tbody td,
+[data-theme="dark"] .tanesw-booking-list tbody td,
+[data-theme="dark"] .modal-dialog .tanesw-table tbody td {
+	color: var(--gray-50) !important;
+	background: var(--card-bg) !important;
+}
+[data-theme="dark"] .tanesw-table tbody tr:hover td,
+[data-theme="dark"] .tanesw-table-bordered tbody tr:hover td {
+	background: var(--gray-700) !important;
+}
+[data-theme="dark"] .tanesw-table td a,
+[data-theme="dark"] .tanesw-table td .tanesw-clickable {
+	color: #7aa2f7 !important;
+}
+
+/* Active tab: win against .nav-tabs .nav-link regardless of load order. */
+.tanesw-nav-tabs .nav-link.active {
+	color: var(--tanesw-accent) !important;
+	border-bottom: 2px solid var(--tanesw-accent) !important;
+	background: transparent !important;
+	font-weight: 600;
+}
+[data-theme="dark"] .tanesw-nav-tabs .nav-link.active {
+	color: #7aa2f7 !important;
+	border-bottom-color: #7aa2f7 !important;
+}

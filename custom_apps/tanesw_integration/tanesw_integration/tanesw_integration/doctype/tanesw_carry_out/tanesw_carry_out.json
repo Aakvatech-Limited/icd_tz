@@ -1,0 +1,241 @@
+{
+ "actions": [],
+ "autoname": "field:cro_base_no",
+ "creation": "2026-10-31 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "cro_base_no",
+  "tansad_no",
+  "exit_date",
+  "column_break_id",
+  "mrn",
+  "crn",
+  "warehouse_code",
+  "status",
+  "process_status_code",
+  "transport_section",
+  "vehicle_no",
+  "trailer_no",
+  "driver_name",
+  "column_break_trsp",
+  "driver_license",
+  "transporter_name",
+  "transporter_tin",
+  "cargo_section",
+  "container_no",
+  "container_size",
+  "seal_no",
+  "column_break_crg",
+  "package_count",
+  "package_type",
+  "weight",
+  "cargo_description",
+  "audit_section",
+  "remarks",
+  "submission_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Carry-Out Identity"
+  },
+  {
+   "fieldname": "cro_base_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Carry-Out Base Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "tansad_no",
+   "fieldtype": "Link",
+   "label": "Linked TANSAD",
+   "options": "TANeSW Declaration"
+  },
+  {
+   "fieldname": "exit_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Exit Date and Time"
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "MRN"
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "label": "CRN"
+  },
+  {
+   "fieldname": "warehouse_code",
+   "fieldtype": "Data",
+   "label": "Warehouse Code"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status"
+  },
+  {
+   "fieldname": "process_status_code",
+   "fieldtype": "Data",
+   "label": "Process Status Code"
+  },
+  {
+   "fieldname": "transport_section",
+   "fieldtype": "Section Break",
+   "label": "Conveyance & Driver Particulars"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle Registration No"
+  },
+  {
+   "fieldname": "trailer_no",
+   "fieldtype": "Data",
+   "label": "Trailer Registration No"
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name"
+  },
+  {
+   "fieldname": "column_break_trsp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "driver_license",
+   "fieldtype": "Data",
+   "label": "Driver License No"
+  },
+  {
+   "fieldname": "transporter_name",
+   "fieldtype": "Data",
+   "label": "Transporter Name"
+  },
+  {
+   "fieldname": "transporter_tin",
+   "fieldtype": "Data",
+   "label": "Transporter TIN"
+  },
+  {
+   "fieldname": "cargo_section",
+   "fieldtype": "Section Break",
+   "label": "Container & Cargo Details"
+  },
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "label": "Container Number",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Data",
+   "label": "Container Size"
+  },
+  {
+   "fieldname": "seal_no",
+   "fieldtype": "Data",
+   "label": "Seal Number"
+  },
+  {
+   "fieldname": "column_break_crg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "package_count",
+   "fieldtype": "Int",
+   "label": "Package Count"
+  },
+  {
+   "fieldname": "package_type",
+   "fieldtype": "Data",
+   "label": "Package Type"
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "label": "Weight (KG)"
+  },
+  {
+   "fieldname": "cargo_description",
+   "fieldtype": "Small Text",
+   "label": "Cargo Description"
+  },
+  {
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Audit & Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "submission_response",
+   "fieldtype": "Code",
+   "label": "Submission Response",
+   "options": "JSON"
+  }
+ ],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Carry Out",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "cro_base_no",
+ "track_changes": 1
+}

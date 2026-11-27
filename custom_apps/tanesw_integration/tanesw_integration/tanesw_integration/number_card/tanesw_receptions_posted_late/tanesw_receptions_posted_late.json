@@ -1,0 +1,22 @@
+{
+ "color": "#e74c3c",
+ "creation": "2026-11-16 18:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "dynamic_filters_json": "[]",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Receptions Posted Late",
+ "modified": "2026-11-16 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Receptions Posted Late",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type",
+ "document_type": "TANeSW Reception Date Check",
+ "function": "Count",
+ "filters_json": "[[\"TANeSW Reception Date Check\", \"status\", \"=\", \"Posted Late\", false], [\"TANeSW Reception Date Check\", \"posting_date\", \"Timespan\", \"this month\", false]]"
+}

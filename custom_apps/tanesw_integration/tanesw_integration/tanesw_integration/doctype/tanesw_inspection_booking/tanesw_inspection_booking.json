@@ -1,0 +1,212 @@
+{
+ "actions": [],
+ "autoname": "field:tansad_no",
+ "creation": "2026-10-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "tansad_no",
+  "declaration_record",
+  "status",
+  "column_break_id",
+  "booking_request_date",
+  "booking_approval_datetime",
+  "process_status_code",
+  "details_section",
+  "warehouse_code",
+  "customs_office",
+  "consignee_tin",
+  "consignee_name",
+  "column_break_det",
+  "company_name",
+  "bl_no",
+  "container_count",
+  "cargo_type",
+  "goods_description",
+  "agencies_section",
+  "participating_agencies",
+  "audit_section",
+  "notes",
+  "raw_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Booking Identity"
+  },
+  {
+   "fieldname": "tansad_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "TANSAD Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "declaration_record",
+   "fieldtype": "Link",
+   "label": "Linked Declaration",
+   "options": "TANeSW Declaration"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Booking Status",
+   "options": "Draft\nRequested\nApproved\nRejected"
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "booking_request_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Booking Request Date"
+  },
+  {
+   "fieldname": "booking_approval_datetime",
+   "fieldtype": "Datetime",
+   "label": "Approval Datetime"
+  },
+  {
+   "fieldname": "process_status_code",
+   "fieldtype": "Data",
+   "label": "Process Status Code (e.g. B=Approved)",
+   "description": "Process Status Code (RKM0019: A Received, B Approved, C Confirmed, D Submitted, E Rejected, F Returned, G Re-submit, H Re-submitted, I Inspected)"
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Cargo, Warehouse & Parties"
+  },
+  {
+   "fieldname": "warehouse_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Warehouse Location"
+  },
+  {
+   "fieldname": "customs_office",
+   "fieldtype": "Data",
+   "label": "Customs Office"
+  },
+  {
+   "fieldname": "consignee_tin",
+   "fieldtype": "Data",
+   "label": "Consignee TIN"
+  },
+  {
+   "fieldname": "consignee_name",
+   "fieldtype": "Data",
+   "label": "Consignee Name"
+  },
+  {
+   "fieldname": "column_break_det",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Clearing Agent Name"
+  },
+  {
+   "fieldname": "bl_no",
+   "fieldtype": "Data",
+   "label": "B/L Number"
+  },
+  {
+   "default": "0",
+   "fieldname": "container_count",
+   "fieldtype": "Int",
+   "label": "Containers Count"
+  },
+  {
+   "fieldname": "cargo_type",
+   "fieldtype": "Data",
+   "label": "Cargo Type"
+  },
+  {
+   "fieldname": "goods_description",
+   "fieldtype": "Small Text",
+   "label": "Goods Description"
+  },
+  {
+   "fieldname": "agencies_section",
+   "fieldtype": "Section Break",
+   "label": "Participating Government Agencies (PGA)"
+  },
+  {
+   "fieldname": "participating_agencies",
+   "fieldtype": "Table",
+   "label": "Participating Government Agencies",
+   "options": "TANeSW Inspection Agency"
+  },
+  {
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Notes & API Response"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Inspection Notes"
+  },
+  {
+   "fieldname": "raw_response",
+   "fieldtype": "Code",
+   "label": "Raw API Response",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Inspection Booking",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "tansad_no",
+ "track_changes": 1
+}

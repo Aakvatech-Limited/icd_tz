@@ -1,0 +1,23 @@
+{
+ "aggregate_function_based_on": "container_count",
+ "color": "#5e64ff",
+ "creation": "2026-11-11 15:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "TANeSW Vessel Allocation",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"TANeSW Vessel Allocation\", \"arrival_date\", \"Timespan\", \"this month\", false]]",
+ "function": "Sum",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Allocated This Month",
+ "modified": "2026-11-11 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Allocated This Month",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

@@ -1,0 +1,228 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:reception",
+ "creation": "2026-11-16 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reception",
+  "container_no",
+  "status",
+  "freight_indicator",
+  "column_break_ids",
+  "manifest",
+  "mrn",
+  "m_bl_no",
+  "clerk",
+  "dates_section",
+  "carry_in_on",
+  "carry_in_source",
+  "posting_date",
+  "icd_time_in",
+  "days_late",
+  "hours_off",
+  "column_break_storage",
+  "ship_dc_date",
+  "erp_received_date",
+  "expected_received_date",
+  "storage_days_lost",
+  "checked_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "reception",
+   "fieldtype": "Link",
+   "label": "Container Reception",
+   "read_only": 1,
+   "options": "Container Reception",
+   "reqd": 1,
+   "in_list_view": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "label": "Container No",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "read_only": 1,
+   "options": "Matches\nPosted Late\nPosted Early\nTime Differs\nNo TANeSW Carry-In",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "freight_indicator",
+   "fieldtype": "Data",
+   "label": "FCL/LCL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ids",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manifest",
+   "fieldtype": "Link",
+   "label": "Manifest",
+   "read_only": 1,
+   "options": "Manifest",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "label": "MRN",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "m_bl_no",
+   "fieldtype": "Data",
+   "label": "B/L No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "clerk",
+   "fieldtype": "Link",
+   "label": "Clerk",
+   "read_only": 1,
+   "options": "Employee",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "carry_in_on",
+   "fieldtype": "Datetime",
+   "label": "TANeSW Carry-In",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "carry_in_source",
+   "fieldtype": "Data",
+   "label": "Carry-In From",
+   "read_only": 1,
+   "description": "TANeSW Tracking ('Carry In Report Approved' event) or the carry-in report itself"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "ERP Posting Date",
+   "read_only": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "icd_time_in",
+   "fieldtype": "Time",
+   "label": "ERP Time In",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_late",
+   "fieldtype": "Int",
+   "label": "Days Late",
+   "read_only": 1,
+   "description": "ERP Posting Date minus the TANeSW carry-in date"
+  },
+  {
+   "fieldname": "hours_off",
+   "fieldtype": "Float",
+   "label": "Hours Off",
+   "read_only": 1,
+   "description": "ERP Posting Date + Time In minus the TANeSW carry-in"
+  },
+  {
+   "fieldname": "column_break_storage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ship_dc_date",
+   "fieldtype": "Date",
+   "label": "Ship D/C Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erp_received_date",
+   "fieldtype": "Date",
+   "label": "ERP Storage Start",
+   "read_only": 1,
+   "description": "Container Reception Received Date"
+  },
+  {
+   "fieldname": "expected_received_date",
+   "fieldtype": "Date",
+   "label": "Storage Should Start",
+   "read_only": 1,
+   "description": "icd_tz's rule on TANeSW dates: the B/L's last carry-in once 48 h (ICD Setting) after Ship D/C, else Ship D/C"
+  },
+  {
+   "fieldname": "storage_days_lost",
+   "fieldtype": "Int",
+   "label": "Storage Days Lost",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "ERP Storage Start minus Storage Should Start; positive = days of storage not charged"
+  },
+  {
+   "fieldname": "checked_on",
+   "fieldtype": "Datetime",
+   "label": "Checked On",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-16 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Reception Date Check",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "posting_date",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "container_no",
+ "track_changes": 0,
+ "search_fields": "container_no,mrn,manifest"
+}

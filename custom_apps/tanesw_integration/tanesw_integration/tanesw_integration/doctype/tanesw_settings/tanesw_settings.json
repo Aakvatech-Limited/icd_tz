@@ -1,0 +1,520 @@
+{
+ "actions": [],
+ "creation": "2026-10-24 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "connection_section",
+  "base_url",
+  "environment",
+  "column_break_connection",
+  "request_timeout",
+  "verify_tls",
+  "login_section",
+  "login_tanesw_id",
+  "login_password",
+  "login_role_code",
+  "login_warehouse_code",
+  "column_break_login",
+  "login_company_tin",
+  "login_company_code",
+  "login_company_type",
+  "login_status",
+  "login_last_success",
+  "login_error",
+  "sync_section",
+  "enable_read_sync",
+  "allocation_monitoring_section",
+  "background_watcher_account",
+  "background_watcher_fallback_account",
+  "allocation_watcher_initialized",
+  "landed_watch_initialized",
+  "email_allocation_alerts",
+  "allocation_last_run",
+  "allocation_last_result",
+  "allocation_baseline_pending",
+  "container_tracking_section",
+  "container_tracking_days",
+  "container_last_sync",
+  "container_last_result",
+  "icd_link_section",
+  "enable_icd_link",
+  "draft_portal_receptions",
+  "best_pick_without_manifest",
+  "icd_link_last_run",
+  "icd_link_last_result",
+  "manifest_sync_section",
+  "enable_manifest_sync",
+  "auto_create_manifests",
+  "terminal_ports",
+  "manifest_create_status",
+  "update_erp_manifests",
+  "check_port_charges",
+  "port_charge_check_mode",
+  "column_break_manifest_sync",
+  "manifest_sync_last_run",
+  "manifest_sync_last_result",
+  "anomaly_section",
+  "enable_anomaly_tracking",
+  "anomaly_last_run",
+  "anomaly_last_result",
+  "reception_date_section",
+  "enable_reception_date_check",
+  "reception_date_on_save",
+  "column_break_reception_date",
+  "reception_date_last_run",
+  "reception_date_last_result",
+  "write_operations_section",
+  "enable_write_operations",
+  "test_mode",
+  "token_cache_duration",
+  "logging_section",
+  "log_sanitized_metadata"
+ ],
+ "fields": [
+  {
+   "fieldname": "connection_section",
+   "fieldtype": "Section Break",
+   "label": "Connection"
+  },
+  {
+   "default": "https://tanesw.tra.go.tz/api",
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "Base URL",
+   "reqd": 1
+  },
+  {
+   "default": "Development",
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "label": "Environment",
+   "options": "Development\nTest\nProduction",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_connection",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "30",
+   "fieldname": "request_timeout",
+   "fieldtype": "Int",
+   "label": "Request Timeout (seconds)",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "verify_tls",
+   "fieldtype": "Check",
+   "label": "Verify TLS"
+  },
+  {
+   "fieldname": "login_section",
+   "fieldtype": "Section Break",
+   "label": "TANeSW Login (used by every TANeSW user)"
+  },
+  {
+   "fieldname": "login_tanesw_id",
+   "fieldtype": "Data",
+   "label": "TANeSW ID",
+   "description": "One TANeSW login for the whole team. Every ERPNext user with the TANeSW User or TANeSW Operations role works through it: no personal TANeSW credentials needed. Background jobs use it too when no watcher account is set. A personal TANeSW User Account, if one exists, still takes precedence for that user. Only System Managers can change these fields; the password is never shown."
+  },
+  {
+   "fieldname": "login_password",
+   "fieldtype": "Password",
+   "label": "TANeSW Password"
+  },
+  {
+   "fieldname": "login_role_code",
+   "fieldtype": "Data",
+   "label": "Role Code"
+  },
+  {
+   "fieldname": "login_warehouse_code",
+   "fieldtype": "Data",
+   "label": "Warehouse Code (Our ICD)",
+   "description": "Our ICD's TANeSW code, e.g. WITZDL019. Used for logins, our cargo, carry-ins and inspections.",
+   "mandatory_depends_on": "eval:doc.login_tanesw_id"
+  },
+  {
+   "fieldname": "column_break_login",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "login_company_tin",
+   "fieldtype": "Data",
+   "label": "Company TIN"
+  },
+  {
+   "fieldname": "login_company_code",
+   "fieldtype": "Data",
+   "label": "Company Code"
+  },
+  {
+   "fieldname": "login_company_type",
+   "fieldtype": "Data",
+   "label": "Company Type"
+  },
+  {
+   "fieldname": "login_status",
+   "fieldtype": "Select",
+   "label": "Last Login Status",
+   "options": "Never Tested\nSuccessful\nFailed",
+   "default": "Never Tested",
+   "read_only": 1
+  },
+  {
+   "fieldname": "login_last_success",
+   "fieldtype": "Datetime",
+   "label": "Last Successful Login",
+   "read_only": 1
+  },
+  {
+   "fieldname": "login_error",
+   "fieldtype": "Small Text",
+   "label": "Last Login Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Operations"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_read_sync",
+   "fieldtype": "Check",
+   "label": "Enable Read Synchronization"
+  },
+  {
+   "fieldname": "allocation_monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation Monitoring"
+  },
+  {
+   "fieldname": "background_watcher_account",
+   "fieldtype": "Link",
+   "label": "Background Watcher Account",
+   "options": "TANeSW User Account",
+   "depends_on": "eval:doc.enable_read_sync",
+   "description": "Optional: leave empty to use the TANeSW Login above."
+  },
+  {
+   "fieldname": "background_watcher_fallback_account",
+   "fieldtype": "Link",
+   "label": "Fallback Watcher Account",
+   "options": "TANeSW User Account",
+   "depends_on": "eval:doc.enable_read_sync",
+   "description": "Optional: leave empty to use the TANeSW Login above."
+  },
+  {
+   "fieldname": "allocation_watcher_initialized",
+   "fieldtype": "Check",
+   "label": "Allocation Watcher Initialized",
+   "default": "0",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "landed_watch_initialized",
+   "fieldtype": "Check",
+   "label": "Ready-to-Declare Watch Initialized",
+   "default": "0",
+   "read_only": 1,
+   "description": "Set by the first run after deployment, which records every vessel's landed count without alerting."
+  },
+  {
+   "fieldname": "email_allocation_alerts",
+   "fieldtype": "Check",
+   "label": "Email Allocation Alerts",
+   "default": "1",
+   "description": "Also email new / changed vessel allocations and newly landed containers to the operations team only: enabled users with the role TANeSW Operations. Bell notifications still go to every TANeSW user. Nobody with the role means no email."
+  },
+  {
+   "fieldname": "allocation_last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Allocation Check",
+   "read_only": 1
+  },
+  {
+   "fieldname": "allocation_last_result",
+   "fieldtype": "Small Text",
+   "label": "Last Allocation Check Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "allocation_baseline_pending",
+   "fieldtype": "Small Text",
+   "label": "Baseline Pending MRNs",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "container_tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Container Tracking"
+  },
+  {
+   "fieldname": "container_tracking_days",
+   "fieldtype": "Int",
+   "label": "Track Vessels Arrived In The Last (days)",
+   "default": "45",
+   "description": "Hourly: containers on our B/Ls of these vessels are read from TANeSW Cargo Tracking (reports: TANeSW Container Allocation / TANeSW Container Dwell). Containers not yet received at the ICD keep being tracked after that."
+  },
+  {
+   "fieldname": "container_last_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Container Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_last_result",
+   "fieldtype": "Small Text",
+   "label": "Last Container Sync Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "icd_link_section",
+   "fieldtype": "Section Break",
+   "label": "Link Carry-Ins to icd_tz"
+  },
+  {
+   "fieldname": "enable_icd_link",
+   "fieldtype": "Check",
+   "label": "Link Carry-Ins to icd_tz",
+   "default": "0",
+   "description": "Every 5 minutes: read our TANeSW carry-in and handover reports and fill the matching Best Pick Movement Order (same manifest MRN, truck, container and B/L) while the truck is on the road. The Container Reception is made and submitted from our Carry-In screen. See TANeSW Carry In Container for each container's result."
+  },
+  {
+   "fieldname": "draft_portal_receptions",
+   "fieldtype": "Check",
+   "default": "0",
+   "label": "Also Draft Receptions for Portal Carry-Ins",
+   "depends_on": "enable_icd_link",
+   "description": "Off (recommended): receptions are made and submitted from our Carry-In screen, where the gate gives the yard location and clerk. A carry-in made in the TANeSW portal still gets its Movement Order filled, then waits as 'Awaiting Reception' until someone opens it on our Carry-In screen and presses 'Receive into ERP'. On: a portal carry-in also gets a DRAFT Container Reception for the clerk to finish and submit by hand."
+  },
+  {
+   "fieldname": "best_pick_without_manifest",
+   "fieldtype": "Check",
+   "default": "0",
+   "label": "Allow Best Pick Orders Without Manifest",
+   "depends_on": "enable_icd_link",
+   "description": "Ops can create a Best Pick Movement Order before the driver goes to the port with only the transporter, driver, truck and trailer. When TANeSW's handover says which box that truck took, the manifest, container and B/L are filled in. Changes field settings on Container Movement Order (manifest not required on Best Pick; manifest and ship details fillable after submit, once only); icd_tz's code is not changed. Untick to put the settings back."
+  },
+  {
+   "fieldname": "icd_link_last_run",
+   "fieldtype": "Datetime",
+   "label": "Last ICD Link Run",
+   "read_only": 1
+  },
+  {
+   "fieldname": "icd_link_last_result",
+   "fieldtype": "Small Text",
+   "label": "Last ICD Link Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manifest_sync_section",
+   "fieldtype": "Section Break",
+   "label": "Manifest Sync (TANeSW to ERP Manifest)"
+  },
+  {
+   "fieldname": "enable_manifest_sync",
+   "fieldtype": "Check",
+   "default": "0",
+   "depends_on": "enable_read_sync",
+   "label": "Track Allocation Changes Box by Box",
+   "description": "Records every box that leaves or joins our allocation, with where it went (report: TANeSW Diverted Containers; 'Diverted' card on the Manifest). A vessel's manifest Excel is downloaded from TANeSW only when something points at a change: its B/L or box count moved (allocation watcher), the container sync saw a new box or a box leave our B/Ls, its ERP Manifest was just uploaded, or it has none yet and Create ERP Manifest is on. Otherwise once a day as a safety net. On its own nothing in the ERP Manifest changes unless the options below are ticked."
+  },
+  {
+   "fieldname": "auto_create_manifests",
+   "fieldtype": "Check",
+   "default": "0",
+   "depends_on": "enable_manifest_sync",
+   "label": "Create ERP Manifest for New Allocations",
+   "description": "A vessel allocated to us with no ERP Manifest gets one, made from TANeSW's Excel by icd_tz's own import."
+  },
+  {
+   "fieldname": "terminal_ports",
+   "fieldtype": "Small Text",
+   "label": "Terminal Codes to Manifest Ports",
+   "description": "One per line: TANeSW terminal code = the Port name used on ERP Manifests, e.g. WTTZDL008 = TEAGTL. A manifest whose terminal is not listed is created as Draft for the Port to be set."
+  },
+  {
+   "fieldname": "manifest_create_status",
+   "fieldtype": "Select",
+   "options": "Draft\nSubmitted",
+   "default": "Draft",
+   "depends_on": "eval:doc.enable_manifest_sync && doc.auto_create_manifests",
+   "label": "Create Manifests As",
+   "description": "Draft: Ops check and submit. Submitted: submitted at once when the port is known from TANeSW (WTTZDL007 = DP WORLD, WTTZDL008 = TEAGTL); otherwise left as Draft with a comment."
+  },
+  {
+   "fieldname": "update_erp_manifests",
+   "fieldtype": "Check",
+   "default": "0",
+   "depends_on": "enable_manifest_sync",
+   "label": "Apply TANeSW Changes to ERP Manifests",
+   "description": "Boxes added in TANeSW are added to the ERP Manifest (with their B/Ls, consignees and ICD Container / ICD Master BL records). Boxes removed in TANeSW come off it, unless a Movement Order, Container or Reception already exists: those stay and are flagged. Ticking this makes the Manifest's four tables editable after submit (Property Setters); unticking puts that back. icd_tz's code is not changed."
+  },
+  {
+   "fieldname": "check_port_charges",
+   "fieldtype": "Check",
+   "default": "0",
+   "depends_on": "enable_manifest_sync",
+   "label": "Check Port Charges Against TANeSW",
+   "description": "Port charges (Purchase Order / Purchase Invoice lines per ICD Container) are raised from the ERP Manifest on the day it is uploaded, so a box TANeSW later moves to another ICD stays charged to us. With this on: saving such a document warns about lines for boxes already recorded as gone; submitting first re-reads the vessel from TANeSW (unless checked in the last 30 minutes) and then stops or warns, see below."
+  },
+  {
+   "fieldname": "port_charge_check_mode",
+   "fieldtype": "Select",
+   "options": "Block\nWarn",
+   "default": "Block",
+   "depends_on": "check_port_charges",
+   "label": "When a Line Is for a Box That Is Not Ours"
+  },
+  {
+   "fieldname": "column_break_manifest_sync",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manifest_sync_last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Manifest Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manifest_sync_last_result",
+   "fieldtype": "Small Text",
+   "label": "Last Manifest Sync Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anomaly_section",
+   "fieldtype": "Section Break",
+   "label": "TANeSW Anomalies (Container Allocation Track log)"
+  },
+  {
+   "fieldname": "enable_anomaly_tracking",
+   "fieldtype": "Check",
+   "label": "Track TANeSW Anomalies",
+   "default": "0",
+   "description": "After each hourly container sync, compare TANeSW with the ERP and write the Container Allocation Track log (delivered on TANeSW not in ERP / unbilled / unpaid, diverted, ghost arrival / pending submit, stranded at port past the ICD Setting free days). Replaces the GitHub delivery tracker and allocation daemon: switch those workflows off the same day."
+  },
+  {
+   "fieldname": "anomaly_last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Anomaly Run",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anomaly_last_result",
+   "fieldtype": "Small Text",
+   "label": "Last Anomaly Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reception_date_section",
+   "fieldtype": "Section Break",
+   "label": "Reception Dates (Container Reception vs TANeSW Carry-In)"
+  },
+  {
+   "fieldname": "enable_reception_date_check",
+   "fieldtype": "Check",
+   "default": "0",
+   "depends_on": "enable_read_sync",
+   "label": "Check Reception Dates Against TANeSW",
+   "description": "Every hour, compare each submitted Container Reception of the last 45 days with the TANeSW carry-in at our ICD and record Matches / Posted Late / Posted Early / Time Differs / No TANeSW Carry-In, with the storage days a late Posting Date costs (report: TANeSW Reception Date Check). Read-only: submitted receptions are flagged, never changed."
+  },
+  {
+   "fieldname": "reception_date_on_save",
+   "fieldtype": "Select",
+   "options": "Off\nWarn\nCorrect",
+   "default": "Warn",
+   "label": "On Reception Save",
+   "description": "Applies only while 'Check Reception Dates Against TANeSW' is ticked, when a clerk saves or submits a Container Reception whose Posting Date differs from the TANeSW carry-in. Warn (default): only tell the clerk. Correct: set Posting Date and ICD Time In to the TANeSW carry-in, which moves the storage start date and so the customer's storage charge; choose it only by an explicit decision. Off: nothing."
+  },
+  {
+   "fieldname": "column_break_reception_date",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reception_date_last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Reception Date Check",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reception_date_last_result",
+   "fieldtype": "Small Text",
+   "label": "Last Reception Date Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "write_operations_section",
+   "fieldtype": "Section Break",
+   "label": "Write Operations"
+  },
+  {
+   "default": "0",
+   "description": "Fail-closed master switch. Enabling this does not bypass per-operation contract validation.",
+   "fieldname": "enable_write_operations",
+   "fieldtype": "Check",
+   "label": "Enable TANeSW Write Operations"
+  },
+  {
+   "fieldname": "test_mode",
+   "fieldtype": "Check",
+   "label": "Test Mode (nothing sent to TANeSW)",
+   "default": "0",
+   "description": "For a test site only. Buttons work, but no write reaches TANeSW: Carry-In Submit is simulated and only creates the ERP records (movement order, Container Reception); every other write is refused. An orange TEST MODE badge shows on every TANeSW screen. Never tick on the live server: carry-ins would not reach TRA."
+  },
+  {
+   "default": "1800",
+   "fieldname": "token_cache_duration",
+   "fieldtype": "Int",
+   "label": "Token Cache Duration (seconds)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "logging_section",
+   "fieldtype": "Section Break",
+   "label": "Logging"
+  },
+  {
+   "default": "1",
+   "description": "Never stores passwords, bearer tokens, or authorization headers.",
+   "fieldname": "log_sanitized_metadata",
+   "fieldtype": "Check",
+   "label": "Log Sanitized Metadata"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-22 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

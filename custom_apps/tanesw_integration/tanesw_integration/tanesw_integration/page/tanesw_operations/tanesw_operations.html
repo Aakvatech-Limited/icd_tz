@@ -1,0 +1,40 @@
+<div class="tanesw-operations-page">
+	<div class="tanesw-top-bar d-flex justify-content-between align-items-center mb-3">
+		<div class="tanesw-conn-status text-muted small d-flex align-items-center">
+			<span class="indicator-pill gray" id="tanesw-conn-pill">Checking Connection</span>
+			<span id="tanesw-conn-text" class="ml-2">TANeSW Single Window Gateway</span>
+		</div>
+		<div>
+			<button class="btn btn-default btn-xs" id="btn-tanesw-test-conn">Test Connection</button>
+		</div>
+	</div>
+
+	<div class="tanesw-tabs-wrapper mb-3">
+		<ul class="nav nav-tabs tanesw-nav-tabs" role="tablist">
+			<li class="nav-item">
+				<a class="nav-link active" data-tab="manifest" role="tab">Manifest Lookup</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" data-tab="transfers" role="tab">ICD Transfers</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" data-tab="tracking" role="tab">Cargo Tracking</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" data-tab="carry_in" role="tab">Carry-In</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" data-tab="carry_out" role="tab">Carry-Out</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" data-tab="bookings" role="tab">Bookings</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" data-tab="inspections" role="tab">Inspections</a>
+			</li>
+		</ul>
+	</div>
+
+	<div class="tanesw-tab-content" id="tanesw-tab-content">
+	</div>
+</div>

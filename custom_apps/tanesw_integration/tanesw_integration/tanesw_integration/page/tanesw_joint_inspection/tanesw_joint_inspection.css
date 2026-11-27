@@ -1,0 +1,87 @@
+/* LPCO > Joint Inspection — layout mirrors the TANeSW portal screens */
+.ji-page,
+.modal-dialog .ji-modal {
+	--ji-accent: var(--primary);
+	--ji-label-bg: var(--bg-light-gray, var(--gray-100));
+	--ji-line: var(--border-color);
+}
+[data-theme="dark"] .ji-page,
+[data-theme="dark"] .modal-dialog .ji-modal {
+	--ji-accent: #7aa2f7;
+}
+
+.ji-page { display: flex; gap: 16px; align-items: flex-start; padding: 8px 0; color: var(--text-color); }
+
+/* Left navigation: Portal menu "LPCO > Joint Inspection" */
+.ji-nav { flex: 0 0 220px; border: 1px solid var(--ji-line); border-radius: 6px; background: var(--card-bg); padding: 10px 0; position: sticky; top: 70px; }
+.ji-nav .ji-nav-group { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); padding: 6px 14px; letter-spacing: .03em; }
+.ji-nav .ji-nav-sub { font-size: 13px; font-weight: 600; padding: 4px 14px 6px; }
+.ji-nav a { display: block; padding: 6px 14px 6px 24px; font-size: 13px; color: var(--text-color); cursor: pointer; border-left: 3px solid transparent; }
+.ji-nav a:hover { background: var(--ji-label-bg); text-decoration: none; }
+.ji-nav a.active { color: var(--ji-accent); border-left-color: var(--ji-accent); font-weight: 600; }
+.ji-nav .ji-nav-note { font-size: 11px; color: var(--text-muted); padding: 8px 14px 0; }
+
+.ji-main { flex: 1 1 auto; min-width: 0; }
+.ji-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
+.ji-title { font-size: 16px; font-weight: 700; margin: 0; }
+.ji-crumb { font-size: 12px; color: var(--text-muted); }
+.ji-crumb span:last-child { color: var(--ji-accent); }
+
+.ji-card { background: var(--card-bg); border: 1px solid var(--ji-line); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
+.ji-card-title { font-size: 14px; font-weight: 700; margin: 4px 0 10px; }
+
+/* Label/value form grid (portal oN.Row / oN.Control) */
+.ji-form { display: grid; grid-template-columns: 160px minmax(0, 1fr) 160px minmax(0, 1fr); border-top: 1px solid var(--ji-line); border-left: 1px solid var(--ji-line); }
+.ji-form > .ji-l, .ji-form > .ji-v { border-right: 1px solid var(--ji-line); border-bottom: 1px solid var(--ji-line); padding: 7px 10px; font-size: 12.5px; min-height: 36px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ji-form > .ji-l { background: var(--ji-label-bg); font-weight: 600; }
+.ji-form > .ji-l .req { color: var(--red-500, #e24c4c); margin-left: 2px; }
+.ji-form > .ji-v.wide { grid-column: span 3; }
+.ji-form input.form-control, .ji-form select.form-control, .ji-form textarea.form-control { box-sizing: border-box; height: 28px; font-size: 12.5px; padding: 2px 8px; }
+.ji-form textarea.form-control { height: 64px; width: 100%; }
+.ji-form .ji-seg { width: 88px; }
+.ji-form .ji-seg.w60 { width: 60px; }
+.ji-form .ji-seg.w110 { width: 120px; }
+.ji-form .ji-date { width: 150px; }
+.ji-form .ji-dash { color: var(--text-muted); }
+.ji-form .ji-range-btn { padding: 1px 8px; font-size: 11.5px; }
+
+.ji-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; flex-wrap: wrap; }
+.ji-actions .right { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn.ji-reset { background: #f2d600; border-color: #f2d600; color: #1c1c1c; }
+
+/* Grids */
+.ji-table-wrap { overflow-x: auto; }
+table.ji-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.ji-table th { background: var(--ji-label-bg); font-weight: 600; text-align: center; padding: 8px 6px; border: 1px solid var(--ji-line); white-space: nowrap; }
+table.ji-table td { padding: 7px 6px; border: 1px solid var(--ji-line); text-align: center; vertical-align: middle; }
+table.ji-table td.left { text-align: left; }
+table.ji-table td.idx { color: var(--text-muted); width: 44px; }
+table.ji-table tr:hover td { background: var(--ji-label-bg); }
+.ji-page a.ji-link, .ji-modal a.ji-link { color: var(--ji-accent); text-decoration: underline; cursor: pointer; }
+.ji-empty { text-align: center; color: var(--text-muted); padding: 28px 0 !important; }
+
+.ji-pager { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12.5px; gap: 10px; flex-wrap: wrap; }
+.ji-pager .left { display: flex; gap: 10px; align-items: center; }
+.ji-pager select { height: 26px; font-size: 12px; padding: 0 6px; width: auto; display: inline-block; }
+.ji-pager .pages { display: flex; gap: 4px; flex-wrap: wrap; }
+.ji-pager .pages .btn { min-width: 28px; padding: 2px 6px; font-size: 12px; }
+
+.ji-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--ji-line); margin-bottom: 12px; }
+.ji-tabs a { padding: 7px 14px; font-size: 13px; cursor: pointer; color: var(--text-muted); border-radius: 4px 4px 0 0; }
+.ji-tabs a.active { background: var(--ji-accent); color: #fff; }
+.ji-tabs a:hover { text-decoration: none; }
+
+.ji-banner { font-size: 12px; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px; background: var(--ji-label-bg); }
+.ji-banner.warn { border-left: 3px solid var(--orange-500, #f39c12); }
+.ji-muted { color: var(--text-muted); font-size: 12px; }
+
+@media (max-width: 991px) {
+	.ji-page { flex-direction: column; align-items: stretch; }
+	.ji-main { width: 100%; }
+	.ji-nav { position: static; width: 100%; flex-basis: auto; }
+	.ji-form { grid-template-columns: 110px minmax(0, 1fr); }
+	.ji-form > .ji-v { flex-wrap: wrap; }
+	.ji-form .ji-seg, .ji-form .ji-seg.w60, .ji-form .ji-seg.w110 { flex: 1 1 0; width: auto; min-width: 0; }
+	.ji-form .ji-date { width: 100%; }
+	.ji-form > .ji-v.wide { grid-column: span 1; }
+}

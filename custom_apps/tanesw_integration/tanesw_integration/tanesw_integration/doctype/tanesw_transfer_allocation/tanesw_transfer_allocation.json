@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "autoname": "field:allocation_no",
+ "creation": "2026-10-31 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "allocation_no",
+  "declaration_no",
+  "tansad_no",
+  "column_break_id",
+  "mrn",
+  "crn",
+  "status",
+  "process_status_code",
+  "transfer_section",
+  "place_of_departure",
+  "place_of_destination",
+  "column_break_trsf",
+  "transfer_start_date",
+  "transfer_end_date",
+  "containers_section",
+  "containers",
+  "audit_section",
+  "submission_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation & Transfer Identity"
+  },
+  {
+   "fieldname": "allocation_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Allocation / Transfer No",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "declaration_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Declaration Number"
+  },
+  {
+   "fieldname": "tansad_no",
+   "fieldtype": "Link",
+   "label": "Linked TANSAD",
+   "options": "TANeSW Declaration"
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mrn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "MRN"
+  },
+  {
+   "fieldname": "crn",
+   "fieldtype": "Data",
+   "label": "CRN"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status"
+  },
+  {
+   "fieldname": "process_status_code",
+   "fieldtype": "Data",
+   "label": "Process Status Code"
+  },
+  {
+   "fieldname": "transfer_section",
+   "fieldtype": "Section Break",
+   "label": "Routing & Schedule"
+  },
+  {
+   "fieldname": "place_of_departure",
+   "fieldtype": "Data",
+   "label": "Place of Departure (Warehouse/Terminal)"
+  },
+  {
+   "fieldname": "place_of_destination",
+   "fieldtype": "Data",
+   "label": "Place of Destination (ICD)"
+  },
+  {
+   "fieldname": "column_break_trsf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transfer_start_date",
+   "fieldtype": "Date",
+   "label": "Transfer Start Date"
+  },
+  {
+   "fieldname": "transfer_end_date",
+   "fieldtype": "Date",
+   "label": "Transfer End Date"
+  },
+  {
+   "fieldname": "containers_section",
+   "fieldtype": "Section Break",
+   "label": "Allocated Containers"
+  },
+  {
+   "fieldname": "containers",
+   "fieldtype": "Table",
+   "label": "Containers",
+   "options": "TANeSW Transfer Container"
+  },
+  {
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Submission Audit"
+  },
+  {
+   "fieldname": "submission_response",
+   "fieldtype": "Code",
+   "label": "Submission Response",
+   "options": "JSON"
+  }
+ ],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TANeSW Integration",
+ "name": "TANeSW Transfer Allocation",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "role": "TANeSW User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "TANeSW Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "allocation_no",
+ "track_changes": 1
+}
